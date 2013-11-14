@@ -14,6 +14,8 @@ class BenchmarkSpec extends Specification {
   val iterations = 50
   val byteCount = iterations * megaByteData.length
 
+  args(skipAll = true)
+
   "AES" should {
     "encrypt fast" in {
       val encAes128 = benchmarkSymmetricEncryption("AES", "AES/CBC/NoPadding", Cipher.ENCRYPT_MODE, 16, 16)
