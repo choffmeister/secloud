@@ -29,10 +29,16 @@ class RichFileSpec extends Specification {
   "iterate with children before their parents" in {
     val list = new RichFile(base).treeChildrenFirst.toList
     list.map(_.getName) === Seq(file1, file2, dir2, file3, dir1, file4, base).map(_.getName)
+    
+    val listFiltered = new RichFile(base).treeChildrenFirstFiltered(_.getName != "z-subsub1")
+    listFiltered.map(_.getName) === Seq(file3, dir1, file4, base).map(_.getName)
   }
 
   "iterate with parents before their children" in {
     val list = new RichFile(base).treeParentFirst.toList
     list.map(_.getName) === Seq(base, dir1, dir2, file1, file2, file3, file4).map(_.getName)
+    
+    val listFiltered = new RichFile(base).treeParentFirstFiltered(_.getName != "z-subsub1")
+    listFiltered.map(_.getName) === Seq(base, dir1, file3, file4).map(_.getName)
   }
 }
