@@ -41,6 +41,11 @@ class BinaryWriter(val stream: OutputStream) {
     stream.write(bytes)
   }
 
+  def writeBinary(value: Array[Byte]): Unit = {
+    writeInt32(value.length)
+    stream.write(value)
+  }
+
   def close(): Unit = stream.close()
 }
 
@@ -78,6 +83,13 @@ class BinaryReader(val stream: InputStream) {
     val stringBuf = new Array[Byte](length)
     stream.read(stringBuf, 0, length)
     return new String(stringBuf, "UTF-8")
+  }
+
+  def readBinary(): Array[Byte] = {
+    val length = readInt32()
+    val buf = new Array[Byte](length)
+    stream.read(buf, 0, length)
+    return buf
   }
 
   def close(): Unit = stream.close()

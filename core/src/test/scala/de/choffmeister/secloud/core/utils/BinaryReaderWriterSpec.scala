@@ -118,5 +118,25 @@ class BinaryReaderWriterSpec extends Specification {
       reader.readString() === ""
       reader.readString() === "äöü"
     }
+
+    "read and write Binary" in {
+      val streamWrite = new ByteArrayOutputStream()
+      val writer = new BinaryWriter(streamWrite)
+
+      writer.writeBinary(Array(Byte.MinValue, Byte.MaxValue))
+      writer.writeBinary(Array.empty[Byte])
+      writer.writeBinary(Array(10.toByte, 11.toByte, 12.toByte))
+      writer.close()
+
+      val buf = streamWrite.toByteArray()
+      buf.length === 17
+
+      val streamRead = new ByteArrayInputStream(buf)
+      val reader = new BinaryReader(streamRead)
+
+      reader.readBinary() === Array(Byte.MinValue, Byte.MaxValue)
+      reader.readBinary() === Array.empty[Byte]
+      reader.readBinary() === Array(10.toByte, 11.toByte, 12.toByte)
+    }
   }
 }
