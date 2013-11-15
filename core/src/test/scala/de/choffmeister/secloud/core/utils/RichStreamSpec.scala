@@ -70,5 +70,24 @@ class RichStreamSpec extends Specification {
 
       ms.toByteArray.toList === List[Byte](0, 1, 2, 3, 0)
     }
+
+    "cache output streams" in {
+      val ms = new ByteArrayOutputStream()
+      ms.write(0)
+      ms.write(1)
+
+      ms.cached(cs => ms.write(cs.size)) { cs =>
+        cs.write(10)
+        cs.write(11)
+        cs.write(12)
+        cs.write(13)
+        
+        ms.size === 2
+      }
+
+      ms.write(14)
+
+      ms.toByteArray.toList === List[Byte](0, 1, 4, 10, 11, 12, 13, 14)
+    }
   }
 }

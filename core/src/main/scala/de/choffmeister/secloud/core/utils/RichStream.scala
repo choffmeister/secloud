@@ -4,6 +4,7 @@ import java.io.File
 import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
+import java.io.ByteArrayOutputStream
 import scala.language.implicitConversions
 
 class RichInputStream(val stream: InputStream) {
@@ -14,7 +15,7 @@ class RichInputStream(val stream: InputStream) {
     } finally {
       wrapper.close()
     }
-  } 
+  }
 
   /**
    * Optimize (for example implement read(Array[Byte], Int, Int) => Int)
@@ -45,6 +46,14 @@ class RichOutputStream(val stream: OutputStream) {
       wrapper.close()
     }
   } 
+
+  def cached(after: ByteArrayOutputStream => Any)(inner: ByteArrayOutputStream => Any) {
+    val cache = new ByteArrayOutputStream()
+    inner(cache)
+    after(cache)
+    val buf = cache.toByteArray
+    stream.write(buf)
+  }
 
   /**
    * Optimize (for example implement write(Array[Byte], Int, Int) => Unit)
