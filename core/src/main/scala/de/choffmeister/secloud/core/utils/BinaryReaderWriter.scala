@@ -4,6 +4,7 @@ import java.io.OutputStream
 import java.io.InputStream
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
+import de.choffmeister.secloud.core.ObjectId
 
 class BinaryWriter(val stream: OutputStream) {
   private val bufRaw = new Array[Byte](8)
@@ -44,6 +45,10 @@ class BinaryWriter(val stream: OutputStream) {
   def writeBinary(value: Array[Byte]): Unit = {
     writeInt32(value.length)
     stream.write(value)
+  }
+
+  def writeObjectId(value: ObjectId): Unit = {
+    writeBinary(value.bytes)
   }
 
   def close(): Unit = stream.close()
@@ -90,6 +95,10 @@ class BinaryReader(val stream: InputStream) {
     val buf = new Array[Byte](length)
     stream.read(buf, 0, length)
     return buf
+  }
+
+  def readObjectId(): ObjectId = {
+    return ObjectId(readBinary)
   }
 
   def close(): Unit = stream.close()

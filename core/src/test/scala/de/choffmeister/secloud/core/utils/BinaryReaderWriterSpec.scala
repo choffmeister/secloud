@@ -5,6 +5,7 @@ import org.junit.runner.RunWith
 import org.specs2.runner.JUnitRunner
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
+import de.choffmeister.secloud.core.ObjectId
 
 @RunWith(classOf[JUnitRunner])
 class BinaryReaderWriterSpec extends Specification {
@@ -177,6 +178,26 @@ class BinaryReaderWriterSpec extends Specification {
       reader.readBinary() === Array(Byte.MinValue, Byte.MaxValue)
       reader.readBinary() === Array.empty[Byte]
       reader.readBinary() === Array(10.toByte, 11.toByte, 12.toByte)
+    }
+
+    "read and write ObjectId" in {
+      val streamWrite = new ByteArrayOutputStream()
+      val writer = new BinaryWriter(streamWrite)
+
+      writer.writeObjectId(ObjectId("000000"))
+      writer.writeObjectId(ObjectId())
+      writer.writeObjectId(ObjectId("ffffffffffffffffffffffff"))
+      writer.close()
+
+      val buf = streamWrite.toByteArray()
+      buf.length === 27
+
+      val streamRead = new ByteArrayInputStream(buf)
+      val reader = new BinaryReader(streamRead)
+
+      reader.readObjectId() === ObjectId("000000")
+      reader.readObjectId() === ObjectId()
+      reader.readObjectId() === ObjectId("ffffffffffffffffffffffff")
     }
   }
 }
