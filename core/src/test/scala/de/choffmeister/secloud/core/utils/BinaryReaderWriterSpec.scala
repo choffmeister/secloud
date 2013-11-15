@@ -9,21 +9,55 @@ import java.io.ByteArrayOutputStream
 @RunWith(classOf[JUnitRunner])
 class BinaryReaderWriterSpec extends Specification {
   "BinaryReaderWriter" should {
+    "use big endian (network byte order)" in {
+      val streamWrite = new ByteArrayOutputStream()
+      val writer = new BinaryWriter(streamWrite)
+
+      writer.writeInt8(1)
+      writer.writeInt16(16385)
+      writer.writeInt32(134480385)
+      writer.writeInt64(9169364094552375809L)
+      
+      val buf = streamWrite.toByteArray()
+      buf.length === 15
+      
+      buf(0) === 1.toByte
+      
+      buf(1) === 64.toByte
+      buf(2) === 1.toByte
+      
+      buf(3) === 8.toByte
+      buf(4) === 4.toByte
+      buf(5) === 2.toByte
+      buf(6) === 1.toByte
+      
+      buf(7) === 127.toByte
+      buf(8) === 64.toByte
+      buf(9) === 32.toByte
+      buf(10) === 16.toByte
+      buf(11) === 8.toByte
+      buf(12) === 4.toByte
+      buf(13) === 2.toByte
+      buf(14) === 1.toByte
+    }
+
     "read and write Int8" in {
       val streamWrite = new ByteArrayOutputStream()
       val writer = new BinaryWriter(streamWrite)
 
       writer.writeInt8(Byte.MinValue)
+      writer.writeInt8(1.toByte)
       writer.writeInt8(Byte.MaxValue)
       writer.close()
 
       val buf = streamWrite.toByteArray()
-      buf.length === 2
+      buf.length === 3
 
       val streamRead = new ByteArrayInputStream(buf)
       val reader = new BinaryReader(streamRead)
 
       reader.readInt8() === Byte.MinValue
+      reader.readInt8() === 1.toByte
       reader.readInt8() === Byte.MaxValue
     }
 
@@ -32,16 +66,18 @@ class BinaryReaderWriterSpec extends Specification {
       val writer = new BinaryWriter(streamWrite)
 
       writer.writeInt16(Short.MinValue)
+      writer.writeInt16(16385.toShort)
       writer.writeInt16(Short.MaxValue)
       writer.close()
 
       val buf = streamWrite.toByteArray()
-      buf.length === 4
+      buf.length === 6
 
       val streamRead = new ByteArrayInputStream(buf)
       val reader = new BinaryReader(streamRead)
 
       reader.readInt16() === Short.MinValue
+      reader.readInt16() === 16385.toShort
       reader.readInt16() === Short.MaxValue
     }
 
@@ -50,16 +86,18 @@ class BinaryReaderWriterSpec extends Specification {
       val writer = new BinaryWriter(streamWrite)
 
       writer.writeInt32(Int.MinValue)
+      writer.writeInt32(134480385)
       writer.writeInt32(Int.MaxValue)
       writer.close()
 
       val buf = streamWrite.toByteArray()
-      buf.length === 8
+      buf.length === 12
 
       val streamRead = new ByteArrayInputStream(buf)
       val reader = new BinaryReader(streamRead)
 
       reader.readInt32() === Int.MinValue
+      reader.readInt32() === 134480385
       reader.readInt32() === Int.MaxValue
     }
 
@@ -68,16 +106,18 @@ class BinaryReaderWriterSpec extends Specification {
       val writer = new BinaryWriter(streamWrite)
 
       writer.writeInt64(Long.MinValue)
+      writer.writeInt64(9169364094552375809L)
       writer.writeInt64(Long.MaxValue)
       writer.close()
 
       val buf = streamWrite.toByteArray()
-      buf.length === 16
+      buf.length === 24
 
       val streamRead = new ByteArrayInputStream(buf)
       val reader = new BinaryReader(streamRead)
 
       reader.readInt64() === Long.MinValue
+      reader.readInt64() === 9169364094552375809L
       reader.readInt64() === Long.MaxValue
     }
 
