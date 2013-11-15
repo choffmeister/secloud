@@ -10,7 +10,7 @@ import java.io.ByteArrayOutputStream
 class BinaryReaderWriterSpec extends Specification {
   "BinaryReaderWriter" should {
     "read and write Int8" in {
-      val streamWrite = new ByteArrayOutputStream(128)
+      val streamWrite = new ByteArrayOutputStream()
       val writer = new BinaryWriter(streamWrite)
 
       writer.writeInt8(Byte.MinValue)
@@ -18,6 +18,7 @@ class BinaryReaderWriterSpec extends Specification {
       writer.close()
 
       val buf = streamWrite.toByteArray()
+      buf.length === 2
 
       val streamRead = new ByteArrayInputStream(buf)
       val reader = new BinaryReader(streamRead)
@@ -27,7 +28,7 @@ class BinaryReaderWriterSpec extends Specification {
     }
 
     "read and write Int16" in {
-      val streamWrite = new ByteArrayOutputStream(128)
+      val streamWrite = new ByteArrayOutputStream()
       val writer = new BinaryWriter(streamWrite)
 
       writer.writeInt16(Short.MinValue)
@@ -35,6 +36,7 @@ class BinaryReaderWriterSpec extends Specification {
       writer.close()
 
       val buf = streamWrite.toByteArray()
+      buf.length === 4
 
       val streamRead = new ByteArrayInputStream(buf)
       val reader = new BinaryReader(streamRead)
@@ -44,7 +46,7 @@ class BinaryReaderWriterSpec extends Specification {
     }
 
     "read and write Int32" in {
-      val streamWrite = new ByteArrayOutputStream(128)
+      val streamWrite = new ByteArrayOutputStream()
       val writer = new BinaryWriter(streamWrite)
 
       writer.writeInt32(Int.MinValue)
@@ -52,6 +54,7 @@ class BinaryReaderWriterSpec extends Specification {
       writer.close()
 
       val buf = streamWrite.toByteArray()
+      buf.length === 8
 
       val streamRead = new ByteArrayInputStream(buf)
       val reader = new BinaryReader(streamRead)
@@ -61,7 +64,7 @@ class BinaryReaderWriterSpec extends Specification {
     }
 
     "read and write Int64" in {
-      val streamWrite = new ByteArrayOutputStream(128)
+      val streamWrite = new ByteArrayOutputStream()
       val writer = new BinaryWriter(streamWrite)
 
       writer.writeInt64(Long.MinValue)
@@ -69,6 +72,7 @@ class BinaryReaderWriterSpec extends Specification {
       writer.close()
 
       val buf = streamWrite.toByteArray()
+      buf.length === 16
 
       val streamRead = new ByteArrayInputStream(buf)
       val reader = new BinaryReader(streamRead)
@@ -78,7 +82,7 @@ class BinaryReaderWriterSpec extends Specification {
     }
 
     "read and write Boolean" in {
-      val streamWrite = new ByteArrayOutputStream(128)
+      val streamWrite = new ByteArrayOutputStream()
       val writer = new BinaryWriter(streamWrite)
 
       writer.writeBoolean(true)
@@ -86,6 +90,7 @@ class BinaryReaderWriterSpec extends Specification {
       writer.close()
 
       val buf = streamWrite.toByteArray()
+      buf.length === 2
 
       val streamRead = new ByteArrayInputStream(buf)
       val reader = new BinaryReader(streamRead)
@@ -95,7 +100,7 @@ class BinaryReaderWriterSpec extends Specification {
     }
 
     "read and write String" in {
-      val streamWrite = new ByteArrayOutputStream(128)
+      val streamWrite = new ByteArrayOutputStream()
       val writer = new BinaryWriter(streamWrite)
 
       writer.writeString("foo")
@@ -104,6 +109,7 @@ class BinaryReaderWriterSpec extends Specification {
       writer.close()
 
       val buf = streamWrite.toByteArray()
+      buf.length === 21
 
       val streamRead = new ByteArrayInputStream(buf)
       val reader = new BinaryReader(streamRead)
