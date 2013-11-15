@@ -5,6 +5,7 @@ import java.io.InputStream
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import de.choffmeister.secloud.core.ObjectId
+import scala.language.implicitConversions
 
 class BinaryWriter(val stream: OutputStream) {
   private val bufRaw = new Array[Byte](8)
@@ -102,4 +103,9 @@ class BinaryReader(val stream: InputStream) {
   }
 
   def close(): Unit = stream.close()
+}
+
+object BinaryReaderWriter {
+  implicit def inputStreamToBinaryReader(stream: InputStream) = new BinaryReader(stream)
+  implicit def outputStreamToBinaryWriter(stream: OutputStream) = new BinaryWriter(stream)
 }
