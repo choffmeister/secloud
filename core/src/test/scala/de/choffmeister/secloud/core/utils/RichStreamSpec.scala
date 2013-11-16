@@ -7,6 +7,7 @@ import de.choffmeister.secloud.core.utils.RichStream._
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.IOException
+import org.apache.commons.codec.binary.Hex
 
 @RunWith(classOf[JUnitRunner])
 class RichStreamSpec extends Specification {
@@ -37,6 +38,19 @@ class RichStreamSpec extends Specification {
       }
 
       ms.read() === 4.toByte
+    }
+
+    "hash read data" in {
+      val buf = "Hello World!".getBytes("ASCII")
+      val readBuffer = new Array[Byte](128)
+      val ms = new ByteArrayInputStream(buf)
+
+      val actualHash = Hex.encodeHexString(ms.hashed("SHA-1") { hs =>
+        hs.read(readBuffer) === 12
+      })
+      val expectedHash = "2ef7bde608ce5404e97d5f042f95f89f1c232871"
+
+      actualHash === expectedHash
     }
   }
 
@@ -88,6 +102,17 @@ class RichStreamSpec extends Specification {
       ms.write(14)
 
       ms.toByteArray.toList === List[Byte](0, 1, 4, 10, 11, 12, 13, 14)
+    }
+
+    "hash written data" in {
+      val ms = new ByteArrayOutputStream()
+
+      val actualHash = Hex.encodeHexString(ms.hashed("SHA-1") { hs =>
+        hs.write("Hello World!".getBytes("ASCII"))
+      })
+      val expectedHash = "2ef7bde608ce5404e97d5f042f95f89f1c232871"
+
+      actualHash === expectedHash
     }
   }
 }

@@ -5,6 +5,9 @@ import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
 import java.io.ByteArrayOutputStream
+import java.security.MessageDigest
+import java.security.DigestInputStream
+import java.security.DigestOutputStream
 import scala.language.implicitConversions
 
 class RichInputStream(val stream: InputStream) {
@@ -15,6 +18,13 @@ class RichInputStream(val stream: InputStream) {
     } finally {
       wrapper.close()
     }
+  }
+
+  def hashed(hashAlgorithmName: String)(inner: InputStream => Any): Array[Byte] = {
+    val digest = MessageDigest.getInstance(hashAlgorithmName)
+    val hs = new DigestInputStream(stream, digest)
+    inner(hs)
+    digest.digest()
   }
 
   /**
@@ -53,6 +63,13 @@ class RichOutputStream(val stream: OutputStream) {
     after(cache)
     val buf = cache.toByteArray
     stream.write(buf)
+  }
+
+  def hashed(hashAlgorithmName: String)(inner: OutputStream => Any): Array[Byte] = {
+    val digest = MessageDigest.getInstance(hashAlgorithmName)
+    val hs = new DigestOutputStream(stream, digest)
+    inner(hs)
+    digest.digest()
   }
 
   /**
