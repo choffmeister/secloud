@@ -9,7 +9,7 @@ import java.io.OutputStream
 import java.security.DigestOutputStream
 import de.choffmeister.secloud.core.security.CryptographicAlgorithms._
 
-class ObjectInputStream(val stream: InputStream, val hashAlgorithm: HashAlgorithm) extends InputStream {
+class ObjectHashInputStream(val stream: InputStream, val hashAlgorithm: HashAlgorithm) extends InputStream {
   private val digestStream = hashAlgorithm.wrapStream(stream)
   private val bufRaw = new Array[Byte](8)
   private val buf = ByteBuffer.wrap(bufRaw)
@@ -68,7 +68,7 @@ class ObjectInputStream(val stream: InputStream, val hashAlgorithm: HashAlgorith
   }
 }
 
-class ObjectOutputStream(val stream: OutputStream, val hashAlgorithm: HashAlgorithm) extends OutputStream {
+class ObjectHashOutputStream(val stream: OutputStream, val hashAlgorithm: HashAlgorithm) extends OutputStream {
   private val digestStream = hashAlgorithm.wrapStream(stream)
   private val bufRaw = new Array[Byte](8)
   private val buf = ByteBuffer.wrap(bufRaw)
@@ -129,6 +129,6 @@ class ObjectOutputStream(val stream: OutputStream, val hashAlgorithm: HashAlgori
   }
 }
 
-object ObjectStream {
+object ObjectHashStream {
 
 }

@@ -12,11 +12,13 @@ import java.io.ByteArrayInputStream
 class ObjectSerializerSpec extends Specification {
   "ObjectSerializer" should {
     "serialize blobs" in {
+      val algo = security.CryptographicAlgorithms.`AES-128`
+      val params = algo.generateKey()
       val oid = ObjectId("0001efff")
       val issuer = Issuer(Array(0.toByte, 1.toByte, 128.toByte, 255.toByte), "me")
       val blob1 = Blob(oid, issuer)
-      val buf = writeToBuffer(ObjectSerializer.serialize(blob1, _))
-      val blob2 = readFromBuffer(buf, ObjectSerializer.deserialize(oid, _).asInstanceOf[Blob])
+      val buf = writeToBuffer(ObjectSerializer.serialize(blob1, _, algo, params))
+      val blob2 = readFromBuffer(buf, ObjectSerializer.deserialize(oid, _, algo, params).asInstanceOf[Blob])
 
       blob1 === blob2
     }

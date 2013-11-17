@@ -13,12 +13,12 @@ import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 
 @RunWith(classOf[JUnitRunner])
-class ObjectStreamSpec extends Specification {
-  "ObjectStream" should {
+class ObjectHashStreamSpec extends Specification {
+  "ObjectHashStream" should {
     "only hash the header and the first three root blocks" in {
       val hashAlgo = `SHA-1`
       val ms1 = new ByteArrayOutputStream()
-      val os1 = new ObjectOutputStream(ms1, hashAlgo)
+      val os1 = new ObjectHashOutputStream(ms1, hashAlgo)
 
       writeHeader(os1, CommitObjectType)
       writeIssuerIdentityBlock(os1, Issuer(Array[Byte](Byte.MinValue, 127, Byte.MaxValue), "me"))
@@ -35,7 +35,7 @@ class ObjectStreamSpec extends Specification {
       h1 must beSome
 
       val ms2 = new ByteArrayOutputStream()
-      val os2 = new ObjectOutputStream(ms2, hashAlgo)
+      val os2 = new ObjectHashOutputStream(ms2, hashAlgo)
 
       writeHeader(os2, CommitObjectType)
       writeIssuerIdentityBlock(os2, Issuer(Array[Byte](Byte.MinValue, 127, Byte.MaxValue), "me"))
@@ -54,8 +54,8 @@ class ObjectStreamSpec extends Specification {
 
       h1 must beEqualTo(h2)
 
-      val os3 = new ObjectInputStream(new ByteArrayInputStream(ms1.toByteArray), hashAlgo)
-      val os4 = new ObjectInputStream(new ByteArrayInputStream(ms2.toByteArray), hashAlgo)
+      val os3 = new ObjectHashInputStream(new ByteArrayInputStream(ms1.toByteArray), hashAlgo)
+      val os4 = new ObjectHashInputStream(new ByteArrayInputStream(ms2.toByteArray), hashAlgo)
 
       readToEnd(os3)
       readToEnd(os4)
@@ -72,7 +72,7 @@ class ObjectStreamSpec extends Specification {
     "only hash the header and the first three root blocks (empty pub and priv block)" in {
       val hashAlgo = `SHA-1`
       val ms1 = new ByteArrayOutputStream()
-      val os1 = new ObjectOutputStream(ms1, hashAlgo)
+      val os1 = new ObjectHashOutputStream(ms1, hashAlgo)
 
       writeHeader(os1, CommitObjectType)
       writeIssuerIdentityBlock(os1, Issuer(Array[Byte](Byte.MinValue, 127, Byte.MaxValue), "me"))
@@ -85,7 +85,7 @@ class ObjectStreamSpec extends Specification {
       h1 must beSome
 
       val ms2 = new ByteArrayOutputStream()
-      val os2 = new ObjectOutputStream(ms2, hashAlgo)
+      val os2 = new ObjectHashOutputStream(ms2, hashAlgo)
 
       writeHeader(os2, CommitObjectType)
       writeIssuerIdentityBlock(os2, Issuer(Array[Byte](Byte.MinValue, 127, Byte.MaxValue), "me"))
@@ -100,8 +100,8 @@ class ObjectStreamSpec extends Specification {
 
       h1 must beEqualTo(h2)
 
-      val os3 = new ObjectInputStream(new ByteArrayInputStream(ms1.toByteArray), hashAlgo)
-      val os4 = new ObjectInputStream(new ByteArrayInputStream(ms2.toByteArray), hashAlgo)
+      val os3 = new ObjectHashInputStream(new ByteArrayInputStream(ms1.toByteArray), hashAlgo)
+      val os4 = new ObjectHashInputStream(new ByteArrayInputStream(ms2.toByteArray), hashAlgo)
 
       readToEnd(os3)
       readToEnd(os4)

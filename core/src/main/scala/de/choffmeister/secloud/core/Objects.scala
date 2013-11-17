@@ -77,18 +77,18 @@ object ObjectSerializer {
   import ObjectSerializerConstants._
   import security.CryptographicAlgorithms._
 
-  def serialize(obj: BaseObject, stream: OutputStream): Unit = {
-    val os = new ObjectOutputStream(stream, `SHA-2-256`)
+  def serialize(obj: BaseObject, stream: OutputStream, encryptAlgo: SymmetricEncryptionAlgorithm, encryptParams: SymmetricEncryptionParameters): Unit = {
+    val os = new ObjectHashOutputStream(stream, `SHA-2-256`)
 
     writeHeader(os, obj.objectType)
     writeIssuerIdentityBlock(os, obj.issuer)
 
     // public block
-    writeBlock(os, PublicBlockType) { bs =>
+    writePublicBlock(os) { bs =>
     }
 
     // private block
-    writeBlock(os, PrivateBlockType) { bs =>
+    writePrivateBlock(os, encryptAlgo, encryptParams) { bs =>
     }
 
     // TODO: sign hash
@@ -96,17 +96,17 @@ object ObjectSerializer {
     writeIssuerSignatureBlock(os, signature)
   }
 
-  def deserialize(id: ObjectId, stream: InputStream): BaseObject = {
-    val os = new ObjectInputStream(stream, `SHA-2-256`)
+  def deserialize(id: ObjectId, stream: InputStream, decryptAlgo: SymmetricEncryptionAlgorithm, decryptParams: SymmetricEncryptionParameters): BaseObject = {
+    val os = new ObjectHashInputStream(stream, `SHA-2-256`)
     val objectType = readHeader(os)
     val issuer = readIssuerIdentityBlock(os)
 
     // public block
-    val publicBlock = readBlock(os, PublicBlockType) { bs =>
+    val publicBlock = readPublicBlock(os) { bs =>
     }
 
     // private block
-    val privateBlock = readBlock(os, PrivateBlockType) { bs =>
+    val privateBlock = readPrivateBlock(os, decryptAlgo, decryptParams) { bs =>
     }
 
     // issuer signature block
@@ -153,6 +153,34 @@ object ObjectSerializer {
   def writeIssuerSignatureBlock(stream: OutputStream, signature: Seq[Byte]) {
     writeBlock(stream, IssuerSignatureBlockType) { bs =>
       bs.writeBinary(signature)
+    }
+  }
+  
+  def readPublicBlock[T](stream: InputStream)(inner: InputStream => T): T = {
+    readBlock(stream, PublicBlockType) { bs =>
+      inner(bs)
+    }
+  }
+  
+  def writePublicBlock(stream: OutputStream)(inner: OutputStream => Any): Unit = {
+    writeBlock(stream, PublicBlockType) { bs =>
+      inner(bs)
+    }
+  }
+  
+  def readPrivateBlock[T](stream: InputStream, decryptAlgo: SymmetricEncryptionAlgorithm, decryptParams: SymmetricEncryptionParameters)(inner: InputStream => T): T = {
+    readBlock(stream, PrivateBlockType) { bs =>
+      val ds = decryptAlgo.wrapStream(bs, decryptParams)
+      inner(ds)
+    }
+  }
+  
+  def writePrivateBlock(stream: OutputStream, encryptAlgo: SymmetricEncryptionAlgorithm, encryptParams: SymmetricEncryptionParameters)(inner: OutputStream => Any): Unit = {
+    writeBlock(stream, PrivateBlockType) { bs =>
+      val ds = encryptAlgo.wrapStream(bs, encryptParams)
+      inner(ds)
+      ds.flush()
+      ds.close()
     }
   }
 
