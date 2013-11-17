@@ -49,7 +49,7 @@ class BinaryWriter(val stream: OutputStream) {
   }
 
   def writeObjectId(value: ObjectId): Unit = {
-    writeBinary(value.bytes)
+    writeBinary(value.bytes.toArray)
   }
 
   def close(): Unit = stream.close()
