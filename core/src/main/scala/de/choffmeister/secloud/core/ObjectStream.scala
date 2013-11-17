@@ -1,6 +1,5 @@
 package de.choffmeister.secloud.core
 
-import de.choffmeister.secloud.core.CryptographicsAlgorithms._
 import java.io.InputStream
 import java.security.MessageDigest
 import java.security.DigestInputStream
@@ -8,6 +7,7 @@ import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.io.OutputStream
 import java.security.DigestOutputStream
+import de.choffmeister.secloud.core.security.CryptographicAlgorithms._
 
 class ObjectInputStream(stream: InputStream, val hashAlgorithm: HashAlgorithm) extends InputStream {
   private val digest = MessageDigest.getInstance(hashAlgorithm.algorithmName)

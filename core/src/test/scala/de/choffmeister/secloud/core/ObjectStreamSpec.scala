@@ -4,9 +4,9 @@ import org.specs2.mutable._
 import org.junit.runner.RunWith
 import org.specs2.runner.JUnitRunner
 import de.choffmeister.secloud.core._
-import de.choffmeister.secloud.core.CryptographicsAlgorithms._
 import de.choffmeister.secloud.core.ObjectSerializer._
 import de.choffmeister.secloud.core.ObjectSerializerConstants._
+import de.choffmeister.secloud.core.security.CryptographicAlgorithms._
 import java.io.OutputStream
 import java.io.InputStream
 import java.io.ByteArrayInputStream
