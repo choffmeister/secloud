@@ -150,7 +150,7 @@ class BinaryReaderWriterSpec extends Specification {
       writer.close()
 
       val buf = streamWrite.toByteArray()
-      buf.length === 21
+      buf.length === 33
 
       val streamRead = new ByteArrayInputStream(buf)
       val reader = new BinaryReader(streamRead)
@@ -170,7 +170,7 @@ class BinaryReaderWriterSpec extends Specification {
       writer.close()
 
       val buf = streamWrite.toByteArray()
-      buf.length === 17
+      buf.length === 29
 
       val streamRead = new ByteArrayInputStream(buf)
       val reader = new BinaryReader(streamRead)
@@ -190,7 +190,7 @@ class BinaryReaderWriterSpec extends Specification {
       writer.close()
 
       val buf = streamWrite.toByteArray()
-      buf.length === 27
+      buf.length === 39
 
       val streamRead = new ByteArrayInputStream(buf)
       val reader = new BinaryReader(streamRead)
