@@ -25,12 +25,12 @@ class ObjectInputStream(stream: InputStream, val hashAlgorithm: HashAlgorithm) e
   def hash: Option[Seq[Byte]] = hashIntern
 
   override def read(): Int = {
-    val byte = digestStream.read().toByte
+    val byte = digestStream.read()
 
     if (sizeIssuerBlock.isEmpty) {
       val sizePosition = 5
       if (sizePosition <= position && position < sizePosition + 8) {
-        bufRaw((position - sizePosition).toInt) = byte
+        bufRaw((position - sizePosition).toInt) = byte.toByte
         if (position == sizePosition + 7) {
           sizeIssuerBlock = Some(buf.getLong(0))
         }
@@ -38,7 +38,7 @@ class ObjectInputStream(stream: InputStream, val hashAlgorithm: HashAlgorithm) e
     } else if (sizePublicBlock.isEmpty) {
       val sizePosition = 5 + 8 + sizeIssuerBlock.get
       if (sizePosition <= position && position < sizePosition + 8) {
-        bufRaw((position - sizePosition).toInt) = byte
+        bufRaw((position - sizePosition).toInt) = byte.toByte
         if (position == sizePosition + 7) {
           sizePublicBlock = Some(buf.getLong(0))
         }
@@ -46,7 +46,7 @@ class ObjectInputStream(stream: InputStream, val hashAlgorithm: HashAlgorithm) e
     } else if (sizePrivateBlock.isEmpty) {
       val sizePosition = 5 + 8 + sizeIssuerBlock.get + 8 + sizePublicBlock.get
       if (sizePosition <= position && position < sizePosition + 8) {
-        bufRaw((position - sizePosition).toInt) = byte
+        bufRaw((position - sizePosition).toInt) = byte.toByte
         if (position == sizePosition + 7) {
           sizePrivateBlock = Some(buf.getLong(0))
         }
