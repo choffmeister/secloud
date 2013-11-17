@@ -7,31 +7,49 @@ import java.io.ByteArrayOutputStream
 import java.io.OutputStream
 import java.io.InputStream
 import java.io.ByteArrayInputStream
+import de.choffmeister.secloud.core.security.CryptographicAlgorithms._
+import java.io.FileInputStream
 
 @RunWith(classOf[JUnitRunner])
 class ObjectSerializerSpec extends Specification {
   "ObjectSerializer" should {
     "serialize blobs" in {
-      val algo = security.CryptographicAlgorithms.`AES-128`
-      val params = algo.generateKey()
-      val oid = ObjectId("0001efff")
-      val issuer = Issuer(Array(0.toByte, 1.toByte, 128.toByte, 255.toByte), "me")
-      val blob1 = Blob(oid, issuer)
-      val buf = writeToBuffer(ObjectSerializer.serialize(blob1, _, algo, params))
-      val blob2 = readFromBuffer(buf, ObjectSerializer.deserialize(oid, _, algo, params).asInstanceOf[Blob])
+      val key = `AES-128`.generateKey()
 
-      blob1 === blob2
+      val content1 = new ByteArrayInputStream("Hello World!".getBytes("ASCII"))
+      val blob1 = Blob(None, Issuer(Array[Byte](0, 1, -2, -1), "owner"))
+      val intermediate1 = new ByteArrayOutputStream()
+      Blob.write(intermediate1, blob1, content1, key)
+      val intermediate2 = new ByteArrayInputStream(intermediate1.toByteArray)
+      val content2 = new ByteArrayOutputStream()
+      val blob2 = Blob.read(intermediate2, content2, key)
+
+      blob1.issuer === blob2.issuer
+      new String(content2.toByteArray, "ASCII") === "Hello World!"
     }
-  }
 
-  def writeToBuffer(inner: OutputStream => Any): Array[Byte] = {
-    val ms = new ByteArrayOutputStream()
-    inner(ms)
-    ms.toByteArray()
-  }
+    "serialize trees" in {
+      val key = `AES-128`.generateKey()
 
-  def readFromBuffer[T](buffer: Array[Byte], inner: InputStream => T): T = {
-    val ms = new ByteArrayInputStream(buffer)
-    inner(ms)
+      val tree1 = Tree(None, Issuer(Array[Byte](0, 1, -2, -1), "owner"))
+      val intermediate1 = new ByteArrayOutputStream()
+      Tree.write(intermediate1, tree1, key)
+      val intermediate2 = new ByteArrayInputStream(intermediate1.toByteArray)
+      val tree2 = Tree.read(intermediate2, key)
+
+      tree2.issuer === tree2.issuer
+    }
+
+    "serialize commits" in {
+      val key = `AES-128`.generateKey()
+
+      val commit1 = Commit(None, Issuer(Array[Byte](0, 1, -2, -1), "owner"))
+      val intermediate1 = new ByteArrayOutputStream()
+      Commit.write(intermediate1, commit1, key)
+      val intermediate2 = new ByteArrayInputStream(intermediate1.toByteArray)
+      val commit2 = Commit.read(intermediate2, key)
+
+      commit1.issuer === commit2.issuer
+    }
   }
 }

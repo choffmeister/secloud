@@ -27,6 +27,17 @@ class RichInputStream(val stream: InputStream) {
     digest.digest()
   }
 
+  def pipeTo(target: OutputStream): Unit = {
+    val buf = new Array[Byte](1024)
+    var done = false
+    
+    while (!done) {
+      val read = stream.read(buf, 0, buf.length)
+      if (read > 0) target.write(buf, 0, read)
+      else done = true
+    }
+  }
+
   /**
    * Optimize (for example implement read(Array[Byte], Int, Int) => Int)
    */
