@@ -33,6 +33,28 @@ class BinaryWriter(val stream: OutputStream) {
     writeToStream(stream, bufRaw, 0, 8)
   }
 
+  def writeInt7(value: Long): Unit = {
+    assert(value >= 0L)
+    assert(value < 72057594037927936L)
+
+    if (value > 0L) {
+      var v = value
+      var l = 0
+
+      while (v != 0L) {
+        if (l == 0) bufRaw(7 - l) = (v & 0x7f).toByte
+        else bufRaw(7 - l) = ((v & 0x7f) | 0x80).toByte
+
+        v = v >> 7
+        l += 1
+      }
+
+      writeToStream(stream, bufRaw, 8 - l, l)
+    } else {
+      writeInt8(0)
+    }
+  }
+
   def writeBoolean(value: Boolean): Unit = value match {
     case true => stream.write(Array(1.toByte))
     case false => stream.write(Array(0.toByte))
@@ -88,6 +110,23 @@ class BinaryReader(val stream: InputStream) {
   def readInt64(): Long = {
     readFromStream(stream, bufRaw, 0, 8)
     return buf.getLong(0)
+  }
+
+  def readInt7(): Long = {
+    var v = 0L
+    var l = 0
+    var done = false
+    while (l < 8 && !done) {
+      val b = readInt8()
+      if (b < 0) {
+        v = (v << 7) | (b & 0x7f)
+      } else {
+        v = (v << 7) | b
+        done = true
+      }
+      l += 1
+    }
+    return v
   }
 
   def readBoolean(): Boolean = {

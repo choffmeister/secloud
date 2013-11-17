@@ -60,6 +60,8 @@ class BinaryReaderWriterSpec extends Specification {
       reader.readInt8() === Byte.MinValue
       reader.readInt8() === 1.toByte
       reader.readInt8() === Byte.MaxValue
+      reader.close()
+      ok
     }
 
     "read and write Int16" in {
@@ -80,6 +82,8 @@ class BinaryReaderWriterSpec extends Specification {
       reader.readInt16() === Short.MinValue
       reader.readInt16() === 16385.toShort
       reader.readInt16() === Short.MaxValue
+      reader.close()
+      ok
     }
 
     "read and write Int32" in {
@@ -100,6 +104,8 @@ class BinaryReaderWriterSpec extends Specification {
       reader.readInt32() === Int.MinValue
       reader.readInt32() === 134480385
       reader.readInt32() === Int.MaxValue
+      reader.close()
+      ok
     }
 
     "read and write Int64" in {
@@ -120,6 +126,72 @@ class BinaryReaderWriterSpec extends Specification {
       reader.readInt64() === Long.MinValue
       reader.readInt64() === 9169364094552375809L
       reader.readInt64() === Long.MaxValue
+      reader.close()
+      ok
+    }
+
+    "read and write Int7" in {
+      val streamWrite = new ByteArrayOutputStream()
+      val writer = new BinaryWriter(streamWrite)
+
+      writer.writeInt7(0L)
+      streamWrite.size === 1
+      writer.writeInt7((1L << 7L) - 1L)
+      streamWrite.size === 2
+      writer.writeInt7((1L << 7L))
+      streamWrite.size === 4
+      writer.writeInt7((1L << 14L) - 1L)
+      streamWrite.size === 6
+      writer.writeInt7((1L << 14L))
+      streamWrite.size === 9
+      writer.writeInt7((1L << 21L) - 1L)
+      streamWrite.size === 12
+      writer.writeInt7((1L << 21L))
+      streamWrite.size === 16
+      writer.writeInt7((1L << 28L) - 1L)
+      streamWrite.size === 20
+      writer.writeInt7((1L << 28L))
+      streamWrite.size === 25
+      writer.writeInt7((1L << 35L) - 1L)
+      streamWrite.size === 30
+      writer.writeInt7((1L << 35L))
+      streamWrite.size === 36
+      writer.writeInt7((1L << 42L) - 1L)
+      streamWrite.size === 42
+      writer.writeInt7((1L << 42L))
+      streamWrite.size === 49
+      writer.writeInt7((1L << 49L) - 1L)
+      streamWrite.size === 56
+      writer.writeInt7((1L << 49L))
+      streamWrite.size === 64
+      writer.writeInt7((1L << 56L) - 1L)
+      streamWrite.size === 72
+      writer.close()
+
+      val buf = streamWrite.toByteArray()
+      buf.length === 72
+
+      val streamRead = new ByteArrayInputStream(buf)
+      val reader = new BinaryReader(streamRead)
+
+      reader.readInt7() === 0L
+      reader.readInt7() === 127L
+      reader.readInt7() === 128L
+      reader.readInt7() === 16383L
+      reader.readInt7() === 16384L
+      reader.readInt7() === 2097151L
+      reader.readInt7() === 2097152L
+      reader.readInt7() === 268435455L
+      reader.readInt7() === 268435456L
+      reader.readInt7() === 34359738367L
+      reader.readInt7() === 34359738368L
+      reader.readInt7() === 4398046511103L
+      reader.readInt7() === 4398046511104L
+      reader.readInt7() === 562949953421311L
+      reader.readInt7() === 562949953421312L
+      reader.readInt7() === 72057594037927935L
+      reader.close()
+      ok
     }
 
     "read and write Boolean" in {
