@@ -17,6 +17,7 @@ object CryptographicAlgorithms {
   case class SymmetricEncryptionParameters(algorithm: SymmetricEncryptionAlgorithm, key: SecretKey, iv: IvParameterSpec)
 
   sealed abstract class SymmetricEncryptionAlgorithm {
+    val friendlyName: String
     val algorithmName: String
     val blockModeName: String
     val paddingName: String
@@ -75,36 +76,44 @@ object CryptographicAlgorithms {
   }
 
   case object `AES-128` extends AES {
+    val friendlyName = "AES-128"
     val keySize = 16
   }
 
   case object `AES-192` extends AES {
+    val friendlyName = "AES-192"
     val keySize = 24
   }
 
   case object `AES-256` extends AES {
+    val friendlyName = "AES-256"
     val keySize = 32
   }
   
   sealed abstract class HashAlgorithm {
+    val friendlyName: String
     val algorithmName: String
   }
   
   case object `SHA-1` extends HashAlgorithm {
+    val friendlyName = "SHA-1"
     val algorithmName = "SHA-1"
   }
 
   sealed abstract class `SHA-2` extends HashAlgorithm
 
   case object `SHA-2-256` extends `SHA-2` {
+    val friendlyName = "SHA-2-256"
     val algorithmName = "SHA-256"
   }
 
   case object `SHA-2-384` extends `SHA-2` {
+    val friendlyName = "SHA-2-384"
     val algorithmName = "SHA-384"
   }
 
   case object `SHA-2-512` extends `SHA-2` {
+    val friendlyName = "SHA-2-512"
     val algorithmName = "SHA-512"
   }
 }

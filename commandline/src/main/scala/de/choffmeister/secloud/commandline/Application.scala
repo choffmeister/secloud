@@ -1,10 +1,11 @@
 package de.choffmeister.secloud.commandline
 
 import java.io.File
+import java.util.Date
 import org.rogach.scallop._
 import de.choffmeister.secloud.core.Secloud
 import de.choffmeister.secloud.core.Environment
-import java.util.Date
+import de.choffmeister.secloud.core.Benchmark
 
 object Application {
   def main(args: Array[String]): Unit = {
@@ -26,6 +27,8 @@ object Application {
       println(s"Current directory: ${env.currentDirectory}")
       println(s"Home directory ${env.userDirectory}")
       println(s"Now: ${env.now}")
+    case Some(cli.benchmark) =>
+      Benchmark.fullBenchmark()
     case _ =>
       cli.printHelp()
   }
@@ -35,5 +38,6 @@ object Application {
 
     val init = new Subcommand("init")
     val environment = new Subcommand("environment")
+    val benchmark = new Subcommand("benchmark")
   }
 }
