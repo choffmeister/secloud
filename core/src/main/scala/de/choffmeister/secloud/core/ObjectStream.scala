@@ -9,9 +9,14 @@ import java.io.OutputStream
 import java.security.DigestOutputStream
 import de.choffmeister.secloud.core.security.CryptographicAlgorithms._
 
-class ObjectInputStream(stream: InputStream, val hashAlgorithm: HashAlgorithm) extends InputStream {
-  private val digest = MessageDigest.getInstance(hashAlgorithm.algorithmName)
-  private val digestStream = new DigestInputStream(stream, digest)
+class ObjectInputStream(
+  val stream: InputStream,
+  val hashAlgorithm: HashAlgorithm,
+  val decryptionAlgorithm: SymmetricEncryptionAlgorithm,
+  val decryptionParameters: SymmetricEncryptionParameters
+) extends InputStream {
+  private val digestStream = hashAlgorithm.wrapStream(stream)
+  private val decryptStream = decryptionAlgorithm.wrapStream(digestStream, decryptionParameters)
   private val bufRaw = new Array[Byte](8)
   private val buf = ByteBuffer.wrap(bufRaw)
   buf.order(ByteOrder.BIG_ENDIAN)
@@ -59,7 +64,7 @@ class ObjectInputStream(stream: InputStream, val hashAlgorithm: HashAlgorithm) e
       val p = position
       if (position == signaturePosition - 1) {
         digestStream.on(false)
-        hashIntern = Some(digest.digest())
+        hashIntern = Some(digestStream.getMessageDigest.digest())
       }
     }
 
@@ -68,9 +73,14 @@ class ObjectInputStream(stream: InputStream, val hashAlgorithm: HashAlgorithm) e
   }
 }
 
-class ObjectOutputStream(stream: OutputStream, val hashAlgorithm: HashAlgorithm) extends OutputStream {
-  private val digest = MessageDigest.getInstance(hashAlgorithm.algorithmName)
-  private val digestStream = new DigestOutputStream(stream, digest)
+class ObjectOutputStream(
+  val stream: OutputStream,
+  val hashAlgorithm: HashAlgorithm,
+  val encryptionAlgorithm: SymmetricEncryptionAlgorithm,
+  val encryptionParameters: SymmetricEncryptionParameters
+) extends OutputStream {
+  private val digestStream = hashAlgorithm.wrapStream(stream)
+  private val encryptStream = encryptionAlgorithm.wrapStream(digestStream, encryptionParameters)
   private val bufRaw = new Array[Byte](8)
   private val buf = ByteBuffer.wrap(bufRaw)
   buf.order(ByteOrder.BIG_ENDIAN)
@@ -115,7 +125,7 @@ class ObjectOutputStream(stream: OutputStream, val hashAlgorithm: HashAlgorithm)
       val signaturePosition = 5 + 8 + sizeIssuerBlock.get + 8 + sizePublicBlock.get + 8 + sizePrivateBlock.get
       if (position == signaturePosition - 1) {
         digestStream.on(false)
-        hashIntern = Some(digest.digest())
+        hashIntern = Some(digestStream.getMessageDigest.digest())
       }
     }
 

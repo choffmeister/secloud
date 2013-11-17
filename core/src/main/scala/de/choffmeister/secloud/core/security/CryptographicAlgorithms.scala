@@ -12,6 +12,9 @@ import de.choffmeister.secloud.core.utils.BinaryReaderWriter._
 import java.security.SecureRandom
 import java.security.spec.AlgorithmParameterSpec
 import javax.crypto.spec.IvParameterSpec
+import java.security.DigestInputStream
+import java.security.DigestOutputStream
+import java.security.MessageDigest
 
 object CryptographicAlgorithms {
   case class SymmetricEncryptionParameters(algorithm: SymmetricEncryptionAlgorithm, key: SecretKey, iv: IvParameterSpec)
@@ -93,6 +96,16 @@ object CryptographicAlgorithms {
   sealed abstract class HashAlgorithm {
     val friendlyName: String
     val algorithmName: String
+    
+    def wrapStream(stream: InputStream): DigestInputStream = {
+      val digest = MessageDigest.getInstance(algorithmName)
+      new DigestInputStream(stream, digest)
+    }
+
+    def wrapStream(stream: OutputStream): DigestOutputStream = {
+      val digest = MessageDigest.getInstance(algorithmName)
+      new DigestOutputStream(stream, digest)
+    }
   }
   
   case object `SHA-1` extends HashAlgorithm {
