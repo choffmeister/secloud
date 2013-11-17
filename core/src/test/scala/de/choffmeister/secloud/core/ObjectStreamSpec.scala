@@ -20,7 +20,7 @@ class ObjectStreamSpec extends Specification {
       val os1 = new ObjectOutputStream(ms1, `SHA-1`)
 
       writeHeader(os1, CommitObjectType)
-      writeIssuerIdentityBlock(os1, Issuer(Array[Byte](10, 20, 30), "me"))
+      writeIssuerIdentityBlock(os1, Issuer(Array[Byte](Byte.MinValue, 127, Byte.MaxValue), "me"))
       writeBlock(os1, PublicBlockType) { bs =>
         bs.write(0)
         bs.write(1)
@@ -37,7 +37,7 @@ class ObjectStreamSpec extends Specification {
       val os2 = new ObjectOutputStream(ms2, `SHA-1`)
 
       writeHeader(os2, CommitObjectType)
-      writeIssuerIdentityBlock(os2, Issuer(Array[Byte](10, 20, 30), "me"))
+      writeIssuerIdentityBlock(os2, Issuer(Array[Byte](Byte.MinValue, 127, Byte.MaxValue), "me"))
       writeBlock(os2, PublicBlockType) { bs =>
         bs.write(0)
         bs.write(1)
@@ -59,7 +59,13 @@ class ObjectStreamSpec extends Specification {
       readToEnd(os3)
       readToEnd(os4)
 
-      os3.hash must beEqualTo(os4.hash)
+      val h3 = os3.hash
+      val h4 = os4.hash
+      
+      h1 === h2
+      h2 === h3
+      h3 === h4
+      h4 === h1
     }
   }
 

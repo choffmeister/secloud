@@ -18,9 +18,7 @@ class ObjectSerializerSpec extends Specification {
       val buf = writeToBuffer(ObjectSerializer.serialize(blob1, _))
       val blob2 = readFromBuffer(buf, ObjectSerializer.deserialize(oid, _).asInstanceOf[Blob])
 
-      blob1.id === blob2.id
-      blob1.issuer.id === blob2.issuer.id
-      blob1.issuer.name === blob2.issuer.name
+      blob1 === blob2
     }
   }
 

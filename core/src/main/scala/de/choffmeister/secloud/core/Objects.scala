@@ -8,10 +8,10 @@ import de.choffmeister.secloud.core.utils.BinaryReaderWriter._
 import java.io.ByteArrayOutputStream
 import java.io.ByteArrayInputStream
 
-case class Issuer(id: Array[Byte], name: String)
+case class Issuer(id: Seq[Byte], name: String)
 
 object Issuer {
-  def apply(): Issuer = Issuer(Array.empty[Byte], "")
+  def apply(): Issuer = Issuer(Seq.empty[Byte], "")
 }
 
 abstract class BaseObject {
@@ -78,65 +78,44 @@ object ObjectSerializer {
   import security.CryptographicAlgorithms._
 
   def serialize(obj: BaseObject, stream: OutputStream): Unit = {
-    val hash = writeHashed(stream, `SHA-2-256`) { hs =>
-      writeHeader(hs, obj.objectType)
-      writeIssuerIdentityBlock(hs, obj.issuer)
+    val os = new ObjectOutputStream(stream, `SHA-2-256`)
 
-      // public block
-      writeBlock(hs, PublicBlockType) { bs =>
-      }
+    writeHeader(os, obj.objectType)
+    writeIssuerIdentityBlock(os, obj.issuer)
 
-      // private block
-      writeBlock(hs, PrivateBlockType) { bs =>
-      }
+    // public block
+    writeBlock(os, PublicBlockType) { bs =>
     }
 
-    // issuer signature block
-    writeBlock(stream, IssuerSignatureBlockType) { bs =>
-      // TODO: sign hash
-      bs.writeBinary(hash)
+    // private block
+    writeBlock(os, PrivateBlockType) { bs =>
     }
+
+    // TODO: sign hash
+    val signature = os.hash.get
+    writeIssuerSignatureBlock(os, signature)
   }
 
   def deserialize(id: ObjectId, stream: InputStream): BaseObject = {
-    val hash = readHashed(stream, `SHA-2-256`) { hs =>
-      val objectType = readHeader(stream)
-      val issuer = readIssuerIdentityBlock(hs)
+    val os = new ObjectInputStream(stream, `SHA-2-256`)
+    val objectType = readHeader(os)
+    val issuer = readIssuerIdentityBlock(os)
 
-      // public block
-      readBlock(stream, PublicBlockType) { bs =>
-      }
+    // public block
+    val publicBlock = readBlock(os, PublicBlockType) { bs =>
+    }
 
-      // private block
-      readBlock(stream, PrivateBlockType) { bs =>
-      }
-
-      (objectType, issuer)
+    // private block
+    val privateBlock = readBlock(os, PrivateBlockType) { bs =>
     }
 
     // issuer signature block
-    readBlock(stream, IssuerSignatureBlockType) { bs =>
-      val signature = bs.readBinary()
-      // TODO: validate signature with hash
-    }
+    val signature = readIssuerSignatureBlock(os)
 
-    Blob(id, hash._1._2)
-  }
+    // TODO: validate signature with hash
+    assert("Signature invalid", signature == os.hash.get)
 
-  def readHashed[T](stream: InputStream, hashAlgorithm: HashAlgorithm)(inner: InputStream => T): (T, Array[Byte]) = {
-    var result: Option[T] = None
-
-    val hash = stream.hashed(hashAlgorithm.algorithmName) { hs =>
-      result = Some(inner(hs))
-    }
-
-    return (result.get, hash)
-  }
-
-  def writeHashed(stream: OutputStream, hashAlgorithm: HashAlgorithm)(inner: OutputStream => Any): Array[Byte] = {
-    stream.hashed(hashAlgorithm.algorithmName) { hs =>
-      inner(hs)
-    }
+    Blob(id, issuer)
   }
 
   def readHeader(stream: InputStream): ObjectType = {
@@ -152,7 +131,9 @@ object ObjectSerializer {
 
   def readIssuerIdentityBlock(stream: InputStream): Issuer = {
     readBlock(stream, IssuerIdentityBlockType) { bs =>
-      Issuer(bs.readBinary(), bs.readString())
+      val id = bs.readBinary()
+      val name = bs.readString()
+      Issuer(id, name)
     }
   }
 
@@ -160,6 +141,18 @@ object ObjectSerializer {
     writeBlock(stream, IssuerIdentityBlockType) { bs => 
       bs.writeBinary(issuer.id)
       bs.writeString(issuer.name)
+    }
+  }
+
+  def readIssuerSignatureBlock(stream: InputStream): Seq[Byte] = {
+    readBlock(stream, IssuerSignatureBlockType) { bs =>
+      bs.readBinary().toSeq
+    }
+  }
+
+  def writeIssuerSignatureBlock(stream: OutputStream, signature: Seq[Byte]) {
+    writeBlock(stream, IssuerSignatureBlockType) { bs =>
+      bs.writeBinary(signature)
     }
   }
 
