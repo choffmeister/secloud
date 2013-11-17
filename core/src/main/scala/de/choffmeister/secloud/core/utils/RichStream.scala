@@ -35,9 +35,12 @@ class RichInputStream(val stream: InputStream) {
 
     override def read(): Int = {
       if (position < size) {
-        position += 1
-        inner.read()
-      } else throw new IOException()
+        val b = inner.read()
+        if (b >= 0) {
+          position += 1
+          b
+        } else -1
+      } else -1
     }
 
     override def close(): Unit = {

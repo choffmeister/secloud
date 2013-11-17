@@ -21,8 +21,8 @@ class RichStreamSpec extends Specification {
       ms.preSizedInner(2) { s =>
         s.read() === 2.toByte
         s.read() === 3.toByte
-        s.read()
-      } must throwA[IOException]
+        s.read() === -1
+      }
 
       ms.read() === 4.toByte
     }
