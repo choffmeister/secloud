@@ -11,7 +11,7 @@ import java.security.DigestOutputStream
 import scala.language.implicitConversions
 
 class RichInputStream(val stream: InputStream) {
-  def preSizedInner(size: Long)(inner: InputStream => Any) {
+  def preSizedInner[T](size: Long)(inner: InputStream => T): T = {
     val wrapper = new PreSizedInnerInputStream(size, stream)
     try {
       inner(wrapper)

@@ -33,7 +33,7 @@ class ObjectInputStream(
     val byte = digestStream.read()
 
     if (sizeIssuerBlock.isEmpty) {
-      val sizePosition = 5
+      val sizePosition = 5 + 1
       if (sizePosition <= position && position < sizePosition + 8) {
         bufRaw((position - sizePosition).toInt) = byte.toByte
         if (position == sizePosition + 7) {
@@ -41,7 +41,7 @@ class ObjectInputStream(
         }
       }
     } else if (sizePublicBlock.isEmpty) {
-      val sizePosition = 5 + 8 + sizeIssuerBlock.get
+      val sizePosition = 5 + 1 + 8 + sizeIssuerBlock.get + 1
       if (sizePosition <= position && position < sizePosition + 8) {
         bufRaw((position - sizePosition).toInt) = byte.toByte
         if (position == sizePosition + 7) {
@@ -49,19 +49,20 @@ class ObjectInputStream(
         }
       }
     } else if (sizePrivateBlock.isEmpty) {
-      val sizePosition = 5 + 8 + sizeIssuerBlock.get + 8 + sizePublicBlock.get
+      val sizePosition = 5 + 1 + 8 + sizeIssuerBlock.get + 1 + 8 + sizePublicBlock.get + 1
       if (sizePosition <= position && position < sizePosition + 8) {
         bufRaw((position - sizePosition).toInt) = byte.toByte
         if (position == sizePosition + 7) {
           sizePrivateBlock = Some(buf.getLong(0))
+          
+          if (sizePrivateBlock == Some(0)) {
+            digestStream.on(false)
+            hashIntern = Some(digestStream.getMessageDigest.digest())
+          }
         }
       }
     } else {
-      val signaturePosition = 5 + 8 + sizeIssuerBlock.get + 8 + sizePublicBlock.get + 8 + sizePrivateBlock.get
-      val p1 = sizeIssuerBlock.get
-      val p2 = sizePublicBlock.get
-      val p3 = sizePrivateBlock.get
-      val p = position
+      val signaturePosition = 5 + 1 + 8 + sizeIssuerBlock.get + 1 + 8 + sizePublicBlock.get + 1 + 8 + sizePrivateBlock.get
       if (position == signaturePosition - 1) {
         digestStream.on(false)
         hashIntern = Some(digestStream.getMessageDigest.digest())
@@ -98,7 +99,7 @@ class ObjectOutputStream(
     val byte = b.toByte
 
     if (sizeIssuerBlock.isEmpty) {
-      val sizePosition = 5
+      val sizePosition = 5 + 1
       if (sizePosition <= position && position < sizePosition + 8) {
         bufRaw((position - sizePosition).toInt) = byte
         if (position == sizePosition + 7) {
@@ -106,7 +107,7 @@ class ObjectOutputStream(
         }
       }
     } else if (sizePublicBlock.isEmpty) {
-      val sizePosition = 5 + 8 + sizeIssuerBlock.get
+      val sizePosition = 5 + 1 + 8 + sizeIssuerBlock.get + 1
       if (sizePosition <= position && position < sizePosition + 8) {
         bufRaw((position - sizePosition).toInt) = byte
         if (position == sizePosition + 7) {
@@ -114,16 +115,23 @@ class ObjectOutputStream(
         }
       }
     } else if (sizePrivateBlock.isEmpty) {
-      val sizePosition = 5 + 8 + sizeIssuerBlock.get + 8 + sizePublicBlock.get
+      val sizePosition = 5 + 1 + 8 + sizeIssuerBlock.get + 1 + 8 + sizePublicBlock.get + 1
       if (sizePosition <= position && position < sizePosition + 8) {
         bufRaw((position - sizePosition).toInt) = byte
         if (position == sizePosition + 7) {
           sizePrivateBlock = Some(buf.getLong(0))
+          
+          if (sizePrivateBlock == Some(0)) {
+            digestStream.flush()
+            digestStream.on(false)
+            hashIntern = Some(digestStream.getMessageDigest.digest())
+          }
         }
       }
     } else {
-      val signaturePosition = 5 + 8 + sizeIssuerBlock.get + 8 + sizePublicBlock.get + 8 + sizePrivateBlock.get
+      val signaturePosition = 5 + 1 + 8 + sizeIssuerBlock.get + 1 + 8 + sizePublicBlock.get + 1 + 8 + sizePrivateBlock.get
       if (position == signaturePosition - 1) {
+        digestStream.flush()
         digestStream.on(false)
         hashIntern = Some(digestStream.getMessageDigest.digest())
       }

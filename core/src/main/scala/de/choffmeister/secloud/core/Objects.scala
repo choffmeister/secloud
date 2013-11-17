@@ -157,27 +157,24 @@ object ObjectSerializer {
   }
 
   def readBlock[T](stream: InputStream, expectedBlockType: BlockType)(inner: InputStream => T): T = {
-    var result: Option[T] = None
-
+    val actualBlockType = blockTypeMapInverse(stream.readInt8())
+    assert(s"Expected block of type '${expectedBlockType.getClass.getSimpleName}'", expectedBlockType == actualBlockType)
+    
     stream.preSizedInner(stream.readInt64()) { is =>
-      val actualBlockType = blockTypeMapInverse(is.readInt8())
-      assert(s"Expected block of type '${expectedBlockType.getClass.getSimpleName}'", expectedBlockType == actualBlockType)
-      result = Some(inner(is))
+      inner(is)
     }
-
-    return result.get
   }
 
   def writeBlock(stream: OutputStream, blockType: BlockType)(inner: OutputStream => Any) {
+    stream.writeInt8(blockTypeMap(blockType))
     stream.cached(cs => stream.writeInt64(cs.size)) { cs =>
-      cs.writeInt8(blockTypeMap(blockType))
       inner(cs)
     }
   }
 
   def writeBlock(stream: OutputStream, blockType: BlockType, innerSize: Long)(inner: OutputStream => Any) {
-    stream.writeInt64(innerSize + 1L)
     stream.writeInt8(blockTypeMap(blockType))
+    stream.writeInt64(innerSize)
     stream.preSizedInner(innerSize)(inner)
   }
 

@@ -70,6 +70,54 @@ class ObjectStreamSpec extends Specification {
       h3 === h4
       h4 === h1
     }
+
+    "only hash the header and the first three root blocks (empty pub and priv block)" in {
+      val hashAlgo = `SHA-1`
+      val encAlgo = `AES-128`
+      val encParams = encAlgo.generateKey()
+      val ms1 = new ByteArrayOutputStream()
+      val os1 = new ObjectOutputStream(ms1, hashAlgo, encAlgo, encParams)
+
+      writeHeader(os1, CommitObjectType)
+      writeIssuerIdentityBlock(os1, Issuer(Array[Byte](Byte.MinValue, 127, Byte.MaxValue), "me"))
+      writeBlock(os1, PublicBlockType) { bs =>
+      }
+      writeBlock(os1, PrivateBlockType) { bs =>
+      }
+
+      val h1 = os1.hash
+      h1 must beSome
+
+      val ms2 = new ByteArrayOutputStream()
+      val os2 = new ObjectOutputStream(ms2, hashAlgo, encAlgo, encParams)
+
+      writeHeader(os2, CommitObjectType)
+      writeIssuerIdentityBlock(os2, Issuer(Array[Byte](Byte.MinValue, 127, Byte.MaxValue), "me"))
+      writeBlock(os2, PublicBlockType) { bs =>
+      }
+      writeBlock(os2, PrivateBlockType) { bs =>
+      }
+      os2.write(Array[Byte](100, 101, 102))
+
+      val h2 = os2.hash
+      h2 must beSome
+
+      h1 must beEqualTo(h2)
+
+      val os3 = new ObjectInputStream(new ByteArrayInputStream(ms1.toByteArray), hashAlgo, encAlgo, encParams)
+      val os4 = new ObjectInputStream(new ByteArrayInputStream(ms2.toByteArray), hashAlgo, encAlgo, encParams)
+
+      readToEnd(os3)
+      readToEnd(os4)
+
+      val h3 = os3.hash
+      val h4 = os4.hash
+      
+      h1 === h2
+      h2 === h3
+      h3 === h4
+      h4 === h1
+    }
   }
 
   def readToEnd(stream: InputStream) {
