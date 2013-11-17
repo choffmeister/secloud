@@ -9,14 +9,8 @@ import java.io.OutputStream
 import java.security.DigestOutputStream
 import de.choffmeister.secloud.core.security.CryptographicAlgorithms._
 
-class ObjectInputStream(
-  val stream: InputStream,
-  val hashAlgorithm: HashAlgorithm,
-  val decryptionAlgorithm: SymmetricEncryptionAlgorithm,
-  val decryptionParameters: SymmetricEncryptionParameters
-) extends InputStream {
+class ObjectInputStream(val stream: InputStream, val hashAlgorithm: HashAlgorithm) extends InputStream {
   private val digestStream = hashAlgorithm.wrapStream(stream)
-  private val decryptStream = decryptionAlgorithm.wrapStream(digestStream, decryptionParameters)
   private val bufRaw = new Array[Byte](8)
   private val buf = ByteBuffer.wrap(bufRaw)
   buf.order(ByteOrder.BIG_ENDIAN)
@@ -74,14 +68,8 @@ class ObjectInputStream(
   }
 }
 
-class ObjectOutputStream(
-  val stream: OutputStream,
-  val hashAlgorithm: HashAlgorithm,
-  val encryptionAlgorithm: SymmetricEncryptionAlgorithm,
-  val encryptionParameters: SymmetricEncryptionParameters
-) extends OutputStream {
+class ObjectOutputStream(val stream: OutputStream, val hashAlgorithm: HashAlgorithm) extends OutputStream {
   private val digestStream = hashAlgorithm.wrapStream(stream)
-  private val encryptStream = encryptionAlgorithm.wrapStream(digestStream, encryptionParameters)
   private val bufRaw = new Array[Byte](8)
   private val buf = ByteBuffer.wrap(bufRaw)
   buf.order(ByteOrder.BIG_ENDIAN)

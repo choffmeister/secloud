@@ -78,7 +78,7 @@ object ObjectSerializer {
   import security.CryptographicAlgorithms._
 
   def serialize(obj: BaseObject, stream: OutputStream): Unit = {
-    val os = new ObjectOutputStream(stream, `SHA-2-256`, `AES-256`, `AES-256`.generateKey())
+    val os = new ObjectOutputStream(stream, `SHA-2-256`)
 
     writeHeader(os, obj.objectType)
     writeIssuerIdentityBlock(os, obj.issuer)
@@ -97,7 +97,7 @@ object ObjectSerializer {
   }
 
   def deserialize(id: ObjectId, stream: InputStream): BaseObject = {
-    val os = new ObjectInputStream(stream, `SHA-2-256`, `AES-256`, `AES-256`.generateKey())
+    val os = new ObjectInputStream(stream, `SHA-2-256`)
     val objectType = readHeader(os)
     val issuer = readIssuerIdentityBlock(os)
 
