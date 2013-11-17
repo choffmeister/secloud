@@ -3,6 +3,10 @@ package de.choffmeister.secloud.core
 import org.junit.runner.RunWith
 import org.specs2.mutable._
 import org.specs2.runner.JUnitRunner
+import java.io.ByteArrayOutputStream
+import java.io.OutputStream
+import java.io.InputStream
+import java.io.ByteArrayInputStream
 
 @RunWith(classOf[JUnitRunner])
 class ObjectSerializerSpec extends Specification {
@@ -15,13 +19,24 @@ class ObjectSerializerSpec extends Specification {
         Array(10.toByte, 56.toByte, 241.toByte, 56.toByte)
       )
       val blob1 = Blob(oid, issuer)
-      val buf = ObjectSerializer.serialize(blob1)
-      val blob2 = ObjectSerializer.deserialize(buf).asInstanceOf[Blob]
+      val buf = writeToBuffer(ObjectSerializer.serialize(blob1, _))
+      val blob2 = readFromBuffer(buf, ObjectSerializer.deserialize(_).asInstanceOf[Blob])
 
       blob1.id === blob2.id
       blob1.issuer.id === blob2.issuer.id
       blob1.issuer.name === blob2.issuer.name
       blob1.issuer.signature === blob2.issuer.signature
     }
+  }
+
+  def writeToBuffer(inner: OutputStream => Any): Array[Byte] = {
+    val ms = new ByteArrayOutputStream()
+    inner(ms)
+    ms.toByteArray()
+  }
+
+  def readFromBuffer[T](buffer: Array[Byte], inner: InputStream => T): T = {
+    val ms = new ByteArrayInputStream(buffer)
+    inner(ms)
   }
 }

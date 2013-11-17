@@ -2,11 +2,11 @@ package de.choffmeister.secloud.core
 
 import java.io.OutputStream
 import java.io.InputStream
+import java.io.ByteArrayOutputStream
+import java.io.ByteArrayInputStream
 import de.choffmeister.secloud.core.utils._
 import de.choffmeister.secloud.core.utils.RichStream._
 import de.choffmeister.secloud.core.utils.BinaryReaderWriter._
-import java.io.ByteArrayOutputStream
-import java.io.ByteArrayInputStream
 
 case class IssuerInformation(id: Array[Byte], name: String, signature: Array[Byte])
 
@@ -71,41 +71,35 @@ class ObjectSerializationException(msg: String) extends Exception(msg)
 
 object ObjectSerializer {
   import ObjectSerializerConstants._
-
-  def serialize(obj: BaseObject): Array[Byte] = {
-    val ms = new ByteArrayOutputStream()
-    serialize(obj, ms)
-    ms.toByteArray()
-  }
+  import security.CryptographicAlgorithms._
 
   def serialize(obj: BaseObject, stream: OutputStream): Unit = {
-    writeHeader(stream, obj.objectType)
+    val hash = writeHashed(stream, `SHA-2-256`) { hs1 =>
+      val hashToSign = writeHashed(hs1, `SHA-2-256`) { hs2 =>
+        writeHeader(hs2, obj.objectType)
 
-    // issuer identity block
-    writeBlock(stream, IssuerIdentityBlockType) { bs =>
-      bs.writeBinary(obj.issuer.id)
-      bs.writeString(obj.issuer.name)
-    }
+        // issuer identity block
+        writeBlock(hs2, IssuerIdentityBlockType) { bs =>
+          bs.writeBinary(obj.issuer.id)
+          bs.writeString(obj.issuer.name)
+        }
 
-    // public block
-    writeBlock(stream, PublicBlockType) { bs =>
-    }
+        // public block
+        writeBlock(hs2, PublicBlockType) { bs =>
+        }
 
-    // private block
-    writeBlock(stream, PrivateBlockType) { bs =>
-    }
+        // private block
+        writeBlock(hs2, PrivateBlockType) { bs =>
+        }
+      }
 
-    // issuer signature block
-    writeBlock(stream, IssuerSignatureBlockType) { bs =>
-      bs.writeBinary(obj.issuer.signature)
+      // issuer signature block
+      writeBlock(hs1, IssuerSignatureBlockType) { bs =>
+        bs.writeBinary(obj.issuer.signature)
+      }
     }
 
     stream.writeObjectId(obj.id)
-  }
-
-  def deserialize(buf: Array[Byte]): BaseObject = {
-    val ms = new ByteArrayInputStream(buf)
-    deserialize(ms)
   }
 
   def deserialize(stream: InputStream): BaseObject = {
@@ -134,8 +128,16 @@ object ObjectSerializer {
     }
 
     val objectId = stream.readObjectId()
-    Blob(objectId, issuer)
+
+    objectType match {
+      case BlobObjectType => Blob(objectId, issuer)
+      case _ => throw new ObjectSerializationException(s"")
+    }
   }
+
+  def readHashed(stream: InputStream, hashAlgorithm: HashAlgorithm)(inner: InputStream => Any): Array[Byte] = stream.hashed(hashAlgorithm.algorithmName)(inner)
+
+  def writeHashed(stream: OutputStream, hashAlgorithm: HashAlgorithm)(inner: OutputStream => Any): Array[Byte] = stream.hashed(hashAlgorithm.algorithmName)(inner)
 
   def readHeader(stream: InputStream): ObjectType = {
     val magicBytes = stream.readInt32()
