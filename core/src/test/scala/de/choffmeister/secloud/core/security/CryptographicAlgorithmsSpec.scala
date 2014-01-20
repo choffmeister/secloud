@@ -15,21 +15,30 @@ import org.apache.commons.codec.binary.Hex
 class CryptographicAlgorithmsSpec extends Specification {
   "SymmetricEncryptionAlgorithm" should {
     "wrap streams with AES-128" in {
-      testForConcreteAlgorithm(`AES-128`, "") === ""
-      testForConcreteAlgorithm(`AES-128`, "Hello") === "Hello"
-      testForConcreteAlgorithm(`AES-128`, "Hello World!") === "Hello World!"
+      if (`AES-128`.supported) {
+        testForConcreteAlgorithm(`AES-128`, "") === ""
+        testForConcreteAlgorithm(`AES-128`, "Hello") === "Hello"
+        testForConcreteAlgorithm(`AES-128`, "Hello World!") === "Hello World!"
+        success
+      } else skipped("AES-128 is not supported")
     }
 
     "wrap streams with AES-192" in {
-      testForConcreteAlgorithm(`AES-192`, "") === ""
-      testForConcreteAlgorithm(`AES-192`, "Hello") === "Hello"
-      testForConcreteAlgorithm(`AES-192`, "Hello World!") === "Hello World!"
+      if (`AES-192`.supported) {
+        testForConcreteAlgorithm(`AES-192`, "") === ""
+        testForConcreteAlgorithm(`AES-192`, "Hello") === "Hello"
+        testForConcreteAlgorithm(`AES-192`, "Hello World!") === "Hello World!"
+        success
+      } else skipped("AES-192 is not supported")
     }
 
     "wrap streams with AES-256" in {
-      testForConcreteAlgorithm(`AES-256`, "") === ""
-      testForConcreteAlgorithm(`AES-256`, "Hello") === "Hello"
-      testForConcreteAlgorithm(`AES-256`, "Hello World!") === "Hello World!"
+      if (`AES-256`.supported) {
+        testForConcreteAlgorithm(`AES-256`, "") === ""
+        testForConcreteAlgorithm(`AES-256`, "Hello") === "Hello"
+        testForConcreteAlgorithm(`AES-256`, "Hello World!") === "Hello World!"
+        success
+      } else skipped("AES-256 is not supported")
     }
   }
 

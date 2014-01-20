@@ -30,6 +30,8 @@ object CryptographicAlgorithms {
     val keySize: Int
     def blockSizeBits: Int = blockSize * 8
     def keySizeBits: Int = keySize * 8
+
+    def supported: Boolean
     
     def generateKey(): SymmetricEncryptionParameters = {
       val random = new SecureRandom()
@@ -74,8 +76,9 @@ object CryptographicAlgorithms {
     val algorithmName = "AES"
     val blockModeName = "CBC"
     val paddingName = "PKCS5Padding"
-
     val blockSize = 16
+
+    def supported = Cipher.getMaxAllowedKeyLength("AES") >= keySizeBits
   }
 
   case object `AES-128` extends AES {

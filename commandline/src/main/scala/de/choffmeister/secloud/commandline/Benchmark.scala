@@ -11,14 +11,21 @@ object Benchmark {
   val iterations = 100
   val byteCount = iterations * megaByteData.length
 
+  val symmetricAlgorithms = List(`AES-128`, `AES-192`, `AES-256`)
+  val hashAlgorithms = List(`SHA-1`, `SHA-2-256`, `SHA-2-384`, `SHA-2-512`)
+
   def fullBenchmark() {
-    println(s"${`AES-128`.friendlyName} encrypt: ${benchmark(`AES-128`, Cipher.ENCRYPT_MODE)} MB/s")
-    println(s"${`AES-192`.friendlyName} encrypt: ${benchmark(`AES-192`, Cipher.ENCRYPT_MODE)} MB/s")
-    println(s"${`AES-256`.friendlyName} encrypt: ${benchmark(`AES-256`, Cipher.ENCRYPT_MODE)} MB/s")
-    println(s"${`SHA-1`.friendlyName} hash: ${benchmark(`SHA-1`)} MB/s")
-    println(s"${`SHA-2-256`.friendlyName} hash: ${benchmark(`SHA-2-256`)} MB/s")
-    println(s"${`SHA-2-384`.friendlyName} hash: ${benchmark(`SHA-2-384`)} MB/s")
-    println(s"${`SHA-2-512`.friendlyName} hash: ${benchmark(`SHA-2-512`)} MB/s")
+    for (sa <- symmetricAlgorithms) {
+      if (sa.supported) {
+        println(s"${sa.friendlyName} encrypt: ${benchmark(sa, Cipher.ENCRYPT_MODE)} MB/s")
+      } else {
+        println(s"${sa.friendlyName}: not supported")
+      }
+    }
+
+    for (ha <- hashAlgorithms) {
+      println(s"${ha.friendlyName} hash: ${benchmark(ha)} MB/s")
+    }
   }
 
   def benchmark(algorithm: SymmetricEncryptionAlgorithm, mode: Int): Double = {
