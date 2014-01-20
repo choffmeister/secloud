@@ -37,14 +37,13 @@ case class Commit(
 }
 
 object Blob {
-  def write(output: OutputStream, blob: Blob, content: InputStream, enc: SymmetricEncryptionParameters): Unit = {
+  def write(output: OutputStream, blob: Blob, content: InputStream, contentSize: Option[Long], enc: SymmetricEncryptionParameters): Unit = {
     val os = new ObjectHashOutputStream(output, `SHA-2-256`)
     writeHeader(os, blob.objectType)
     writeIssuerIdentityBlock(os, blob.issuer)
     writePublicBlock(os) { bs =>
     }
-    // TODO: get content size in advance to avoid unnecessary caching
-    writePrivateBlock(os, enc) { bs =>
+    writePrivateBlock(os, enc, contentSize) { bs =>
       content.pipeTo(bs)
     }
     // TODO: sign hash

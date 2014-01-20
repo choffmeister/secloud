@@ -32,6 +32,7 @@ object CryptographicAlgorithms {
     def keySizeBits: Int = keySize * 8
 
     def supported: Boolean
+    def encryptedSize(plainSize: Long): Long
     
     def generateKey(): SymmetricEncryptionParameters = {
       val random = new SecureRandom()
@@ -79,6 +80,7 @@ object CryptographicAlgorithms {
     val blockSize = 16
 
     def supported = Cipher.getMaxAllowedKeyLength("AES") >= keySizeBits
+    def encryptedSize(plainSize: Long) = (plainSize / 16L + 1L) * 16L
   }
 
   case object `AES-128` extends AES {

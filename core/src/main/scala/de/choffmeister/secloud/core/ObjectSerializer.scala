@@ -88,8 +88,8 @@ object ObjectSerializer {
     }
   }
   
-  def writePublicBlock(stream: OutputStream)(inner: OutputStream => Any): Unit = {
-    writeBlock(stream, PublicBlockType) { bs =>
+  def writePublicBlock(stream: OutputStream, innerSize: Option[Long] = None)(inner: OutputStream => Any): Unit = {
+    writeBlock(stream, PublicBlockType, innerSize) { bs =>
       inner(bs)
     }
   }
@@ -101,8 +101,13 @@ object ObjectSerializer {
     }
   }
   
-  def writePrivateBlock(stream: OutputStream, encrypt: SymmetricEncryptionParameters)(inner: OutputStream => Any): Unit = {
-    writeBlock(stream, PrivateBlockType) { bs =>
+  def writePrivateBlock(stream: OutputStream, encrypt: SymmetricEncryptionParameters, innerSize: Option[Long] = None)(inner: OutputStream => Any): Unit = {
+    val encryptedInnerSize = innerSize match {
+      case Some(plainInnerSize) => Some(encrypt.algorithm.encryptedSize(plainInnerSize))
+      case _ => None
+    }
+
+    writeBlock(stream, PrivateBlockType, encryptedInnerSize) { bs =>
       val ds = encrypt.algorithm.wrapStream(bs, encrypt)
       inner(ds)
       ds.flush()
@@ -119,17 +124,18 @@ object ObjectSerializer {
     }
   }
 
-  def writeBlock(stream: OutputStream, blockType: BlockType)(inner: OutputStream => Any) {
-    stream.writeInt8(blockTypeMap(blockType))
-    stream.cached(cs => stream.writeInt64(cs.size)) { cs =>
-      inner(cs)
+  def writeBlock(stream: OutputStream, blockType: BlockType, innerSize: Option[Long] = None)(inner: OutputStream => Any) {
+    innerSize match {
+      case Some(innerSize) =>
+        stream.writeInt8(blockTypeMap(blockType))
+        stream.writeInt64(innerSize)
+        stream.preSizedInner(innerSize)(inner)
+      case _ =>
+        stream.writeInt8(blockTypeMap(blockType))
+        stream.cached(cs => stream.writeInt64(cs.size)) { cs =>
+          inner(cs)
+        }
     }
-  }
-
-  def writeBlock(stream: OutputStream, blockType: BlockType, innerSize: Long)(inner: OutputStream => Any) {
-    stream.writeInt8(blockTypeMap(blockType))
-    stream.writeInt64(innerSize)
-    stream.preSizedInner(innerSize)(inner)
   }
 
   def assert(errorMessage: String, cond: Boolean): Unit = assert(errorMessage)(cond == true)
