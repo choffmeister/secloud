@@ -1,12 +1,12 @@
-package de.choffmeister.secloud.core
+package net.secloud.core
 
 import org.specs2.mutable._
 import org.junit.runner.RunWith
 import org.specs2.runner.JUnitRunner
-import de.choffmeister.secloud.core._
-import de.choffmeister.secloud.core.ObjectSerializer._
-import de.choffmeister.secloud.core.ObjectSerializerConstants._
-import de.choffmeister.secloud.core.security.CryptographicAlgorithms._
+import net.secloud.core._
+import net.secloud.core.ObjectSerializer._
+import net.secloud.core.ObjectSerializerConstants._
+import net.secloud.core.security.CryptographicAlgorithms._
 import java.io.OutputStream
 import java.io.InputStream
 import java.io.ByteArrayInputStream
@@ -62,7 +62,7 @@ class ObjectHashStreamSpec extends Specification {
 
       val h3 = os3.hash
       val h4 = os4.hash
-      
+
       h1 === h2
       h2 === h3
       h3 === h4
@@ -108,7 +108,7 @@ class ObjectHashStreamSpec extends Specification {
 
       val h3 = os3.hash
       val h4 = os4.hash
-      
+
       h1 === h2
       h2 === h3
       h3 === h4

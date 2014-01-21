@@ -1,4 +1,4 @@
-package de.choffmeister.secloud.core
+package net.secloud.core
 
 import java.io.InputStream
 import java.security.MessageDigest
@@ -7,7 +7,7 @@ import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.io.OutputStream
 import java.security.DigestOutputStream
-import de.choffmeister.secloud.core.security.CryptographicAlgorithms._
+import net.secloud.core.security.CryptographicAlgorithms._
 
 class ObjectHashInputStream(val stream: InputStream, val hashAlgorithm: HashAlgorithm) extends InputStream {
   private val digestStream = hashAlgorithm.wrapStream(stream)
@@ -48,7 +48,7 @@ class ObjectHashInputStream(val stream: InputStream, val hashAlgorithm: HashAlgo
         bufRaw((position - sizePosition).toInt) = byte.toByte
         if (position == sizePosition + 7) {
           sizePrivateBlock = Some(buf.getLong(0))
-          
+
           if (sizePrivateBlock == Some(0)) {
             digestStream.on(false)
             hashIntern = Some(digestStream.getMessageDigest.digest())
@@ -108,7 +108,7 @@ class ObjectHashOutputStream(val stream: OutputStream, val hashAlgorithm: HashAl
         bufRaw((position - sizePosition).toInt) = byte
         if (position == sizePosition + 7) {
           sizePrivateBlock = Some(buf.getLong(0))
-          
+
           if (sizePrivateBlock == Some(0)) {
             digestStream.flush()
             digestStream.on(false)

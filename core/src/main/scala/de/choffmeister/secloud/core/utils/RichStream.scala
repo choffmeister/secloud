@@ -1,4 +1,4 @@
-package de.choffmeister.secloud.core.utils
+package net.secloud.core.utils
 
 import java.io.File
 import java.io.IOException
@@ -30,7 +30,7 @@ class RichInputStream(val stream: InputStream) {
   def pipeTo(target: OutputStream): Unit = {
     val buf = new Array[Byte](1024)
     var done = false
-    
+
     while (!done) {
       val read = stream.read(buf, 0, buf.length)
       if (read > 0) target.write(buf, 0, read)
@@ -69,7 +69,7 @@ class RichOutputStream(val stream: OutputStream) {
     } finally {
       wrapper.close()
     }
-  } 
+  }
 
   def cached(after: ByteArrayOutputStream => Any)(inner: ByteArrayOutputStream => Any) {
     val cache = new ByteArrayOutputStream()

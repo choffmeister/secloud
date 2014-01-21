@@ -1,4 +1,4 @@
-package de.choffmeister.secloud.core.utils
+package net.secloud.core.utils
 
 import org.specs2.mutable._
 import org.specs2.matcher._

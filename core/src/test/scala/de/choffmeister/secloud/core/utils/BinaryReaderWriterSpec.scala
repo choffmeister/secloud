@@ -1,11 +1,11 @@
-package de.choffmeister.secloud.core.utils
+package net.secloud.core.utils
 
 import org.specs2.mutable._
 import org.junit.runner.RunWith
 import org.specs2.runner.JUnitRunner
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
-import de.choffmeister.secloud.core.ObjectId
+import net.secloud.core.ObjectId
 
 @RunWith(classOf[JUnitRunner])
 class BinaryReaderWriterSpec extends Specification {
@@ -18,20 +18,20 @@ class BinaryReaderWriterSpec extends Specification {
       writer.writeInt16(16385)
       writer.writeInt32(134480385)
       writer.writeInt64(9169364094552375809L)
-      
+
       val buf = streamWrite.toByteArray()
       buf.length === 15
-      
+
       buf(0) === 1.toByte
-      
+
       buf(1) === 64.toByte
       buf(2) === 1.toByte
-      
+
       buf(3) === 8.toByte
       buf(4) === 4.toByte
       buf(5) === 2.toByte
       buf(6) === 1.toByte
-      
+
       buf(7) === 127.toByte
       buf(8) === 64.toByte
       buf(9) === 32.toByte

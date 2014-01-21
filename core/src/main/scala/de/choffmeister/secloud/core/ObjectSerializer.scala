@@ -1,12 +1,12 @@
-package de.choffmeister.secloud.core
+package net.secloud.core
 
 import java.io.OutputStream
 import java.io.InputStream
 import java.io.ByteArrayOutputStream
 import java.io.ByteArrayInputStream
-import de.choffmeister.secloud.core.utils._
-import de.choffmeister.secloud.core.utils.RichStream._
-import de.choffmeister.secloud.core.utils.BinaryReaderWriter._
+import net.secloud.core.utils._
+import net.secloud.core.utils.RichStream._
+import net.secloud.core.utils.BinaryReaderWriter._
 
 object ObjectSerializerConstants {
   val MagicBytes = 0x12345678
@@ -64,7 +64,7 @@ object ObjectSerializer {
   }
 
   def writeIssuerIdentityBlock(stream: OutputStream, issuer: Issuer) {
-    writeBlock(stream, IssuerIdentityBlockType) { bs => 
+    writeBlock(stream, IssuerIdentityBlockType) { bs =>
       bs.writeBinary(issuer.id)
       bs.writeString(issuer.name)
     }
@@ -81,26 +81,26 @@ object ObjectSerializer {
       bs.writeBinary(signature)
     }
   }
-  
+
   def readPublicBlock[T](stream: InputStream)(inner: InputStream => T): T = {
     readBlock(stream, PublicBlockType) { bs =>
       inner(bs)
     }
   }
-  
+
   def writePublicBlock(stream: OutputStream, innerSize: Option[Long] = None)(inner: OutputStream => Any): Unit = {
     writeBlock(stream, PublicBlockType, innerSize) { bs =>
       inner(bs)
     }
   }
-  
+
   def readPrivateBlock[T](stream: InputStream, decrypt: SymmetricEncryptionParameters)(inner: InputStream => T): T = {
     readBlock(stream, PrivateBlockType) { bs =>
       val ds = decrypt.algorithm.wrapStream(bs, decrypt)
       inner(ds)
     }
   }
-  
+
   def writePrivateBlock(stream: OutputStream, encrypt: SymmetricEncryptionParameters, innerSize: Option[Long] = None)(inner: OutputStream => Any): Unit = {
     val encryptedInnerSize = innerSize match {
       case Some(plainInnerSize) => Some(encrypt.algorithm.encryptedSize(plainInnerSize))
@@ -118,7 +118,7 @@ object ObjectSerializer {
   def readBlock[T](stream: InputStream, expectedBlockType: BlockType)(inner: InputStream => T): T = {
     val actualBlockType = blockTypeMapInverse(stream.readInt8())
     assert(s"Expected block of type '${expectedBlockType.getClass.getSimpleName}'", expectedBlockType == actualBlockType)
-    
+
     stream.preSizedInner(stream.readInt64()) { is =>
       inner(is)
     }

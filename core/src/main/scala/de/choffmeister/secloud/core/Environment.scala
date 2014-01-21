@@ -1,4 +1,4 @@
-package de.choffmeister.secloud.core
+package net.secloud.core
 
 import java.io.File
 import java.util.Date

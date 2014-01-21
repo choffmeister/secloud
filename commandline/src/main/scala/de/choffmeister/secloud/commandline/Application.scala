@@ -1,11 +1,11 @@
-package de.choffmeister.secloud.commandline
+package net.secloud.commandline
 
 import java.io.File
 import java.util.Date
 import org.rogach.scallop._
-import de.choffmeister.secloud.core.Secloud
-import de.choffmeister.secloud.core.Environment
-import de.choffmeister.secloud.core.Benchmark
+import net.secloud.core.Secloud
+import net.secloud.core.Environment
+import net.secloud.core.Benchmark
 
 object Application {
   def main(args: Array[String]): Unit = {
@@ -13,7 +13,7 @@ object Application {
 
     execute(env, new CommandLineInterface(args))
   }
-  
+
   def createEnvironment(): Environment = Environment(
     new File(System.getProperty("user.dir")),
     new File(System.getProperty("user.home")),

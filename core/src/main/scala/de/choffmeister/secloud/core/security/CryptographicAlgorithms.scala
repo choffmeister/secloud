@@ -1,4 +1,4 @@
-package de.choffmeister.secloud.core.security
+package net.secloud.core.security
 
 import java.io.InputStream
 import java.io.OutputStream
@@ -8,7 +8,7 @@ import javax.crypto.Cipher
 import javax.crypto.CipherInputStream
 import javax.crypto.CipherOutputStream
 import javax.crypto.spec.SecretKeySpec
-import de.choffmeister.secloud.core.utils.BinaryReaderWriter._
+import net.secloud.core.utils.BinaryReaderWriter._
 import java.security.SecureRandom
 import java.security.spec.AlgorithmParameterSpec
 import javax.crypto.spec.IvParameterSpec
@@ -33,7 +33,7 @@ object CryptographicAlgorithms {
 
     def supported: Boolean
     def encryptedSize(plainSize: Long): Long
-    
+
     def generateKey(): SymmetricEncryptionParameters = {
       val random = new SecureRandom()
       val keyGen = KeyGenerator.getInstance(algorithmName)
@@ -42,7 +42,7 @@ object CryptographicAlgorithms {
       val ivBinary = new Array[Byte](blockSize)
       random.nextBytes(ivBinary)
       val params = new IvParameterSpec(ivBinary)
-      
+
       SymmetricEncryptionParameters(this, key, params)
     }
 
@@ -97,11 +97,11 @@ object CryptographicAlgorithms {
     val friendlyName = "AES-256"
     val keySize = 32
   }
-  
+
   sealed abstract class HashAlgorithm {
     val friendlyName: String
     val algorithmName: String
-    
+
     def wrapStream(stream: InputStream): DigestInputStream = {
       val digest = MessageDigest.getInstance(algorithmName)
       new DigestInputStream(stream, digest)
@@ -112,7 +112,7 @@ object CryptographicAlgorithms {
       new DigestOutputStream(stream, digest)
     }
   }
-  
+
   case object `SHA-1` extends HashAlgorithm {
     val friendlyName = "SHA-1"
     val algorithmName = "SHA-1"

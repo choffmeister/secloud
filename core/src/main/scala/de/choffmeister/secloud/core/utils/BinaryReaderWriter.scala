@@ -1,10 +1,10 @@
-package de.choffmeister.secloud.core.utils
+package net.secloud.core.utils
 
 import java.io.OutputStream
 import java.io.InputStream
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
-import de.choffmeister.secloud.core.ObjectId
+import net.secloud.core.ObjectId
 import scala.language.implicitConversions
 import scala.annotation.tailrec
 

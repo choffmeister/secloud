@@ -1,4 +1,4 @@
-package de.choffmeister.secloud.core
+package net.secloud.core
 
 import org.junit.runner.RunWith
 import org.specs2.mutable._
@@ -10,13 +10,13 @@ class ObjectIdSpec extends Specification {
   val oh2 = ObjectId("00112233feff")
   val oh3 = ObjectId("01112233feff")
   val oh4 = ObjectId("00112233fefe")
-  
+
   "ObjectHash" should {
     "properly supply hash codes" in {
       ObjectId().hashCode == 0
       ObjectId("10").hashCode == 16
       ObjectId("1020").hashCode == 8208
-      
+
       oh1.hashCode === oh2.hashCode
       oh1.hashCode !== oh3.hashCode
       oh1.hashCode === oh4.hashCode
@@ -26,7 +26,7 @@ class ObjectIdSpec extends Specification {
       oh1 === oh2
       oh1 == oh2 === true
       oh1.eq(oh2) === false
-      
+
       oh1 !== oh3
       oh1 == oh3 === false
       oh1.eq(oh3) === false

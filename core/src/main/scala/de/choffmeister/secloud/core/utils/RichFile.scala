@@ -1,4 +1,4 @@
-package de.choffmeister.secloud.core.utils
+package net.secloud.core.utils
 
 import java.io.File
 import scala.language.implicitConversions

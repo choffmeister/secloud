@@ -1,9 +1,9 @@
-package de.choffmeister.secloud.core.utils
+package net.secloud.core.utils
 
 import org.specs2.mutable._
 import org.junit.runner.RunWith
 import org.specs2.runner.JUnitRunner
-import de.choffmeister.secloud.core.utils.RichStream._
+import net.secloud.core.utils.RichStream._
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.IOException
@@ -95,7 +95,7 @@ class RichStreamSpec extends Specification {
         cs.write(11)
         cs.write(12)
         cs.write(13)
-        
+
         ms.size === 2
       }
 

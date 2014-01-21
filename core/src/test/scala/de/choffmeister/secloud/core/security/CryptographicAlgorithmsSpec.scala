@@ -1,10 +1,10 @@
-package de.choffmeister.secloud.core.security
+package net.secloud.core.security
 
 import org.specs2.mutable._
 import org.junit.runner.RunWith
 import org.specs2.runner.JUnitRunner
-import de.choffmeister.secloud.core.utils.BinaryReaderWriter._
-import de.choffmeister.secloud.core.security.CryptographicAlgorithms._
+import net.secloud.core.utils.BinaryReaderWriter._
+import net.secloud.core.security.CryptographicAlgorithms._
 import java.io.ByteArrayOutputStream
 import java.io.ByteArrayInputStream
 import java.io.InputStream
@@ -57,7 +57,7 @@ class CryptographicAlgorithmsSpec extends Specification {
 
     cs2.readString()
   }
-  
+
   def serializeAndDeserializeParameters(algorithm: SymmetricEncryptionAlgorithm, key: SymmetricEncryptionParameters): SymmetricEncryptionParameters = {
     val out = new ByteArrayOutputStream()
     algorithm.writeParameters(out, key)

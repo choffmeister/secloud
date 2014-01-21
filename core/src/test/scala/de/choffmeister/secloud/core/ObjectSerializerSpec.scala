@@ -1,4 +1,4 @@
-package de.choffmeister.secloud.core
+package net.secloud.core
 
 import org.junit.runner.RunWith
 import org.specs2.mutable._
@@ -7,7 +7,7 @@ import java.io.ByteArrayOutputStream
 import java.io.OutputStream
 import java.io.InputStream
 import java.io.ByteArrayInputStream
-import de.choffmeister.secloud.core.security.CryptographicAlgorithms._
+import net.secloud.core.security.CryptographicAlgorithms._
 import java.io.FileInputStream
 
 @RunWith(classOf[JUnitRunner])
@@ -28,7 +28,7 @@ class ObjectSerializerSpec extends Specification {
       blob1.issuer === blob2.issuer
       new String(content2.toByteArray, "ASCII") === content
     }
-    
+
     "serialize blobs with known content size" in {
       val content = "Hello World! Foobar"
       val key = `AES-128`.generateKey()

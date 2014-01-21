@@ -1,10 +1,10 @@
-package de.choffmeister.secloud.core
+package net.secloud.core
 
 import java.security.MessageDigest
 import javax.crypto.spec.SecretKeySpec
 import javax.crypto.spec.IvParameterSpec
 import javax.crypto.Cipher
-import de.choffmeister.secloud.core.security.CryptographicAlgorithms._
+import net.secloud.core.security.CryptographicAlgorithms._
 
 object Benchmark {
   val megaByteData = (1 to 1024 * 1024).map(_ % 256).map(_.toByte).toArray[Byte]

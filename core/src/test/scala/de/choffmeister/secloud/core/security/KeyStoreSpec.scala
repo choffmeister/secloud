@@ -1,4 +1,4 @@
-package de.choffmeister.secloud.core.security
+package net.secloud.core.security
 
 import org.specs2.mutable._
 import org.junit.runner.RunWith

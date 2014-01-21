@@ -1,4 +1,4 @@
-package de.choffmeister.secloud.core
+package net.secloud.core
 
 import org.apache.commons.codec.binary.Hex
 import org.apache.commons.codec.binary.Base64
@@ -8,7 +8,7 @@ case class ObjectId(bytes: Seq[Byte]) {
     case ObjectId(otherBytes) => bytes == otherBytes
     case _ => false
   }
-  
+
   /**
    * Simple hash value taking the at most the first 4 bytes into account.
    */
@@ -22,7 +22,7 @@ case class ObjectId(bytes: Seq[Byte]) {
 
   def hex = Hex.encodeHexString(bytes.toArray)
   def base64 = Base64.encodeBase64String(bytes.toArray)
-  
+
   override def toString() = hex
 }
 

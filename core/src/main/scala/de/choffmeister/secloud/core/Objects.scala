@@ -1,11 +1,11 @@
-package de.choffmeister.secloud.core
+package net.secloud.core
 
 import java.io.InputStream
 import java.io.OutputStream
-import de.choffmeister.secloud.core.ObjectSerializer._
-import de.choffmeister.secloud.core.security.CryptographicAlgorithms._
-import de.choffmeister.secloud.core.utils.RichStream._
-import de.choffmeister.secloud.core.ObjectSerializerConstants._
+import net.secloud.core.ObjectSerializer._
+import net.secloud.core.security.CryptographicAlgorithms._
+import net.secloud.core.utils.RichStream._
+import net.secloud.core.ObjectSerializerConstants._
 
 case class Issuer(id: Seq[Byte], name: String)
 

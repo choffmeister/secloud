@@ -5,7 +5,7 @@ import com.typesafe.sbteclipse.plugin.EclipsePlugin._
 
 object Build extends sbt.Build {
   val commonSettings = Defaults.defaultSettings ++ Seq(
-    organization := "de.choffmeister",
+    organization := "net.secloud",
     version := "0.0.0-SNAPSHOT",
     scalaVersion := "2.10.3",
     scalacOptions := Seq("-unchecked", "-feature", "-deprecation", "-language:postfixOps", "-encoding", "utf8"),
@@ -24,7 +24,7 @@ object Build extends sbt.Build {
     id = "secloud",
     base = file("."),
     settings = commonSettings ++ packSettings ++ Seq(
-      packMain := Map("secloud" -> "de.choffmeister.secloud.commandline.Application")
+      packMain := Map("secloud" -> "net.secloud.commandline.Application")
     )
   ) aggregate(core, commandline)
 
