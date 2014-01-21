@@ -13,6 +13,8 @@ object Build extends sbt.Build {
     EclipseKeys.withSource := true
   )
 
+  val commonProjectSettings = commonSettings ++ ScctPlugin.instrumentSettings ++ CoveragePlugin.coverageSettings
+
   val commonDependencies = Seq(
     "junit" % "junit" % "4.11" % "test",
     "org.specs2" %% "specs2" % "2.2.3" % "test"
@@ -29,7 +31,7 @@ object Build extends sbt.Build {
   lazy val core = Project(
     id = "core",
     base = file("core"),
-    settings = commonSettings ++ Seq(
+    settings = commonProjectSettings ++ Seq(
       libraryDependencies ++= commonDependencies
     )
   )
@@ -37,7 +39,7 @@ object Build extends sbt.Build {
   lazy val commandline = Project(
     id = "commandline",
     base = file("commandline"),
-    settings = commonSettings ++ Seq(
+    settings = commonProjectSettings ++ Seq(
       libraryDependencies ++= commonDependencies
     )
   ) dependsOn(core)
