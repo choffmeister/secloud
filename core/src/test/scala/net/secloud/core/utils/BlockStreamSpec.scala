@@ -16,19 +16,24 @@ class BlockStreamSpec extends Specification {
       testRead(List[Byte](2,0,1,2,2,3,0)) === List[Byte](0,1,2,3)
       testRead(List[Byte](3,0,1,2,1,3,0)) === List[Byte](0,1,2,3)
       testRead(List[Byte](4,0,1,2,3,0)) === List[Byte](0,1,2,3)
+
+      testRead(List[Byte](1,0,1,1,1,-2,1,-1,0)) === List[Byte](0,1,-2,-1)
+      testRead(List[Byte](2,0,1,2,-2,-1,0)) === List[Byte](0,1,-2,-1)
+      testRead(List[Byte](3,0,1,-2,1,-1,0)) === List[Byte](0,1,-2,-1)
+      testRead(List[Byte](4,0,1,-2,-1,0)) === List[Byte](0,1,-2,-1)
     }
 
     "jump to end of block even if content is unread" in {
       val b1 = List[Byte](1,0,1,1,1,2,1,3,0)
       val b2 = List[Byte](2,4,5,2,6,7,0)
-      var readRaw = new ByteArrayInputStream((b1 ++ b2).toArray)
+      val readRaw = new ByteArrayInputStream((b1 ++ b2).toArray)
 
-      var readBlock1 = new BlockInputStream(readRaw)
+      val readBlock1 = new BlockInputStream(readRaw)
       readBlock1.read() === 0
       readBlock1.read() === 1
       readBlock1.close()
 
-      var readBlock2 = new BlockInputStream(readRaw)
+      val readBlock2 = new BlockInputStream(readRaw)
       readBlock2.read() === 4
       readBlock2.read() === 5
       readBlock2.read() === 6
@@ -49,12 +54,18 @@ class BlockStreamSpec extends Specification {
       testWrite(List[Byte](0,1,2,3), 3) === List[Byte](3,0,1,2,1,3,0)
       testWrite(List[Byte](0,1,2,3), 4) === List[Byte](4,0,1,2,3,0)
       testWrite(List[Byte](0,1,2,3), 5) === List[Byte](4,0,1,2,3,0)
+
+      testWrite(List[Byte](0,1,-2,-1), 1) === List[Byte](1,0,1,1,1,-2,1,-1,0)
+      testWrite(List[Byte](0,1,-2,-1), 2) === List[Byte](2,0,1,2,-2,-1,0)
+      testWrite(List[Byte](0,1,-2,-1), 3) === List[Byte](3,0,1,-2,1,-1,0)
+      testWrite(List[Byte](0,1,-2,-1), 4) === List[Byte](4,0,1,-2,-1,0)
+      testWrite(List[Byte](0,1,-2,-1), 5) === List[Byte](4,0,1,-2,-1,0)
     }
   }
 
   def testRead(data: List[Byte]): List[Byte] = {
-    var readRaw = new ByteArrayInputStream(data.toArray)
-    var readBlock = new BlockInputStream(readRaw)
+    val readRaw = new ByteArrayInputStream(data.toArray)
+    val readBlock = new BlockInputStream(readRaw)
 
     var done = false
     var result = List.empty[Byte]
@@ -69,8 +80,8 @@ class BlockStreamSpec extends Specification {
   }
 
   def testWrite(data: List[Byte], bufferSize: Int): List[Byte] = {
-    var writeRaw = new ByteArrayOutputStream()
-    var writeBlock = new BlockOutputStream(writeRaw, bufferSize)
+    val writeRaw = new ByteArrayOutputStream()
+    val writeBlock = new BlockOutputStream(writeRaw, bufferSize)
     writeBlock.write(data.toArray)
     writeBlock.close()
 

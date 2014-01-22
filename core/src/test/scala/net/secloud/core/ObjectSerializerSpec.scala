@@ -20,23 +20,7 @@ class ObjectSerializerSpec extends Specification {
       val content1 = new ByteArrayInputStream(content.getBytes("ASCII"))
       val blob1 = Blob(None, Issuer(Array[Byte](0, 1, -2, -1), "owner"))
       val intermediate1 = new ByteArrayOutputStream()
-      Blob.write(intermediate1, blob1, content1, None, key)
-      val intermediate2 = new ByteArrayInputStream(intermediate1.toByteArray)
-      val content2 = new ByteArrayOutputStream()
-      val blob2 = Blob.read(intermediate2, content2, key)
-
-      blob1.issuer === blob2.issuer
-      new String(content2.toByteArray, "ASCII") === content
-    }
-
-    "serialize blobs with known content size" in {
-      val content = "Hello World! Foobar"
-      val key = `AES-128`.generateKey()
-
-      val content1 = new ByteArrayInputStream(content.getBytes("ASCII"))
-      val blob1 = Blob(None, Issuer(Array[Byte](0, 1, -2, -1), "owner"))
-      val intermediate1 = new ByteArrayOutputStream()
-      Blob.write(intermediate1, blob1, content1, Some(content.length), key)
+      Blob.write(intermediate1, blob1, content1, key)
       val intermediate2 = new ByteArrayInputStream(intermediate1.toByteArray)
       val content2 = new ByteArrayOutputStream()
       val blob2 = Blob.read(intermediate2, content2, key)

@@ -9,22 +9,27 @@ class BlockInputStream(val inner: InputStream, val ownsInner: Boolean = true) ex
   private var block = Array.empty[Byte]
   private var blockSize = 0
   private var blockPosition = 0
+  private var closed = false
 
   override def read(): Int = {
     if (!startedReading || (blockSize > 0 && blockPosition == blockSize)) readBlock()
 
     if (blockSize > 0) {
-      val b = block(blockPosition)
+      val b = block(blockPosition) & 0xff // change range from [-128,127] to [0,255]  
       blockPosition += 1
       b
     } else -1
   }
 
   override def close(): Unit = {
-    // consume the whole remaining block stream
-    while (read() >= 0) {}
+    if (!closed) {
+      // consume the whole remaining block stream
+      while (read() >= 0) {}
 
-    if (ownsInner) inner.close()
+      if (ownsInner) inner.close()
+      closed = true
+    }
+
   }
 
   private def readBlock() {
@@ -41,6 +46,7 @@ class BlockInputStream(val inner: InputStream, val ownsInner: Boolean = true) ex
 class BlockOutputStream(val inner: OutputStream, val bufferSize: Int = 8192, val ownsInner: Boolean = true) extends OutputStream {
   private val block = new Array[Byte](bufferSize)
   private var blockPosition = 0
+  private var closed = false
 
   override def write(b: Int): Unit = {
     if (blockPosition == bufferSize) flushBlock()
@@ -50,12 +56,15 @@ class BlockOutputStream(val inner: OutputStream, val bufferSize: Int = 8192, val
   }
 
   override def close(): Unit = {
-    // flush last block if non empty
-    if (blockPosition > 0) flushBlock()
-    // always end with an empty block
-    flushBlock()
+    if (!closed) {
+      // flush last block if non empty
+      if (blockPosition > 0) flushBlock()
+      // always end with an empty block
+      flushBlock()
 
-    if (ownsInner) inner.close()
+      if (ownsInner) inner.close()
+      closed = true
+    }
   }
 
   private def flushBlock() {

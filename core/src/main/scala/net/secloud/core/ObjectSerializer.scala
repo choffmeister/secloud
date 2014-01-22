@@ -5,7 +5,7 @@ import java.io.InputStream
 import java.io.ByteArrayOutputStream
 import java.io.ByteArrayInputStream
 import net.secloud.core.utils._
-import net.secloud.core.utils.RichStream._
+import net.secloud.core.utils.BlockStream._
 import net.secloud.core.utils.BinaryReaderWriter._
 
 object ObjectSerializerConstants {
@@ -88,8 +88,8 @@ object ObjectSerializer {
     }
   }
 
-  def writePublicBlock(stream: OutputStream, innerSize: Option[Long] = None)(inner: OutputStream => Any): Unit = {
-    writeBlock(stream, PublicBlockType, innerSize) { bs =>
+  def writePublicBlock(stream: OutputStream)(inner: OutputStream => Any): Unit = {
+    writeBlock(stream, PublicBlockType) { bs =>
       inner(bs)
     }
   }
@@ -101,13 +101,8 @@ object ObjectSerializer {
     }
   }
 
-  def writePrivateBlock(stream: OutputStream, encrypt: SymmetricEncryptionParameters, innerSize: Option[Long] = None)(inner: OutputStream => Any): Unit = {
-    val encryptedInnerSize = innerSize match {
-      case Some(plainInnerSize) => Some(encrypt.algorithm.encryptedSize(plainInnerSize))
-      case _ => None
-    }
-
-    writeBlock(stream, PrivateBlockType, encryptedInnerSize) { bs =>
+  def writePrivateBlock(stream: OutputStream, encrypt: SymmetricEncryptionParameters)(inner: OutputStream => Any): Unit = {
+    writeBlock(stream, PrivateBlockType) { bs =>
       val ds = encrypt.algorithm.wrapStream(bs, encrypt)
       inner(ds)
       ds.flush()
@@ -119,23 +114,18 @@ object ObjectSerializer {
     val actualBlockType = blockTypeMapInverse(stream.readInt8())
     assert(s"Expected block of type '${expectedBlockType.getClass.getSimpleName}'", expectedBlockType == actualBlockType)
 
-    stream.preSizedInner(stream.readInt64()) { is =>
-      inner(is)
-    }
+    val blockStream = new BlockInputStream(stream, ownsInner = false)
+    val result = inner(blockStream)
+    blockStream.close()
+    result
   }
 
-  def writeBlock(stream: OutputStream, blockType: BlockType, innerSize: Option[Long] = None)(inner: OutputStream => Any) {
-    innerSize match {
-      case Some(innerSize) =>
-        stream.writeInt8(blockTypeMap(blockType))
-        stream.writeInt64(innerSize)
-        stream.preSizedInner(innerSize)(inner)
-      case _ =>
-        stream.writeInt8(blockTypeMap(blockType))
-        stream.cached(cs => stream.writeInt64(cs.size)) { cs =>
-          inner(cs)
-        }
-    }
+  def writeBlock(stream: OutputStream, blockType: BlockType)(inner: OutputStream => Any) {
+    stream.writeInt8(blockTypeMap(blockType))
+
+    val blockStream = new BlockOutputStream(stream, ownsInner = false)
+    inner(blockStream)
+    blockStream.close()
   }
 
   def assert(errorMessage: String, cond: Boolean): Unit = assert(errorMessage)(cond == true)

@@ -37,90 +37,100 @@ case class Commit(
 }
 
 object Blob {
-  def write(output: OutputStream, blob: Blob, content: InputStream, contentSize: Option[Long], enc: SymmetricEncryptionParameters): Unit = {
-    val os = new ObjectHashOutputStream(output, `SHA-2-256`)
-    writeHeader(os, blob.objectType)
-    writeIssuerIdentityBlock(os, blob.issuer)
-    writePublicBlock(os) { bs =>
+  def write(output: OutputStream, blob: Blob, content: InputStream, enc: SymmetricEncryptionParameters): Unit = {
+    val ds = `SHA-2-256`.wrapStream(output)
+    writeHeader(ds, blob.objectType)
+    writeIssuerIdentityBlock(ds, blob.issuer)
+    writePublicBlock(ds) { bs =>
     }
-    writePrivateBlock(os, enc, contentSize) { bs =>
+    writePrivateBlock(ds, enc) { bs =>
       content.pipeTo(bs)
     }
+    ds.flush()
+    val digest = ds.getMessageDigest().digest.toSeq
     // TODO: sign hash
-    writeIssuerSignatureBlock(os, os.hash.get)
+    writeIssuerSignatureBlock(output, digest)
+    output.flush()
   }
 
   def read(input: InputStream, content: OutputStream, dec: SymmetricEncryptionParameters): Blob = {
-    val os = new ObjectHashInputStream(input, `SHA-2-256`)
-    val objectType = readHeader(os)
+    val ds = `SHA-2-256`.wrapStream(input)
+    val objectType = readHeader(ds)
     assert("Expected blob", objectType == BlobObjectType)
-    val issuer = readIssuerIdentityBlock(os)
-    val publicBlock = readPublicBlock(os) { bs =>
+    val issuer = readIssuerIdentityBlock(ds)
+    val publicBlock = readPublicBlock(ds) { bs =>
     }
-    val privateBlock = readPrivateBlock(os, dec) { bs =>
+    val privateBlock = readPrivateBlock(ds, dec) { bs =>
       bs.pipeTo(content)
     }
-    val signature = readIssuerSignatureBlock(os)
+    val digest = ds.getMessageDigest.digest.toSeq
+    val signature = readIssuerSignatureBlock(input)
     // TODO: validate signature with hash
-    assert("Signature invalid", signature == os.hash.get)
-    return Blob(Some(ObjectId(os.hash.get)), issuer)
+    assert("Signature invalid", signature == digest)
+    return Blob(Some(ObjectId(digest)), issuer)
   }
 }
 
 object Tree {
   def write(output: OutputStream, tree: Tree, enc: SymmetricEncryptionParameters): Unit = {
-    val os = new ObjectHashOutputStream(output, `SHA-2-256`)
-    writeHeader(os, tree.objectType)
-    writeIssuerIdentityBlock(os, tree.issuer)
-    writePublicBlock(os) { bs =>
+    val ds = `SHA-2-256`.wrapStream(output)
+    writeHeader(ds, tree.objectType)
+    writeIssuerIdentityBlock(ds, tree.issuer)
+    writePublicBlock(ds) { bs =>
     }
-    writePrivateBlock(os, enc) { bs =>
+    writePrivateBlock(ds, enc) { bs =>
     }
+    ds.flush()
+    val digest = ds.getMessageDigest().digest.toSeq
     // TODO: sign hash
-    writeIssuerSignatureBlock(os, os.hash.get)
+    writeIssuerSignatureBlock(output, digest)
   }
 
   def read(input: InputStream, dec: SymmetricEncryptionParameters): Tree = {
-    val os = new ObjectHashInputStream(input, `SHA-2-256`)
-    val objectType = readHeader(os)
+    val ds = `SHA-2-256`.wrapStream(input)
+    val objectType = readHeader(ds)
     assert("Expected tree", objectType == TreeObjectType)
-    val issuer = readIssuerIdentityBlock(os)
-    val publicBlock = readPublicBlock(os) { bs =>
+    val issuer = readIssuerIdentityBlock(ds)
+    val publicBlock = readPublicBlock(ds) { bs =>
     }
-    val privateBlock = readPrivateBlock(os, dec) { bs =>
+    val privateBlock = readPrivateBlock(ds, dec) { bs =>
     }
-    val signature = readIssuerSignatureBlock(os)
+    val digest = ds.getMessageDigest().digest.toSeq
+    val signature = readIssuerSignatureBlock(input)
     // TODO: validate signature with hash
-    assert("Signature invalid", signature == os.hash.get)
-    return Tree(Some(ObjectId(os.hash.get)), issuer)
+    assert("Signature invalid", signature == digest)
+    return Tree(Some(ObjectId(digest)), issuer)
   }
 }
 
 object Commit {
   def write(output: OutputStream, commit: Commit, enc: SymmetricEncryptionParameters): Unit = {
-    val os = new ObjectHashOutputStream(output, `SHA-2-256`)
-    writeHeader(os, commit.objectType)
-    writeIssuerIdentityBlock(os, commit.issuer)
-    writePublicBlock(os) { bs =>
+    val ds = `SHA-2-256`.wrapStream(output)
+    writeHeader(ds, commit.objectType)
+    writeIssuerIdentityBlock(ds, commit.issuer)
+    writePublicBlock(ds) { bs =>
     }
-    writePrivateBlock(os, enc) { bs =>
+    writePrivateBlock(ds, enc) { bs =>
     }
+    ds.flush()
+    val digest = ds.getMessageDigest().digest.toSeq
     // TODO: sign hash
-    writeIssuerSignatureBlock(os, os.hash.get)
+    writeIssuerSignatureBlock(output, digest)
   }
 
   def read(input: InputStream, dec: SymmetricEncryptionParameters): Commit = {
-    val os = new ObjectHashInputStream(input, `SHA-2-256`)
-    val objectType = readHeader(os)
+    val ds = `SHA-2-256`.wrapStream(input)
+    val objectType = readHeader(ds)
     assert("Expected commit", objectType == CommitObjectType)
-    val issuer = readIssuerIdentityBlock(os)
-    val publicBlock = readPublicBlock(os) { bs =>
+    val issuer = readIssuerIdentityBlock(ds)
+    val publicBlock = readPublicBlock(ds) { bs =>
     }
-    val privateBlock = readPrivateBlock(os, dec) { bs =>
+    val privateBlock = readPrivateBlock(ds, dec) { bs =>
     }
-    val signature = readIssuerSignatureBlock(os)
+    val digest = ds.getMessageDigest().digest.toSeq
+    val signature = readIssuerSignatureBlock(input)
     // TODO: validate signature with hash
-    assert("Signature invalid", signature == os.hash.get)
-    return Commit(Some(ObjectId(os.hash.get)), issuer)
+    assert("Signature invalid", signature == digest)
+    return Commit(Some(ObjectId(digest)), issuer)
   }
 }
