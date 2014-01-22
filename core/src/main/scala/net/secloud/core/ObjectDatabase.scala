@@ -10,6 +10,28 @@ import java.io.FileOutputStream
 trait ObjectDatabase {
   def createReader(): ObjectReader
   def createWriter(): ObjectWriter
+
+  def read[T](id: ObjectId)(inner: InputStream => T): T = {
+    val reader = createReader()
+    try {
+      reader.open(id)
+      inner(reader.stream)
+    } finally {
+      reader.close()
+    }
+  }
+
+  def write(inner: OutputStream => ObjectId): ObjectId = {
+    val writer = createWriter()
+    try {
+      writer.open()
+      val id = inner(writer.stream)
+      writer.close(id)
+      id
+    } finally {
+      writer.close()
+    }
+  }
 }
 
 trait ObjectReader {
@@ -21,6 +43,7 @@ trait ObjectReader {
 trait ObjectWriter {
   def open(): Unit
   def close(id: ObjectId): Unit
+  def close(): Unit
   def stream: OutputStream
 }
 
@@ -67,8 +90,10 @@ class DirectoryObjectDatabase(val base: File) extends ObjectDatabase {
     }
 
     def close() = {
-      stream.close()
-      innerStream = None
+      if (innerStream.isDefined) {
+        stream.close()
+        innerStream = None
+      }
     }
 
     def stream = innerStream match {
@@ -89,7 +114,7 @@ class DirectoryObjectDatabase(val base: File) extends ObjectDatabase {
     }
 
     def close(id: ObjectId) = {
-      stream.close()
+      close()
 
       ensureDirectory(odb.directoryFromId(id))
 
@@ -98,7 +123,13 @@ class DirectoryObjectDatabase(val base: File) extends ObjectDatabase {
       }
 
       tempPath = None
-      innerStream = None
+    }
+
+    def close() = {
+      if (innerStream.isDefined) {
+        stream.close()
+        innerStream = None
+      }
     }
 
     def stream = innerStream match {
