@@ -62,17 +62,17 @@ class BinaryWriter(val stream: OutputStream) {
 
   def writeString(value: String): Unit = {
     val bytes = value.getBytes("UTF-8")
-    writeInt64(bytes.length)
+    writeInt7(bytes.length)
     writeToStream(stream, bytes, 0, bytes.length)
   }
 
   def writeBinary(value: Seq[Byte]): Unit = {
-    writeInt64(value.length)
+    writeInt7(value.length)
     writeToStream(stream, value.toArray, 0, value.length)
   }
 
   def writeBinary(value: Array[Byte]): Unit = {
-    writeInt64(value.length)
+    writeInt7(value.length)
     writeToStream(stream, value, 0, value.length)
   }
 
@@ -134,14 +134,14 @@ class BinaryReader(val stream: InputStream) {
   }
 
   def readString(): String = {
-    val length = readInt64().toInt
+    val length = readInt7().toInt
     val stringBuf = new Array[Byte](length)
     readFromStream(stream, stringBuf, 0, length)
     return new String(stringBuf, "UTF-8")
   }
 
   def readBinary(): Array[Byte] = {
-    val length = readInt64().toInt
+    val length = readInt7().toInt
     val buf = new Array[Byte](length)
     readFromStream(stream, buf, 0, length)
     return buf

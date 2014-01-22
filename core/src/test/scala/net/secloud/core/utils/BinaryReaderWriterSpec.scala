@@ -219,10 +219,11 @@ class BinaryReaderWriterSpec extends Specification {
       writer.writeString("foo")
       writer.writeString("")
       writer.writeString("äöü")
+      writer.writeString("uzuy6la8iezaeduhojahfahpuu6yahthiefoow7Iing2oofiuWau9Ohjee0Wiwai3mu8phee7ephaeKaishohg9iev3wequaophahmahsiewoo3eexaef8ahj8phoi2z")
       writer.close()
 
       val buf = streamWrite.toByteArray()
-      buf.length === 33
+      buf.length === 142 // (1+3)+(1+0)+(1+6)+(2+128)
 
       val streamRead = new ByteArrayInputStream(buf)
       val reader = new BinaryReader(streamRead)
@@ -230,6 +231,7 @@ class BinaryReaderWriterSpec extends Specification {
       reader.readString() === "foo"
       reader.readString() === ""
       reader.readString() === "äöü"
+      reader.readString() === "uzuy6la8iezaeduhojahfahpuu6yahthiefoow7Iing2oofiuWau9Ohjee0Wiwai3mu8phee7ephaeKaishohg9iev3wequaophahmahsiewoo3eexaef8ahj8phoi2z"
     }
 
     "read and write Binary" in {
@@ -239,10 +241,11 @@ class BinaryReaderWriterSpec extends Specification {
       writer.writeBinary(Array(Byte.MinValue, Byte.MaxValue))
       writer.writeBinary(Array.empty[Byte])
       writer.writeBinary(Array(10.toByte, 11.toByte, 12.toByte))
+      writer.writeBinary((1 to 128).map(_.toByte).toArray)
       writer.close()
 
       val buf = streamWrite.toByteArray()
-      buf.length === 29
+      buf.length === 138 // (1+2)+(1+0)+(1+3)+(2+128)
 
       val streamRead = new ByteArrayInputStream(buf)
       val reader = new BinaryReader(streamRead)
@@ -250,6 +253,7 @@ class BinaryReaderWriterSpec extends Specification {
       reader.readBinary() === Array(Byte.MinValue, Byte.MaxValue)
       reader.readBinary() === Array.empty[Byte]
       reader.readBinary() === Array(10.toByte, 11.toByte, 12.toByte)
+      reader.readBinary() === (1 to 128).map(_.toByte).toArray
     }
 
     "read and write ObjectId" in {
@@ -262,7 +266,7 @@ class BinaryReaderWriterSpec extends Specification {
       writer.close()
 
       val buf = streamWrite.toByteArray()
-      buf.length === 39
+      buf.length === 18 // (1+3)+(1+0)+(1+12)
 
       val streamRead = new ByteArrayInputStream(buf)
       val reader = new BinaryReader(streamRead)
