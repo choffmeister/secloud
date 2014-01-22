@@ -11,34 +11,34 @@ import com.jcraft.jzlib.{GZIPInputStream, GZIPOutputStream}
 case class Issuer(id: Seq[Byte], name: String)
 
 abstract class BaseObject {
-  val id: Option[ObjectId]
+  val id: ObjectId
   val issuer: Issuer
   val objectType: ObjectType
 }
 
 case class Blob(
-  id: Option[ObjectId],
+  id: ObjectId,
   issuer: Issuer
 ) extends BaseObject {
   val objectType = BlobObjectType
 }
 
 case class Tree(
-  id: Option[ObjectId],
+  id: ObjectId,
   issuer: Issuer
 ) extends BaseObject {
   val objectType = TreeObjectType
 }
 
 case class Commit(
-  id: Option[ObjectId],
+  id: ObjectId,
   issuer: Issuer
 ) extends BaseObject {
   val objectType = CommitObjectType
 }
 
 object Blob {
-  def write(output: OutputStream, blob: Blob, content: InputStream, enc: SymmetricEncryptionParameters): Unit = {
+  def write(output: OutputStream, blob: Blob, content: InputStream, enc: SymmetricEncryptionParameters): Blob = {
     val ds = `SHA-2-256`.wrapStream(output)
     writeHeader(ds, blob.objectType)
     writeIssuerIdentityBlock(ds, blob.issuer)
@@ -55,6 +55,7 @@ object Blob {
     // TODO: sign hash
     writeIssuerSignatureBlock(output, digest)
     output.flush()
+    return blob.copy(id = ObjectId(digest))
   }
 
   def read(input: InputStream, content: OutputStream, dec: SymmetricEncryptionParameters): Blob = {
@@ -73,12 +74,12 @@ object Blob {
     val signature = readIssuerSignatureBlock(input)
     // TODO: validate signature with hash
     assert("Signature invalid", signature == digest)
-    return Blob(Some(ObjectId(digest)), issuer)
+    return Blob(ObjectId(digest), issuer)
   }
 }
 
 object Tree {
-  def write(output: OutputStream, tree: Tree, enc: SymmetricEncryptionParameters): Unit = {
+  def write(output: OutputStream, tree: Tree, enc: SymmetricEncryptionParameters): Tree = {
     val ds = `SHA-2-256`.wrapStream(output)
     writeHeader(ds, tree.objectType)
     writeIssuerIdentityBlock(ds, tree.issuer)
@@ -90,6 +91,7 @@ object Tree {
     val digest = ds.getMessageDigest().digest.toSeq
     // TODO: sign hash
     writeIssuerSignatureBlock(output, digest)
+    return tree.copy(id = ObjectId(digest))
   }
 
   def read(input: InputStream, dec: SymmetricEncryptionParameters): Tree = {
@@ -105,12 +107,12 @@ object Tree {
     val signature = readIssuerSignatureBlock(input)
     // TODO: validate signature with hash
     assert("Signature invalid", signature == digest)
-    return Tree(Some(ObjectId(digest)), issuer)
+    return Tree(ObjectId(digest), issuer)
   }
 }
 
 object Commit {
-  def write(output: OutputStream, commit: Commit, enc: SymmetricEncryptionParameters): Unit = {
+  def write(output: OutputStream, commit: Commit, enc: SymmetricEncryptionParameters): Commit = {
     val ds = `SHA-2-256`.wrapStream(output)
     writeHeader(ds, commit.objectType)
     writeIssuerIdentityBlock(ds, commit.issuer)
@@ -122,6 +124,7 @@ object Commit {
     val digest = ds.getMessageDigest().digest.toSeq
     // TODO: sign hash
     writeIssuerSignatureBlock(output, digest)
+    return commit.copy(id = ObjectId(digest))
   }
 
   def read(input: InputStream, dec: SymmetricEncryptionParameters): Commit = {
@@ -137,6 +140,6 @@ object Commit {
     val signature = readIssuerSignatureBlock(input)
     // TODO: validate signature with hash
     assert("Signature invalid", signature == digest)
-    return Commit(Some(ObjectId(digest)), issuer)
+    return Commit(ObjectId(digest), issuer)
   }
 }

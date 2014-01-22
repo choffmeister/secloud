@@ -18,7 +18,7 @@ class ObjectSerializerSpec extends Specification {
       val key = `AES-128`.generateKey()
 
       val content1 = new ByteArrayInputStream(content.getBytes("ASCII"))
-      val blob1 = Blob(None, Issuer(Array[Byte](0, 1, -2, -1), "owner"))
+      val blob1 = Blob(ObjectId.empty, Issuer(Array[Byte](0, 1, -2, -1), "owner"))
       val intermediate1 = new ByteArrayOutputStream()
       Blob.write(intermediate1, blob1, content1, key)
       val intermediate2 = new ByteArrayInputStream(intermediate1.toByteArray)
@@ -32,7 +32,7 @@ class ObjectSerializerSpec extends Specification {
     "serialize trees" in {
       val key = `AES-128`.generateKey()
 
-      val tree1 = Tree(None, Issuer(Array[Byte](0, 1, -2, -1), "owner"))
+      val tree1 = Tree(ObjectId.empty, Issuer(Array[Byte](0, 1, -2, -1), "owner"))
       val intermediate1 = new ByteArrayOutputStream()
       Tree.write(intermediate1, tree1, key)
       val intermediate2 = new ByteArrayInputStream(intermediate1.toByteArray)
@@ -44,7 +44,7 @@ class ObjectSerializerSpec extends Specification {
     "serialize commits" in {
       val key = `AES-128`.generateKey()
 
-      val commit1 = Commit(None, Issuer(Array[Byte](0, 1, -2, -1), "owner"))
+      val commit1 = Commit(ObjectId.empty, Issuer(Array[Byte](0, 1, -2, -1), "owner"))
       val intermediate1 = new ByteArrayOutputStream()
       Commit.write(intermediate1, commit1, key)
       val intermediate2 = new ByteArrayInputStream(intermediate1.toByteArray)

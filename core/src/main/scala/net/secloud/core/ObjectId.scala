@@ -29,4 +29,5 @@ case class ObjectId(bytes: Seq[Byte]) {
 object ObjectId {
   def apply(): ObjectId = ObjectId(Seq.empty[Byte])
   def apply(hex: String): ObjectId = ObjectId(Hex.decodeHex(hex.toCharArray()))
+  def empty = ObjectId()
 }
