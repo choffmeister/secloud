@@ -5,6 +5,8 @@ import javax.crypto.spec.SecretKeySpec
 import javax.crypto.spec.IvParameterSpec
 import javax.crypto.Cipher
 import net.secloud.core.security.CryptographicAlgorithms._
+import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
+import com.jcraft.jzlib.{GZIPInputStream, GZIPOutputStream}
 
 object Benchmark {
   val megaByteData = (1 to 1024 * 1024).map(_ % 256).map(_.toByte).toArray[Byte]
@@ -26,6 +28,33 @@ object Benchmark {
     for (ha <- hashAlgorithms) {
       println(s"${ha.friendlyName} hash: ${benchmark(ha)} MB/s")
     }
+
+    val gzip = benchmarkGZIP()
+    println(s"GZip compress: ${gzip._1} MB/s")
+    println(s"GZip decompress: ${gzip._2} MB/s")
+  }
+
+  def benchmarkGZIP(): (Double, Double) = {
+    val buf = new Array[Byte](8192)
+
+    val ba1 = new ByteArrayOutputStream()
+    val gzip1 = new GZIPOutputStream(ba1)
+    val runtime1 = benchmark {
+      for (i <- 1 to iterations) {
+        gzip1.write(megaByteData)
+      }
+      gzip1.flush()
+      gzip1.close()
+    }
+
+    val ba2 = new ByteArrayInputStream(ba1.toByteArray)
+    val gzip2 = new GZIPInputStream(ba2)
+    val runtime2 = benchmark {
+      while (gzip2.read(buf, 0, 8192) >= 0) {}
+      gzip2.close()
+    }
+
+    return (toMegaBytesPerSecond(byteCount, runtime1), toMegaBytesPerSecond(byteCount, runtime2))
   }
 
   def benchmark(algorithm: SymmetricEncryptionAlgorithm, mode: Int): Double = {

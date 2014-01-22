@@ -5,6 +5,7 @@ resolvers ++= Seq(
 )
 
 libraryDependencies ++= Seq(
+  "com.jcraft" % "jzlib" % "1.1.3",
   "commons-codec" % "commons-codec" % "1.8",
   "org.netbeans.modules" % "org-netbeans-modules-keyring-impl" % "RELEASE731"
 )

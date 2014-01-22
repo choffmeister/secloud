@@ -6,6 +6,7 @@ import net.secloud.core.ObjectSerializer._
 import net.secloud.core.security.CryptographicAlgorithms._
 import net.secloud.core.utils.RichStream._
 import net.secloud.core.ObjectSerializerConstants._
+import com.jcraft.jzlib.{GZIPInputStream, GZIPOutputStream}
 
 case class Issuer(id: Seq[Byte], name: String)
 
@@ -44,7 +45,10 @@ object Blob {
     writePublicBlock(ds) { bs =>
     }
     writePrivateBlock(ds, enc) { bs =>
-      content.pipeTo(bs)
+      val gzip = new GZIPOutputStream(bs)
+      content.pipeTo(gzip)
+      gzip.flush()
+      gzip.close()
     }
     ds.flush()
     val digest = ds.getMessageDigest().digest.toSeq
@@ -61,7 +65,9 @@ object Blob {
     val publicBlock = readPublicBlock(ds) { bs =>
     }
     val privateBlock = readPrivateBlock(ds, dec) { bs =>
-      bs.pipeTo(content)
+      val gzip = new GZIPInputStream(bs)
+      gzip.pipeTo(content)
+      gzip.close()
     }
     val digest = ds.getMessageDigest.digest.toSeq
     val signature = readIssuerSignatureBlock(input)
