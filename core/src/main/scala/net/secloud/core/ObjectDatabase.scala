@@ -10,6 +10,7 @@ import java.io.FileOutputStream
 trait ObjectDatabase {
   def createReader(): ObjectReader
   def createWriter(): ObjectWriter
+  def find(idPrefix: String): Option[ObjectId]
 
   def read[T](id: ObjectId)(inner: InputStream => T): T = {
     val reader = createReader()
@@ -55,6 +56,18 @@ class DirectoryObjectDatabase(val base: File) extends ObjectDatabase {
   def createReader(): ObjectReader = new DirectoryObjectReader(this)
 
   def createWriter(): ObjectWriter = new DirectoryObjectWriter(this)
+
+  def find(idPrefix: String): Option[ObjectId] = {
+    if (idPrefix.length >= 4) {
+      val dir = pathJoin(base, List("objects", idPrefix.substring(0, 2)))
+      if (dir.exists && dir.isDirectory) {
+        val files = dir.listFiles().filter(f => f.getName.startsWith(idPrefix.substring(2))).toList
+        if (files.length == 1) {
+          Some(ObjectId(idPrefix.substring(0,2) + files(0).getName))
+        } else None
+      } else None
+    } else None
+  }
 
   def directoryFromId(id: ObjectId) = pathJoin(base, List("objects", id.hex.substring(0, 2)))
 
