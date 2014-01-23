@@ -6,6 +6,8 @@ import java.io.InputStream
 import java.io.OutputStream
 import java.io.FileInputStream
 import java.io.FileOutputStream
+import java.io.BufferedInputStream
+import java.io.BufferedOutputStream
 
 trait ObjectDatabase {
   def createReader(): ObjectReader
@@ -99,7 +101,7 @@ class DirectoryObjectDatabase(val base: File) extends ObjectDatabase {
 
     def open(id: ObjectId) = innerStream match {
       case Some(s) => throw new Exception("Cannot open read stream twice")
-      case _ => innerStream = Some(new FileInputStream(odb.pathFromId(id)))
+      case _ => innerStream = Some(new BufferedInputStream(new FileInputStream(odb.pathFromId(id)), 8192))
     }
 
     def close() = {
@@ -123,7 +125,7 @@ class DirectoryObjectDatabase(val base: File) extends ObjectDatabase {
       case Some(s) => throw new Exception("Cannot open write stream twice")
       case _ =>
         tempPath = Some(odb.createTempFile())
-        innerStream = Some(new FileOutputStream(tempPath.get))
+        innerStream = Some(new BufferedOutputStream(new FileOutputStream(tempPath.get), 8192))
     }
 
     def close(id: ObjectId) = {
