@@ -15,12 +15,10 @@ import org.apache.commons.codec.binary.Hex
 class CryptographicAlgorithmsSpec extends Specification {
   "SymmetricEncryptionAlgorithm" should {
     "wrap streams with AES-128" in {
-      if (`AES-128`.supported) {
-        testForConcreteAlgorithm(`AES-128`, "") === ""
-        testForConcreteAlgorithm(`AES-128`, "Hello") === "Hello"
-        testForConcreteAlgorithm(`AES-128`, "Hello World!") === "Hello World!"
-        success
-      } else skipped("AES-128 is not supported")
+      testForConcreteAlgorithm(`AES-128`, "") === ""
+      testForConcreteAlgorithm(`AES-128`, "Hello") === "Hello"
+      testForConcreteAlgorithm(`AES-128`, "Hello World!") === "Hello World!"
+      success
     }
 
     "wrap streams with AES-192" in {
