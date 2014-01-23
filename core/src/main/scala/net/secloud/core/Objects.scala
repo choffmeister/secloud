@@ -4,7 +4,9 @@ import java.io.InputStream
 import java.io.OutputStream
 import net.secloud.core.ObjectSerializer._
 import net.secloud.core.security.CryptographicAlgorithms._
+import net.secloud.core.security.CryptographicAlgorithmSerializer._
 import net.secloud.core.utils.RichStream._
+import net.secloud.core.utils.BinaryReaderWriter._
 import net.secloud.core.ObjectSerializerConstants._
 import com.jcraft.jzlib.{GZIPInputStream, GZIPOutputStream}
 
@@ -23,16 +25,25 @@ case class Blob(
   val objectType = BlobObjectType
 }
 
+case class TreeEntry(
+  id: ObjectId,
+  name: String,
+  key: SymmetricEncryptionParameters
+)
+
 case class Tree(
   id: ObjectId,
-  issuer: Issuer
+  issuer: Issuer,
+  entries: List[TreeEntry]
 ) extends BaseObject {
   val objectType = TreeObjectType
 }
 
 case class Commit(
   id: ObjectId,
-  issuer: Issuer
+  issuer: Issuer,
+  treeId: ObjectId,
+  treeKey: SymmetricEncryptionParameters
 ) extends BaseObject {
   val objectType = CommitObjectType
 }
@@ -84,8 +95,15 @@ object Tree {
     writeHeader(ds, tree.objectType)
     writeIssuerIdentityBlock(ds, tree.issuer)
     writePublicBlock(ds) { bs =>
+      bs.writeList(tree.entries) {
+        e => bs.writeObjectId(e.id)
+      }
     }
     writePrivateBlock(ds, enc) { bs =>
+      bs.writeList(tree.entries) { e =>
+        bs.writeString(e.name)
+        writeSymmetricEncryptionParameters(bs, e.key)
+      }
     }
     ds.flush()
     val digest = ds.getMessageDigest().digest.toSeq
@@ -100,14 +118,21 @@ object Tree {
     assert("Expected tree", objectType == TreeObjectType)
     val issuer = readIssuerIdentityBlock(ds)
     val publicBlock = readPublicBlock(ds) { bs =>
+      bs.readList {
+        bs.readObjectId()
+      }
     }
     val privateBlock = readPrivateBlock(ds, dec) { bs =>
+      bs.readList {
+        (bs.readString(), readSymmetricEncryptionParameters(bs))
+      }
     }
+    val entries = publicBlock.zip(privateBlock).map(e => TreeEntry(e._1, e._2._1, e._2._2))
     val digest = ds.getMessageDigest().digest.toSeq
     val signature = readIssuerSignatureBlock(input)
     // TODO: validate signature with hash
     assert("Signature invalid", signature == digest)
-    return Tree(ObjectId(digest), issuer)
+    return Tree(ObjectId(digest), issuer, entries)
   }
 }
 
@@ -117,8 +142,10 @@ object Commit {
     writeHeader(ds, commit.objectType)
     writeIssuerIdentityBlock(ds, commit.issuer)
     writePublicBlock(ds) { bs =>
+      bs.writeObjectId(commit.treeId)
     }
     writePrivateBlock(ds, enc) { bs =>
+      writeSymmetricEncryptionParameters(bs, commit.treeKey)
     }
     ds.flush()
     val digest = ds.getMessageDigest().digest.toSeq
@@ -133,13 +160,17 @@ object Commit {
     assert("Expected commit", objectType == CommitObjectType)
     val issuer = readIssuerIdentityBlock(ds)
     val publicBlock = readPublicBlock(ds) { bs =>
+      bs.readObjectId()
     }
     val privateBlock = readPrivateBlock(ds, dec) { bs =>
+      readSymmetricEncryptionParameters(bs)
     }
+    val treeId = publicBlock
+    val treeKey = privateBlock
     val digest = ds.getMessageDigest().digest.toSeq
     val signature = readIssuerSignatureBlock(input)
     // TODO: validate signature with hash
     assert("Signature invalid", signature == digest)
-    return Commit(ObjectId(digest), issuer)
+    return Commit(ObjectId(digest), issuer, treeId, treeKey)
   }
 }
