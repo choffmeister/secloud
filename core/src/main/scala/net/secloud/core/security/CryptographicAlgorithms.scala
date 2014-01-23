@@ -1,7 +1,6 @@
 package net.secloud.core.security
 
-import java.io.InputStream
-import java.io.OutputStream
+import java.io.{InputStream, OutputStream, ByteArrayInputStream, ByteArrayOutputStream}
 import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
 import javax.crypto.Cipher
@@ -133,5 +132,47 @@ object CryptographicAlgorithms {
   case object `SHA-2-512` extends `SHA-2` {
     val friendlyName = "SHA-2-512"
     val algorithmName = "SHA-512"
+  }
+}
+
+object CryptographicAlgorithmSerializerConstants {
+  import CryptographicAlgorithms._
+
+  val symmetricEncryptionAlgorithmMap = Map[SymmetricEncryptionAlgorithm, Byte](
+    `AES-128` -> 0x00,
+    `AES-192` -> 0x01,
+    `AES-256` -> 0x02
+  )
+  val symmetricEncryptionAlgorithmMapInverse = symmetricEncryptionAlgorithmMap.map(entry => (entry._2, entry._1))
+
+  val hashAlgorithmMap = Map[HashAlgorithm, Byte](
+    `SHA-1`-> 0x00,
+    `SHA-2-256` -> 0x01,
+    `SHA-2-384` -> 0x02,
+    `SHA-2-512` -> 0x03
+  )
+  val hashAlgorithmMapInverse = hashAlgorithmMap.map(entry => (entry._2, entry._1))
+}
+
+object CryptographicAlgorithmSerializer {
+  import CryptographicAlgorithms._
+  import CryptographicAlgorithmSerializerConstants._
+
+  def writeSymmetricEncryptionParameters(stream: OutputStream, parameters: SymmetricEncryptionParameters) {
+    stream.writeInt8(symmetricEncryptionAlgorithmMap(parameters.algorithm))
+    parameters.algorithm.writeParameters(stream, parameters)
+  }
+
+  def readSymmetricEncryptionParameters(stream: InputStream): SymmetricEncryptionParameters = {
+    val algorithm = symmetricEncryptionAlgorithmMapInverse(stream.readInt8())
+    algorithm.readParameters(stream)
+  }
+
+  def writeHashAlgorithm(stream: OutputStream, hashAlgorithm: HashAlgorithm) {
+    stream.writeInt8(hashAlgorithmMap(hashAlgorithm))
+  }
+
+  def readHashAlgorithm(stream: InputStream): HashAlgorithm = {
+    hashAlgorithmMapInverse(stream.readInt8())
   }
 }
