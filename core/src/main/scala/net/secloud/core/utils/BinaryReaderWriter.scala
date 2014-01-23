@@ -80,6 +80,11 @@ class BinaryWriter(val stream: OutputStream) {
     writeBinary(value.bytes.toArray)
   }
 
+  def writeList[T](value: List[T])(inner: T => Any): Unit = {
+    writeInt7(value.length)
+    value.foreach(item => inner(item))
+  }
+
   def close(): Unit = stream.close()
 
   private def writeToStream(stream: OutputStream, buffer: Array[Byte], offset: Int, length: Int) {
@@ -149,6 +154,10 @@ class BinaryReader(val stream: InputStream) {
 
   def readObjectId(): ObjectId = {
     return ObjectId(readBinary)
+  }
+
+  def readList[T](inner: => T): List[T] = {
+    (1 to readInt7().toInt).map(i => inner).toList
   }
 
   def close(): Unit = stream.close()

@@ -275,5 +275,25 @@ class BinaryReaderWriterSpec extends Specification {
       reader.readObjectId() === ObjectId()
       reader.readObjectId() === ObjectId("ffffffffffffffffffffffff")
     }
+
+    "read and write List" in {
+      val streamWrite = new ByteArrayOutputStream()
+      val writer = new BinaryWriter(streamWrite)
+
+      writer.writeList(List[Int](1,2,3))(item => writer.writeInt32(item))
+      writer.writeList(List[Int]())(item => writer.writeInt32(item))
+      writer.writeList(List[Int](1234,5678,9012345,67890123))(item => writer.writeInt32(item))
+      writer.close()
+
+      val buf = streamWrite.toByteArray()
+      buf.length === 31 // (1+12)+(1+0)+(1+16)
+
+      val streamRead = new ByteArrayInputStream(buf)
+      val reader = new BinaryReader(streamRead)
+
+      reader.readList(reader.readInt32()) === List[Int](1,2,3)
+      reader.readList(reader.readInt32()) === List[Int]()
+      reader.readList(reader.readInt32()) === List[Int](1234,5678,9012345,67890123)
+    }
   }
 }
