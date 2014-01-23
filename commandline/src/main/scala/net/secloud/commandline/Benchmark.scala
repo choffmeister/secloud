@@ -13,13 +13,13 @@ object Benchmark {
   val iterations = 100
   val byteCount = iterations * megaByteData.length
 
-  val symmetricAlgorithms = List(`AES-128`, `AES-192`, `AES-256`)
+  val symmetricAlgorithms = List(NullEncryption, `AES-128`, `AES-192`, `AES-256`)
   val hashAlgorithms = List(`SHA-1`, `SHA-2-256`, `SHA-2-384`, `SHA-2-512`)
 
   def fullBenchmark() {
     for (sa <- symmetricAlgorithms) {
       if (sa.supported) {
-        println(s"${sa.friendlyName} encrypt: ${benchmark(sa, Cipher.ENCRYPT_MODE)} MB/s")
+        println(s"${sa.friendlyName} encrypt: ${benchmark(sa, EncryptMode)} MB/s")
       } else {
         println(s"${sa.friendlyName}: not supported")
       }
@@ -57,12 +57,9 @@ object Benchmark {
     return (toMegaBytesPerSecond(byteCount, runtime1), toMegaBytesPerSecond(byteCount, runtime2))
   }
 
-  def benchmark(algorithm: SymmetricEncryptionAlgorithm, mode: Int): Double = {
-    val key = new SecretKeySpec((1 to algorithm.keySize).map(_.toByte).toArray, algorithm.algorithmName)
-    val iv = new IvParameterSpec((1 to algorithm.blockSize).map(_.toByte).toArray)
-
-    val cipher = Cipher.getInstance(algorithm.fullAlgorithmName)
-    cipher.init(mode, key, iv)
+  def benchmark(algorithm: SymmetricEncryptionAlgorithm, mode: SymmetricEncryptionMode): Double = {
+    val params = algorithm.generateKey()
+    val cipher = algorithm.createCipher(mode, params)
 
     val runtime = benchmark {
       for (i <- 1 to iterations) {

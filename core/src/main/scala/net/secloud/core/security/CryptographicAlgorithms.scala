@@ -4,6 +4,7 @@ import java.io.{InputStream, OutputStream, ByteArrayInputStream, ByteArrayOutput
 import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
 import javax.crypto.Cipher
+import javax.crypto.NullCipher
 import javax.crypto.CipherInputStream
 import javax.crypto.CipherOutputStream
 import javax.crypto.spec.SecretKeySpec
@@ -16,7 +17,11 @@ import java.security.DigestOutputStream
 import java.security.MessageDigest
 
 object CryptographicAlgorithms {
-  case class SymmetricEncryptionParameters(algorithm: SymmetricEncryptionAlgorithm, key: SecretKey, iv: IvParameterSpec)
+  sealed abstract class SymmetricEncryptionMode
+  case object EncryptMode extends SymmetricEncryptionMode
+  case object DecryptMode extends SymmetricEncryptionMode
+
+  case class SymmetricEncryptionParameters(algorithm: SymmetricEncryptionAlgorithm, key: Option[SecretKey], iv: Option[IvParameterSpec])
 
   sealed abstract class SymmetricEncryptionAlgorithm {
     val friendlyName: String
@@ -33,6 +38,16 @@ object CryptographicAlgorithms {
     def supported: Boolean
     def encryptedSize(plainSize: Long): Long
 
+    def createCipher(mode: SymmetricEncryptionMode, params: SymmetricEncryptionParameters): Cipher = {
+      val cipher = Cipher.getInstance(fullAlgorithmName)
+      val mode2 = mode match {
+        case EncryptMode => Cipher.ENCRYPT_MODE
+        case DecryptMode => Cipher.DECRYPT_MODE
+      }
+      cipher.init(mode2, params.key.getOrElse(null), params.iv.getOrElse(null))
+      cipher
+    }
+
     def generateKey(): SymmetricEncryptionParameters = {
       val random = new SecureRandom()
       val keyGen = KeyGenerator.getInstance(algorithmName)
@@ -42,7 +57,7 @@ object CryptographicAlgorithms {
       random.nextBytes(ivBinary)
       val params = new IvParameterSpec(ivBinary)
 
-      SymmetricEncryptionParameters(this, key, params)
+      SymmetricEncryptionParameters(this, Some(key), Some(params))
     }
 
     def readParameters(stream: InputStream): SymmetricEncryptionParameters = {
@@ -51,25 +66,43 @@ object CryptographicAlgorithms {
       val ivBinary = stream.readBinary()
       val params = new IvParameterSpec(ivBinary)
 
-      SymmetricEncryptionParameters(this, key, params)
+      SymmetricEncryptionParameters(this, Some(key), Some(params))
     }
 
     def writeParameters(stream: OutputStream, parameters: SymmetricEncryptionParameters) {
-      stream.writeBinary(parameters.key.getEncoded)
-      stream.writeBinary(parameters.iv.getIV)
+      stream.writeBinary(parameters.key.get.getEncoded)
+      stream.writeBinary(parameters.iv.get.getIV)
     }
 
     def wrapStream(stream: InputStream, parameters: SymmetricEncryptionParameters): CipherInputStream = {
-      val cipher = Cipher.getInstance(fullAlgorithmName);
-      cipher.init(Cipher.DECRYPT_MODE, parameters.key, parameters.iv);
-      new CipherInputStream(stream, cipher);
+      new CipherInputStream(stream, createCipher(DecryptMode, parameters))
     }
 
     def wrapStream(stream: OutputStream, parameters: SymmetricEncryptionParameters): CipherOutputStream = {
-      val cipher = Cipher.getInstance(fullAlgorithmName);
-      cipher.init(Cipher.ENCRYPT_MODE, parameters.key, parameters.iv);
-      new CipherOutputStream(stream, cipher);
+      new CipherOutputStream(stream, createCipher(EncryptMode, parameters))
     }
+  }
+
+  object NullEncryption extends SymmetricEncryptionAlgorithm {
+    val friendlyName = "NULL"
+    val algorithmName = "NULL"
+    val blockModeName = "NULL"
+    val paddingName = "NoPadding"
+    override def fullAlgorithmName: String = "NULL"
+
+    val blockSize = 1
+    val keySize = 0
+
+    def supported = true
+    def encryptedSize(plainSize: Long) = plainSize
+
+    override def createCipher(mode: SymmetricEncryptionMode, params: SymmetricEncryptionParameters): Cipher = new NullCipher()
+
+    override def generateKey(): SymmetricEncryptionParameters = SymmetricEncryptionParameters(this, None, None)
+
+    override def readParameters(stream: InputStream): SymmetricEncryptionParameters = SymmetricEncryptionParameters(this, None, None)
+
+    override def writeParameters(stream: OutputStream, parameters: SymmetricEncryptionParameters) {}
   }
 
   sealed abstract class AES extends SymmetricEncryptionAlgorithm {
@@ -139,9 +172,10 @@ object CryptographicAlgorithmSerializerConstants {
   import CryptographicAlgorithms._
 
   val symmetricEncryptionAlgorithmMap = Map[SymmetricEncryptionAlgorithm, Byte](
-    `AES-128` -> 0x00,
-    `AES-192` -> 0x01,
-    `AES-256` -> 0x02
+    NullEncryption -> 0x00,
+    `AES-128` -> 0x01,
+    `AES-192` -> 0x02,
+    `AES-256` -> 0x03
   )
   val symmetricEncryptionAlgorithmMapInverse = symmetricEncryptionAlgorithmMap.map(entry => (entry._2, entry._1))
 
