@@ -1,9 +1,5 @@
 package net.secloud.core
 
-import java.security.MessageDigest
-import javax.crypto.spec.SecretKeySpec
-import javax.crypto.spec.IvParameterSpec
-import javax.crypto.Cipher
 import net.secloud.core.security.CryptographicAlgorithms._
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
 import com.jcraft.jzlib.{GZIPInputStream, GZIPOutputStream}
@@ -17,27 +13,35 @@ object Benchmark {
   val hashAlgorithms = List(`SHA-1`, `SHA-2-256`, `SHA-2-384`, `SHA-2-512`)
 
   def fullBenchmark() {
+    val format = "%-15s %7.1f MB/s (%s)"
+    val format2 = "%-15s              (unsupported)"
+
     for (sa <- symmetricAlgorithms) {
       if (sa.supported) {
-        println(s"${sa.friendlyName} encrypt: ${benchmark(sa, EncryptMode)} MB/s")
+        val res = benchmark(sa)
+        println(format.format(sa.friendlyName, res._1, "encrypt"))
+        println(format.format(sa.friendlyName, res._2, "decrypt"))
       } else {
-        println(s"${sa.friendlyName}: not supported")
+        println(format2.format(sa.friendlyName))
       }
     }
 
     for (ha <- hashAlgorithms) {
-      println(s"${ha.friendlyName} hash: ${benchmark(ha)} MB/s")
+      val res = benchmark(ha)
+      println(format.format(ha.friendlyName, res, "hash"))
     }
 
-    val gzip = benchmarkGZIP()
-    println(s"GZip compress: ${gzip._1} MB/s")
-    println(s"GZip decompress: ${gzip._2} MB/s")
+    {
+      val res = benchmarkGZIP()
+      println(format.format("GZip", res._1, "compress"))
+      println(format.format("GZip", res._2, "decompress"))
+    }
   }
 
   def benchmarkGZIP(): (Double, Double) = {
     val buf = new Array[Byte](8192)
 
-    val ba1 = new ByteArrayOutputStream()
+    val ba1 = new ByteArrayOutputStream(byteCount + 100)
     val gzip1 = new GZIPOutputStream(ba1)
     val runtime1 = benchmark {
       for (i <- 1 to iterations) {
@@ -57,28 +61,39 @@ object Benchmark {
     return (toMegaBytesPerSecond(byteCount, runtime1), toMegaBytesPerSecond(byteCount, runtime2))
   }
 
-  def benchmark(algorithm: SymmetricEncryptionAlgorithm, mode: SymmetricEncryptionMode): Double = {
+  def benchmark(algorithm: SymmetricEncryptionAlgorithm): (Double, Double) = {
+    val buf = new Array[Byte](8192)
     val params = algorithm.generateKey()
-    val cipher = algorithm.createCipher(mode, params)
 
-    val runtime = benchmark {
+    val ba1 = new ByteArrayOutputStream(byteCount + 100)
+    val cs1 = algorithm.wrapStream(ba1, params)
+    val runtime1 = benchmark {
       for (i <- 1 to iterations) {
-        cipher.update(megaByteData)
+        cs1.write(megaByteData)
       }
-      cipher.doFinal()
+      cs1.flush()
+      cs1.close()
     }
 
-    return toMegaBytesPerSecond(byteCount, runtime)
+    val ba2 = new ByteArrayInputStream(ba1.toByteArray)
+    val cs2 = algorithm.wrapStream(ba2, params)
+    val runtime2 = benchmark {
+      while (cs2.read(buf, 0, 8192) >= 0) {}
+      cs2.close()
+    }
+
+    return (toMegaBytesPerSecond(byteCount, runtime1), toMegaBytesPerSecond(byteCount, runtime2))
   }
 
   def benchmark(algorithm: HashAlgorithm): Double = {
-    val digest = MessageDigest.getInstance(algorithm.algorithmName)
-
+    val ba = new ByteArrayOutputStream(byteCount + 100)
+    val hs = algorithm.wrapStream(ba)
     val runtime = benchmark {
       for (i <- 1 to iterations) {
-        digest.update(megaByteData)
+        hs.write(megaByteData)
       }
-      digest.digest()
+      hs.flush()
+      hs.close()
     }
 
     return toMegaBytesPerSecond(byteCount, runtime)
