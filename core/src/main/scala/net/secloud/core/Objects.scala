@@ -25,8 +25,14 @@ case class Blob(
   val objectType = BlobObjectType
 }
 
+abstract class TreeEntryMode
+case object NonExecutableFileTreeEntryMode extends TreeEntryMode
+case object ExecutableFileTreeEntryMode extends TreeEntryMode
+case object DirectoryTreeEntryMode extends TreeEntryMode
+
 case class TreeEntry(
   id: ObjectId,
+  mode: TreeEntryMode,
   name: String,
   key: SymmetricEncryptionParameters
 )
@@ -103,8 +109,9 @@ object Tree {
     writeIssuerIdentityBlock(ds, tree.issuer)
 
     writePublicBlock(ds) { bs =>
-      bs.writeList(tree.entries) {
-        e => bs.writeObjectId(e.id)
+      bs.writeList(tree.entries) { e =>
+        bs.writeObjectId(e.id)
+        bs.writeInt8(treeEntryModeMap(e.mode))
       }
     }
 
@@ -128,11 +135,13 @@ object Tree {
     assert("Expected tree", objectType == TreeObjectType)
     val issuer = readIssuerIdentityBlock(ds)
 
-    val entryIds = readPublicBlock(ds) { bs =>
-      val entryIds = bs.readList() {
-        bs.readObjectId()
+    val entryIdsAndModes = readPublicBlock(ds) { bs =>
+      val entryIdsAndModes = bs.readList() {
+        val id = bs.readObjectId()
+        val mode = treeEntryModeMapInverse(bs.readInt8())
+        (id, mode)
       }
-      entryIds
+      entryIdsAndModes
     }
 
     val entryNamesAndKey = readPrivateBlock(ds, dec) { bs =>
@@ -142,7 +151,8 @@ object Tree {
       entryNamesAndKey
     }
 
-    val entries = entryIds.zip(entryNamesAndKey).map(e => TreeEntry(e._1, e._2._1, e._2._2))
+    val entries = entryIdsAndModes.zip(entryNamesAndKey)
+      .map(e => TreeEntry(e._1._1, e._1._2, e._2._1, e._2._2))
     val digest = ds.getMessageDigest().digest.toSeq
     val signature = readIssuerSignatureBlock(input)
     // TODO: validate signature with hash
