@@ -4,7 +4,8 @@ import org.specs2.mutable._
 import org.junit.runner.RunWith
 import org.specs2.runner.JUnitRunner
 import java.util.UUID
-import java.io.{File, FileOutputStream}
+import java.io.{InputStream, OutputStream}
+import java.io.{File, FileInputStream, FileOutputStream}
 import net.secloud.core.objects._
 
 @RunWith(classOf[JUnitRunner])
@@ -35,6 +36,17 @@ class RepositoryWorkingDirSpec extends Specification {
         WorkingDirElement("/second/second-1/e.txt", List("second", "second-1", "e.txt"), "e.txt", NonExecutableFileElementMode)
       )
     }
+
+    "read and write files" in {
+      val base = getTempDir
+      build(base)
+      val wd = new DirectoryRepositoryWorkingDir(base)
+
+      wd.read("/a.txt")(s => read(s) === "Hello World a")
+      wd.read("/second/second-1/e.txt")(s => read(s) === "Hello World e")
+      wd.write("/new.txt")(s => write(s, "NEW.TXT"))
+      wd.read("/new.txt")(s => read(s) === "NEW.TXT")
+    }
   }
 
   def build(base: File) {
@@ -58,8 +70,16 @@ class RepositoryWorkingDirSpec extends Specification {
   def put(base: File, path: List[String], content: String) {
     val file = new File(base, path.mkString(File.separator))
     val stream = new FileOutputStream(file)
-    val buffer = content.getBytes("UTF-8")
-    stream.write(buffer, 0, buffer.length)
+    write(stream, content)
     stream.close()
+  }
+
+  def write(s: OutputStream, content: String): Unit = {
+    val buffer = content.getBytes("ASCII")
+    s.write(buffer, 0, buffer.length)
+  }
+
+  def read(s: InputStream): String = {
+    scala.io.Source.fromInputStream(s).mkString("")
   }
 }
