@@ -7,7 +7,7 @@ import net.secloud.core.security.CryptographicAlgorithmSerializer._
 
 case class RepositoryConfig(val workingDir: File, val issuer: Issuer)
 
-class Repository(val config: RepositoryConfig, val database: ObjectDatabase) {
+class Repository(val config: RepositoryConfig, val database: RepositoryDatabase) {
   val algo = `AES-128`
 
   def init() {
@@ -46,7 +46,7 @@ class Repository(val config: RepositoryConfig, val database: ObjectDatabase) {
     (headId, headKey)
   }
 
-  private def iterateFiles(database: ObjectDatabase, issuer: Issuer, file: File): TreeEntry = {
+  private def iterateFiles(database: RepositoryDatabase, issuer: Issuer, file: File): TreeEntry = {
     if (file.isDirectory) {
       println(file.getAbsolutePath)
 
@@ -73,9 +73,9 @@ class Repository(val config: RepositoryConfig, val database: ObjectDatabase) {
 }
 
 object Repository {
-  def apply(config: RepositoryConfig, database: ObjectDatabase): Repository =
+  def apply(config: RepositoryConfig, database: RepositoryDatabase): Repository =
     new Repository(config, database)
 
   def apply(config: RepositoryConfig): Repository =
-    new Repository(config, new DirectoryObjectDatabase(new File(config.workingDir, ".secloud")))
+    new Repository(config, new DirectoryRepositoryDatabase(new File(config.workingDir, ".secloud")))
 }

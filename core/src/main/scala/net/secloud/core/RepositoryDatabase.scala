@@ -9,7 +9,7 @@ import java.io.FileOutputStream
 import java.io.BufferedInputStream
 import java.io.BufferedOutputStream
 
-trait ObjectDatabase {
+trait RepositoryDatabase {
   def init(): Unit
 
   def createReader(): ObjectReader
@@ -52,7 +52,7 @@ trait ObjectWriter {
   def stream: OutputStream
 }
 
-class DirectoryObjectDatabase(val base: File) extends ObjectDatabase {
+class DirectoryRepositoryDatabase(val base: File) extends RepositoryDatabase {
   def this(base: String) = this(new File(base))
 
   def init() {
@@ -101,12 +101,12 @@ class DirectoryObjectDatabase(val base: File) extends ObjectDatabase {
     case Nil => base
   }
 
-  class DirectoryObjectReader(val odb: DirectoryObjectDatabase) extends ObjectReader {
+  class DirectoryObjectReader(val rdb: DirectoryRepositoryDatabase) extends ObjectReader {
     private var innerStream: Option[InputStream] = None
 
     def open(id: ObjectId) = innerStream match {
       case Some(s) => throw new Exception("Cannot open read stream twice")
-      case _ => innerStream = Some(new BufferedInputStream(new FileInputStream(odb.pathFromId(id)), 8192))
+      case _ => innerStream = Some(new BufferedInputStream(new FileInputStream(rdb.pathFromId(id)), 8192))
     }
 
     def close() = {
@@ -122,23 +122,23 @@ class DirectoryObjectDatabase(val base: File) extends ObjectDatabase {
     }
   }
 
-  class DirectoryObjectWriter(val odb: DirectoryObjectDatabase) extends ObjectWriter {
+  class DirectoryObjectWriter(val rdb: DirectoryRepositoryDatabase) extends ObjectWriter {
     private var innerStream: Option[OutputStream] = None
     private var tempPath: Option[File] = None
 
     def open() = innerStream match {
       case Some(s) => throw new Exception("Cannot open write stream twice")
       case _ =>
-        tempPath = Some(odb.createTempFile())
+        tempPath = Some(rdb.createTempFile())
         innerStream = Some(new BufferedOutputStream(new FileOutputStream(tempPath.get), 8192))
     }
 
     def close(id: ObjectId) = {
       close()
 
-      ensureDirectory(odb.directoryFromId(id))
+      ensureDirectory(rdb.directoryFromId(id))
 
-      if (!tempPath.get.renameTo(odb.pathFromId(id))) {
+      if (!tempPath.get.renameTo(rdb.pathFromId(id))) {
         throw new Exception("Moving file to final position failed")
       }
 
