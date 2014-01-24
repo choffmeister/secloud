@@ -25,11 +25,6 @@ object ObjectSerializerConstants {
   )
   val blockTypeMapInverse = blockTypeMap.map(entry => (entry._2, entry._1))
 
-  sealed abstract class ObjectType
-  case object BlobObjectType extends ObjectType
-  case object TreeObjectType extends ObjectType
-  case object CommitObjectType extends ObjectType
-
   val objectTypeMap = Map[ObjectType, Byte](
     BlobObjectType -> 0x00,
     TreeObjectType -> 0x01,
