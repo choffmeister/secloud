@@ -1,4 +1,4 @@
-package net.secloud.core
+package net.secloud.core.objects
 
 import org.junit.runner.RunWith
 import org.specs2.mutable._
@@ -21,10 +21,10 @@ class ObjectSerializerSpec extends Specification {
       val content1 = new ByteArrayInputStream(content.getBytes("ASCII"))
       val blob1 = Blob(ObjectId.empty, Issuer(Array[Byte](0, 1, -2, -1), "owner"))
       val intermediate1 = new ByteArrayOutputStream()
-      Blob.write(intermediate1, blob1, content1, key)
+      BlobSerializer.write(intermediate1, blob1, content1, key)
       val intermediate2 = new ByteArrayInputStream(intermediate1.toByteArray)
       val content2 = new ByteArrayOutputStream()
-      val blob2 = Blob.read(intermediate2, content2, key)
+      val blob2 = BlobSerializer.read(intermediate2, content2, key)
 
       blob1.issuer === blob2.issuer
       new String(content2.toByteArray, "ASCII") === content
@@ -39,9 +39,9 @@ class ObjectSerializerSpec extends Specification {
         TreeEntry(ObjectId("00"), DirectoryTreeEntryMode, "test3", NullEncryption.generateKey())
       ))
       val intermediate1 = new ByteArrayOutputStream()
-      Tree.write(intermediate1, tree1, key)
+      TreeSerializer.write(intermediate1, tree1, key)
       val intermediate2 = new ByteArrayInputStream(intermediate1.toByteArray)
-      val tree2 = Tree.read(intermediate2, key)
+      val tree2 = TreeSerializer.read(intermediate2, key)
 
       tree1.issuer === tree2.issuer
       tree1.entries.map(e => (e.id, e.name)) === tree2.entries.map(e => (e.id, e.name))
@@ -53,9 +53,9 @@ class ObjectSerializerSpec extends Specification {
 
       val commit1 = Commit(ObjectId.empty, Issuer(Array[Byte](0, 1, -2, -1), "owner"), List(ObjectId(), ObjectId("00aaff")), ObjectId("0011feff"), `AES-128`.generateKey())
       val intermediate1 = new ByteArrayOutputStream()
-      Commit.write(intermediate1, commit1, key)
+      CommitSerializer.write(intermediate1, commit1, key)
       val intermediate2 = new ByteArrayInputStream(intermediate1.toByteArray)
-      val commit2 = Commit.read(intermediate2, key)
+      val commit2 = CommitSerializer.read(intermediate2, key)
 
       commit1.issuer === commit2.issuer
       commit1.parentIds === commit2.parentIds

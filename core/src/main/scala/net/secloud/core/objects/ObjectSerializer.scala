@@ -1,66 +1,16 @@
-package net.secloud.core
+package net.secloud.core.objects
 
 import java.io.InputStream
 import java.io.OutputStream
-import net.secloud.core.ObjectSerializer._
+import net.secloud.core.objects.ObjectSerializerConstants._
+import net.secloud.core.objects.ObjectSerializerCommons._
 import net.secloud.core.security.CryptographicAlgorithms._
 import net.secloud.core.security.CryptographicAlgorithmSerializer._
 import net.secloud.core.utils.RichStream._
 import net.secloud.core.utils.BinaryReaderWriter._
-import net.secloud.core.ObjectSerializerConstants._
 import com.jcraft.jzlib.{GZIPInputStream, GZIPOutputStream}
 
-sealed abstract class ObjectType
-case object BlobObjectType extends ObjectType
-case object TreeObjectType extends ObjectType
-case object CommitObjectType extends ObjectType
-
-case class Issuer(id: Seq[Byte], name: String)
-
-sealed abstract class BaseObject {
-  val id: ObjectId
-  val issuer: Issuer
-  val objectType: ObjectType
-}
-
-case class Blob(
-  id: ObjectId,
-  issuer: Issuer
-) extends BaseObject {
-  val objectType = BlobObjectType
-}
-
-sealed abstract class TreeEntryMode
-case object NonExecutableFileTreeEntryMode extends TreeEntryMode
-case object ExecutableFileTreeEntryMode extends TreeEntryMode
-case object DirectoryTreeEntryMode extends TreeEntryMode
-
-case class TreeEntry(
-  id: ObjectId,
-  mode: TreeEntryMode,
-  name: String,
-  key: SymmetricEncryptionParameters
-)
-
-case class Tree(
-  id: ObjectId,
-  issuer: Issuer,
-  entries: List[TreeEntry]
-) extends BaseObject {
-  val objectType = TreeObjectType
-}
-
-case class Commit(
-  id: ObjectId,
-  issuer: Issuer,
-  parentIds: List[ObjectId],
-  treeId: ObjectId,
-  treeKey: SymmetricEncryptionParameters
-) extends BaseObject {
-  val objectType = CommitObjectType
-}
-
-object Blob {
+private[objects] object BlobSerializer {
   def write(output: OutputStream, blob: Blob, content: InputStream, enc: SymmetricEncryptionParameters): Blob = {
     val ds = `SHA-2-256`.wrapStream(output)
     writeHeader(ds, blob.objectType)
@@ -70,10 +20,9 @@ object Blob {
     }
 
     writePrivateBlock(ds, enc) { bs =>
-      val gzip = new GZIPOutputStream(bs)
-      content.pipeTo(gzip)
-      gzip.flush()
-      gzip.close()
+      writeCompressed(bs) { cs =>
+        content.pipeTo(cs)
+      }
     }
 
     ds.flush()
@@ -94,9 +43,9 @@ object Blob {
     }
 
     readPrivateBlock(ds, dec) { bs =>
-      val gzip = new GZIPInputStream(bs)
-      gzip.pipeTo(content)
-      gzip.close()
+      readCompressed(bs) { cs =>
+        cs.pipeTo(content)
+      }
     }
 
     val digest = ds.getMessageDigest.digest.toSeq
@@ -107,7 +56,7 @@ object Blob {
   }
 }
 
-object Tree {
+private[objects] object TreeSerializer {
   def write(output: OutputStream, tree: Tree, enc: SymmetricEncryptionParameters): Tree = {
     val ds = `SHA-2-256`.wrapStream(output)
     writeHeader(ds, tree.objectType)
@@ -166,7 +115,7 @@ object Tree {
   }
 }
 
-object Commit {
+private[objects] object CommitSerializer {
   def write(output: OutputStream, commit: Commit, enc: SymmetricEncryptionParameters): Commit = {
     val ds = `SHA-2-256`.wrapStream(output)
     writeHeader(ds, commit.objectType)

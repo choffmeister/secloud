@@ -8,6 +8,7 @@ import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.BufferedInputStream
 import java.io.BufferedOutputStream
+import net.secloud.core.objects._
 
 trait RepositoryDatabase {
   def init(): Unit

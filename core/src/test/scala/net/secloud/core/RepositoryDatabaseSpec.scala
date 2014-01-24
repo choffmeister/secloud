@@ -5,6 +5,7 @@ import org.junit.runner.RunWith
 import org.specs2.runner.JUnitRunner
 import java.util.UUID
 import java.io.File
+import net.secloud.core.objects._
 
 @RunWith(classOf[JUnitRunner])
 class RepositoryDatabaseSpec extends Specification {

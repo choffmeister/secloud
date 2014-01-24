@@ -5,6 +5,7 @@ import java.io.FileInputStream
 import java.util.Date
 import org.rogach.scallop._
 import net.secloud.core._
+import net.secloud.core.objects._
 
 object Application {
   def main(args: Array[String]): Unit = {

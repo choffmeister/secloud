@@ -1,4 +1,4 @@
-package net.secloud.core
+package net.secloud.core.objects
 
 import java.io.OutputStream
 import java.io.InputStream
@@ -7,44 +7,13 @@ import java.io.ByteArrayInputStream
 import net.secloud.core.utils._
 import net.secloud.core.utils.BlockStream._
 import net.secloud.core.utils.BinaryReaderWriter._
-
-object ObjectSerializerConstants {
-  val MagicBytes = 0x12345678
-
-  sealed abstract class BlockType
-  case object IssuerIdentityBlockType extends BlockType
-  case object IssuerSignatureBlockType extends BlockType
-  case object PublicBlockType extends BlockType
-  case object PrivateBlockType extends BlockType
-
-  val blockTypeMap = Map[BlockType, Byte](
-    IssuerIdentityBlockType -> 0x00,
-    IssuerSignatureBlockType -> 0x01,
-    PublicBlockType -> 0x02,
-    PrivateBlockType -> 0x03
-  )
-  val blockTypeMapInverse = blockTypeMap.map(entry => (entry._2, entry._1))
-
-  val objectTypeMap = Map[ObjectType, Byte](
-    BlobObjectType -> 0x00,
-    TreeObjectType -> 0x01,
-    CommitObjectType -> 0x02
-  )
-  val objectTypeMapInverse = objectTypeMap.map(entry => (entry._2, entry._1))
-
-  val treeEntryModeMap = Map[TreeEntryMode, Byte](
-    NonExecutableFileTreeEntryMode -> 0x00,
-    ExecutableFileTreeEntryMode -> 0x01,
-    DirectoryTreeEntryMode -> 0x10
-  )
-  val treeEntryModeMapInverse = treeEntryModeMap.map(entry => (entry._2, entry._1))
-}
+import com.jcraft.jzlib.{GZIPInputStream, GZIPOutputStream}
 
 class ObjectSerializationException(msg: String) extends Exception(msg)
 
-object ObjectSerializer {
+private[objects] object ObjectSerializerCommons {
   import ObjectSerializerConstants._
-  import security.CryptographicAlgorithms._
+  import net.secloud.core.security.CryptographicAlgorithms._
 
   def readHeader(stream: InputStream): ObjectType = {
     val magicBytes = stream.readInt32()
@@ -128,6 +97,25 @@ object ObjectSerializer {
     val blockStream = new BlockOutputStream(stream, ownsInner = false)
     inner(blockStream)
     blockStream.close()
+  }
+
+  def readCompressed[T](stream: InputStream)(inner: InputStream => T): T = {
+    val gzip = new GZIPInputStream(stream)
+    try {
+      inner(gzip)
+    } finally {
+      gzip.close()
+    }
+  }
+
+  def writeCompressed(stream: OutputStream)(inner: OutputStream => Any) {
+    val gzip = new GZIPOutputStream(stream)
+    try {
+      inner(gzip)
+      gzip.flush()
+    } finally {
+      gzip.close()
+    }
   }
 
   def assert(errorMessage: String, cond: Boolean): Unit = assert(errorMessage)(cond == true)

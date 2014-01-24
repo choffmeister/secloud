@@ -4,6 +4,7 @@ import java.io.{File, FileInputStream, FileOutputStream}
 import net.secloud.core.utils.BinaryReaderWriter._
 import net.secloud.core.security.CryptographicAlgorithms._
 import net.secloud.core.security.CryptographicAlgorithmSerializer._
+import net.secloud.core.objects._
 
 case class RepositoryConfig(val workingDir: File, val issuer: Issuer)
 
@@ -18,7 +19,7 @@ class Repository(val config: RepositoryConfig, val database: RepositoryDatabase)
     val rootTreeEntry = iterateFiles(database, config.issuer, config.workingDir)
     val headKey = algo.generateKey()
     val commit = Commit(ObjectId.empty, config.issuer, Nil, rootTreeEntry.id, rootTreeEntry.key)
-    val headId = database.write(s => Commit.write(s, commit, headKey).id)
+    val headId = database.write(s => writeCommit(s, commit, headKey).id)
 
     saveHead(headId, headKey)
     println(headId)
@@ -56,7 +57,7 @@ class Repository(val config: RepositoryConfig, val database: RepositoryDatabase)
         .toList
       val key = algo.generateKey()
       val tree = Tree(ObjectId.empty, issuer, entries)
-      val oid = database.write(s => Tree.write(s, tree, key).id)
+      val oid = database.write(s => writeTree(s, tree, key).id)
 
       TreeEntry(oid, DirectoryTreeEntryMode, file.getName, key)
     } else {
@@ -65,7 +66,7 @@ class Repository(val config: RepositoryConfig, val database: RepositoryDatabase)
       val fileStream = new FileInputStream(file)
       val key = algo.generateKey()
       val blob = Blob(ObjectId.empty, issuer)
-      val oid = database.write(s => Blob.write(s, blob, fileStream, key).id)
+      val oid = database.write(s => writeBlob(s, blob, fileStream, key).id)
 
       TreeEntry(oid, NonExecutableFileTreeEntryMode, file.getName, key)
     }
