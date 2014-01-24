@@ -22,21 +22,16 @@ object Application {
 
   def execute(env: Environment, cli: CommandLineInterface): Unit = {
     val issuer = Issuer(Array[Byte](0, 1, -2, -1), "owner")
-    val config = RepositoryConfig(env.currentDirectory, issuer)
+    val config = RepositoryConfig(issuer)
+    val repo = Repository(env.currentDirectory, config)
 
     cli.subcommand match {
       case Some(cli.init) =>
-        val repo = Repository(config)
         repo.init()
         println("init")
       case Some(cli.commit) =>
-        val repo = Repository(config)
         repo.commit()
         println("commit")
-      case Some(cli.list) =>
-        val repo = Repository(config)
-        repo.list()
-        println("list")
       case Some(cli.environment) =>
         println(s"Current directory: ${env.currentDirectory}")
         println(s"Home directory ${env.userDirectory}")
@@ -53,7 +48,6 @@ object Application {
 
     val init = new Subcommand("init")
     val commit = new Subcommand("commit")
-    val list = new Subcommand("list")
     val environment = new Subcommand("environment")
     val benchmark = new Subcommand("benchmark")
   }

@@ -30,6 +30,8 @@ object WorkingDirElement {
 }
 
 trait RepositoryWorkingDir {
+  def init(): Unit
+
   def createReader(): WorkingDirElementReader
   def createWriter(): WorkingDirElementWriter
 
@@ -76,8 +78,10 @@ trait WorkingDirElementWriter {
 class DirectoryRepositoryWorkingDir(val base: File) extends RepositoryWorkingDir {
   def this(base: String) = this(new File(base))
 
+  def init(): Unit = base.mkdirs()
+
   def createReader(): WorkingDirElementReader = new DirectoryWorkingDirElementReader(this)
-  def createWriter():WorkingDirElementWriter = new DirectoryWorkingDirElementWriter(this)
+  def createWriter(): WorkingDirElementWriter = new DirectoryWorkingDirElementWriter(this)
 
   def list(element: WorkingDirElement): List[WorkingDirElement] = {
     elementToFile(element).listFiles.toList

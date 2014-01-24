@@ -6,77 +6,58 @@ import net.secloud.core.security.CryptographicAlgorithms._
 import net.secloud.core.security.CryptographicAlgorithmSerializer._
 import net.secloud.core.objects._
 
-case class RepositoryConfig(val workingDir: File, val issuer: Issuer)
+case class RepositoryConfig(val issuer: Issuer)
 
-class Repository(val config: RepositoryConfig, val database: RepositoryDatabase) {
-  val algo = `AES-128`
-
+class Repository(val workingDir: RepositoryWorkingDir, val database: RepositoryDatabase, val config: RepositoryConfig) {
   def init() {
+    workingDir.init()
     database.init()
   }
 
   def commit() {
-    val rootTreeEntry = iterateFiles(database, config.issuer, config.workingDir).copy(name = "")
-    val headKey = algo.generateKey()
+    val rootTreeEntry = iterateFiles("/").copy(name = "")
+    val headKey = generateKey()
     val commit = Commit(ObjectId.empty, config.issuer, Nil, rootTreeEntry)
     val headId = database.write(s => writeCommit(s, commit, headKey).id)
 
-    saveHead(headId, headKey)
     println(headId)
   }
 
-  def list() {
-    val (headId, headKey) = loadHead()
-    println(headId)
-  }
+  private def iterateFiles(path: String): TreeEntry = {
+    val element = workingDir.pathToElement(path)
 
-  def saveHead(headId: ObjectId, headKey: SymmetricEncryptionParameters) {
-    val headFile = new File(new File(config.workingDir, ".secloud"), "HEAD")
-    val headStream = new FileOutputStream(headFile)
-    headStream.writeObjectId(headId)
-    writeSymmetricEncryptionParameters(headStream, headKey)
-    headStream.close()
-  }
+    element.mode match {
+      case DirectoryElementMode =>
+        val entries = workingDir.list(element)
+          .filter(e => !e.name.startsWith(".") && e.name != "target")
+          .map(e => iterateFiles(e.path))
+          .toList
+        val key = generateKey()
+        val tree = Tree(ObjectId.empty, config.issuer, entries)
+        val oid = database.write(s => writeTree(s, tree, key).id)
 
-  def loadHead(): (ObjectId, SymmetricEncryptionParameters) = {
-    val headFile = new File(new File(config.workingDir, ".secloud"), "HEAD")
-    val headStream = new FileInputStream(headFile)
-    val headId = headStream.readObjectId()
-    val headKey = readSymmetricEncryptionParameters(headStream)
-    headStream.close()
-    (headId, headKey)
-  }
+        TreeEntry(oid, DirectoryTreeEntryMode, element.name, key)
+      case NonExecutableFileElementMode =>
+        val key = generateKey()
+        val blob = Blob(ObjectId.empty, config.issuer)
+        val oid = database.write { s1 =>
+          workingDir.read(element) { s2 =>
+            writeBlob(s1, blob, s2, key).id
+          }
+        }
 
-  private def iterateFiles(database: RepositoryDatabase, issuer: Issuer, file: File): TreeEntry = {
-    if (file.isDirectory) {
-      println(file.getAbsolutePath)
-
-      val entries = file.listFiles
-        .filter(f => !f.getName.startsWith(".") && f.getName != "target")
-        .map(f => iterateFiles(database, issuer, f))
-        .toList
-      val key = algo.generateKey()
-      val tree = Tree(ObjectId.empty, issuer, entries)
-      val oid = database.write(s => writeTree(s, tree, key).id)
-
-      TreeEntry(oid, DirectoryTreeEntryMode, file.getName, key)
-    } else {
-      println(file.getAbsolutePath)
-
-      val fileStream = new FileInputStream(file)
-      val key = algo.generateKey()
-      val blob = Blob(ObjectId.empty, issuer)
-      val oid = database.write(s => writeBlob(s, blob, fileStream, key).id)
-
-      TreeEntry(oid, NonExecutableFileTreeEntryMode, file.getName, key)
+        TreeEntry(oid, NonExecutableFileTreeEntryMode, element.name, key)
+      case _ => throw new Exception(element.toString)
     }
   }
+
+  private def generateKey() = `AES-128`.generateKey()
 }
 
 object Repository {
-  def apply(config: RepositoryConfig, database: RepositoryDatabase): Repository =
-    new Repository(config, database)
+  def apply(workingDir: RepositoryWorkingDir, database: RepositoryDatabase, config: RepositoryConfig): Repository =
+    new Repository(workingDir, database, config)
 
-  def apply(config: RepositoryConfig): Repository =
-    new Repository(config, new DirectoryRepositoryDatabase(new File(config.workingDir, ".secloud")))
+  def apply(dir: File, config: RepositoryConfig): Repository =
+    new Repository(new DirectoryRepositoryWorkingDir(dir), new DirectoryRepositoryDatabase(new File(dir, ".secloud")), config)
 }
