@@ -1,140 +1,167 @@
 package net.secloud.core.objects
 
-import java.io.OutputStream
 import java.io.InputStream
-import java.io.ByteArrayOutputStream
-import java.io.ByteArrayInputStream
-import net.secloud.core.utils._
-import net.secloud.core.utils.BlockStream._
+import java.io.OutputStream
+import net.secloud.core.objects.ObjectSerializerConstants._
+import net.secloud.core.objects.ObjectSerializerCommons._
+import net.secloud.core.security.CryptographicAlgorithms._
+import net.secloud.core.security.CryptographicAlgorithmSerializer._
+import net.secloud.core.utils.RichStream._
 import net.secloud.core.utils.BinaryReaderWriter._
+import com.jcraft.jzlib.{GZIPInputStream, GZIPOutputStream}
 
-object ObjectSerializerConstants {
-  val MagicBytes = 0x12345678
+private[objects] object BlobSerializer {
+  def write(output: OutputStream, blob: Blob, content: InputStream, enc: SymmetricEncryptionParameters): Blob = {
+    val ds = `SHA-2-256`.wrapStream(output)
+    writeHeader(ds, blob.objectType)
+    writeIssuerIdentityBlock(ds, blob.issuer)
 
-  sealed abstract class BlockType
-  case object IssuerIdentityBlockType extends BlockType
-  case object IssuerSignatureBlockType extends BlockType
-  case object PublicBlockType extends BlockType
-  case object PrivateBlockType extends BlockType
+    writePublicBlock(ds) { bs =>
+    }
 
-  val blockTypeMap = Map[BlockType, Byte](
-    IssuerIdentityBlockType -> 0x00,
-    IssuerSignatureBlockType -> 0x01,
-    PublicBlockType -> 0x02,
-    PrivateBlockType -> 0x03
-  )
-  val blockTypeMapInverse = blockTypeMap.map(entry => (entry._2, entry._1))
+    writePrivateBlock(ds, enc) { bs =>
+      writeCompressed(bs) { cs =>
+        content.pipeTo(cs)
+      }
+    }
 
-  val objectTypeMap = Map[ObjectType, Byte](
-    BlobObjectType -> 0x00,
-    TreeObjectType -> 0x01,
-    CommitObjectType -> 0x02
-  )
-  val objectTypeMapInverse = objectTypeMap.map(entry => (entry._2, entry._1))
+    ds.flush()
+    val digest = ds.getMessageDigest().digest.toSeq
+    // TODO: sign hash
+    writeIssuerSignatureBlock(output, digest)
+    output.flush()
+    return blob.copy(id = ObjectId(digest))
+  }
 
-  val treeEntryModeMap = Map[TreeEntryMode, Byte](
-    NonExecutableFileTreeEntryMode -> 0x00,
-    ExecutableFileTreeEntryMode -> 0x01,
-    DirectoryTreeEntryMode -> 0x10
-  )
-  val treeEntryModeMapInverse = treeEntryModeMap.map(entry => (entry._2, entry._1))
+  def read(input: InputStream, content: OutputStream, dec: SymmetricEncryptionParameters): Blob = {
+    val ds = `SHA-2-256`.wrapStream(input)
+    val objectType = readHeader(ds)
+    assert("Expected blob", objectType == BlobObjectType)
+    val issuer = readIssuerIdentityBlock(ds)
+
+    readPublicBlock(ds) { bs =>
+    }
+
+    readPrivateBlock(ds, dec) { bs =>
+      readCompressed(bs) { cs =>
+        cs.pipeTo(content)
+      }
+    }
+
+    val digest = ds.getMessageDigest.digest.toSeq
+    val signature = readIssuerSignatureBlock(input)
+    // TODO: validate signature with hash
+    assert("Signature invalid", signature == digest)
+    return Blob(ObjectId(digest), issuer)
+  }
 }
 
-class ObjectSerializationException(msg: String) extends Exception(msg)
+private[objects] object TreeSerializer {
+  def write(output: OutputStream, tree: Tree, enc: SymmetricEncryptionParameters): Tree = {
+    val ds = `SHA-2-256`.wrapStream(output)
+    writeHeader(ds, tree.objectType)
+    writeIssuerIdentityBlock(ds, tree.issuer)
 
-object ObjectSerializer {
-  import ObjectSerializerConstants._
-  import net.secloud.core.security.CryptographicAlgorithms._
-
-  def readHeader(stream: InputStream): ObjectType = {
-    val magicBytes = stream.readInt32()
-    assert("Invalid magic bytes", magicBytes == MagicBytes)
-    objectTypeMapInverse(stream.readInt8())
-  }
-
-  def writeHeader(stream: OutputStream, objectType: ObjectType) {
-    stream.writeInt32(MagicBytes)
-    stream.writeInt8(objectTypeMap(objectType))
-  }
-
-  def readIssuerIdentityBlock(stream: InputStream): Issuer = {
-    readBlock(stream, IssuerIdentityBlockType) { bs =>
-      val id = bs.readBinary()
-      val name = bs.readString()
-      Issuer(id, name)
+    writePublicBlock(ds) { bs =>
+      bs.writeList(tree.entries) { e =>
+        bs.writeObjectId(e.id)
+        bs.writeInt8(treeEntryModeMap(e.mode))
+      }
     }
-  }
 
-  def writeIssuerIdentityBlock(stream: OutputStream, issuer: Issuer) {
-    writeBlock(stream, IssuerIdentityBlockType) { bs =>
-      bs.writeBinary(issuer.id)
-      bs.writeString(issuer.name)
+    writePrivateBlock(ds, enc) { bs =>
+      bs.writeList(tree.entries) { e =>
+        bs.writeString(e.name)
+        writeSymmetricEncryptionParameters(bs, e.key)
+      }
     }
+
+    ds.flush()
+    val digest = ds.getMessageDigest().digest.toSeq
+    // TODO: sign hash
+    writeIssuerSignatureBlock(output, digest)
+    return tree.copy(id = ObjectId(digest))
   }
 
-  def readIssuerSignatureBlock(stream: InputStream): Seq[Byte] = {
-    readBlock(stream, IssuerSignatureBlockType) { bs =>
-      bs.readBinary().toSeq
+  def read(input: InputStream, dec: SymmetricEncryptionParameters): Tree = {
+    val ds = `SHA-2-256`.wrapStream(input)
+    val objectType = readHeader(ds)
+    assert("Expected tree", objectType == TreeObjectType)
+    val issuer = readIssuerIdentityBlock(ds)
+
+    val entryIdsAndModes = readPublicBlock(ds) { bs =>
+      val entryIdsAndModes = bs.readList() {
+        val id = bs.readObjectId()
+        val mode = treeEntryModeMapInverse(bs.readInt8())
+        (id, mode)
+      }
+      entryIdsAndModes
     }
-  }
 
-  def writeIssuerSignatureBlock(stream: OutputStream, signature: Seq[Byte]) {
-    writeBlock(stream, IssuerSignatureBlockType) { bs =>
-      bs.writeBinary(signature)
+    val entryNamesAndKey = readPrivateBlock(ds, dec) { bs =>
+      val entryNamesAndKey = bs.readList() {
+        (bs.readString(), readSymmetricEncryptionParameters(bs))
+      }
+      entryNamesAndKey
     }
-  }
 
-  def readPublicBlock[T](stream: InputStream)(inner: InputStream => T): T = {
-    readBlock(stream, PublicBlockType) { bs =>
-      inner(bs)
+    val entries = entryIdsAndModes.zip(entryNamesAndKey)
+      .map(e => TreeEntry(e._1._1, e._1._2, e._2._1, e._2._2))
+    val digest = ds.getMessageDigest().digest.toSeq
+    val signature = readIssuerSignatureBlock(input)
+    // TODO: validate signature with hash
+    assert("Signature invalid", signature == digest)
+    return Tree(ObjectId(digest), issuer, entries)
+  }
+}
+
+private[objects] object CommitSerializer {
+  def write(output: OutputStream, commit: Commit, enc: SymmetricEncryptionParameters): Commit = {
+    val ds = `SHA-2-256`.wrapStream(output)
+    writeHeader(ds, commit.objectType)
+    writeIssuerIdentityBlock(ds, commit.issuer)
+
+    writePublicBlock(ds) { bs =>
+      bs.writeList(commit.parentIds) {
+        p => bs.writeObjectId(p)
+      }
+      bs.writeObjectId(commit.treeId)
     }
-  }
 
-  def writePublicBlock(stream: OutputStream)(inner: OutputStream => Any): Unit = {
-    writeBlock(stream, PublicBlockType) { bs =>
-      inner(bs)
+    writePrivateBlock(ds, enc) { bs =>
+      writeSymmetricEncryptionParameters(bs, commit.treeKey)
     }
+
+    ds.flush()
+    val digest = ds.getMessageDigest().digest.toSeq
+    // TODO: sign hash
+    writeIssuerSignatureBlock(output, digest)
+    return commit.copy(id = ObjectId(digest))
   }
 
-  def readPrivateBlock[T](stream: InputStream, decrypt: SymmetricEncryptionParameters)(inner: InputStream => T): T = {
-    readBlock(stream, PrivateBlockType) { bs =>
-      val ds = decrypt.algorithm.wrapStream(bs, decrypt)
-      inner(ds)
+  def read(input: InputStream, dec: SymmetricEncryptionParameters): Commit = {
+    val ds = `SHA-2-256`.wrapStream(input)
+    val objectType = readHeader(ds)
+    assert("Expected commit", objectType == CommitObjectType)
+    val issuer = readIssuerIdentityBlock(ds)
+
+    val (parentIds, treeId) = readPublicBlock(ds) { bs =>
+      val parentIds = bs.readList() {
+        bs.readObjectId()
+      }
+      val treeId = bs.readObjectId()
+      (parentIds, treeId)
     }
-  }
 
-  def writePrivateBlock(stream: OutputStream, encrypt: SymmetricEncryptionParameters)(inner: OutputStream => Any): Unit = {
-    writeBlock(stream, PrivateBlockType) { bs =>
-      val ds = encrypt.algorithm.wrapStream(bs, encrypt)
-      inner(ds)
-      ds.flush()
-      ds.close()
+    val treeKey = readPrivateBlock(ds, dec) { bs =>
+      val treeKey = readSymmetricEncryptionParameters(bs)
+      treeKey
     }
-  }
 
-  def readBlock[T](stream: InputStream, expectedBlockType: BlockType)(inner: InputStream => T): T = {
-    val actualBlockType = blockTypeMapInverse(stream.readInt8())
-    assert(s"Expected block of type '${expectedBlockType.getClass.getSimpleName}'", expectedBlockType == actualBlockType)
-
-    val blockStream = new BlockInputStream(stream, ownsInner = false)
-    val result = inner(blockStream)
-    blockStream.close()
-    result
-  }
-
-  def writeBlock(stream: OutputStream, blockType: BlockType)(inner: OutputStream => Any) {
-    stream.writeInt8(blockTypeMap(blockType))
-
-    val blockStream = new BlockOutputStream(stream, ownsInner = false)
-    inner(blockStream)
-    blockStream.close()
-  }
-
-  def assert(errorMessage: String, cond: Boolean): Unit = assert(errorMessage)(cond == true)
-
-  def assert(errorMessage: String)(cond: => Boolean): Unit = {
-    if (cond == false) {
-      throw new ObjectSerializationException(errorMessage)
-    }
+    val digest = ds.getMessageDigest().digest.toSeq
+    val signature = readIssuerSignatureBlock(input)
+    // TODO: validate signature with hash
+    assert("Signature invalid", signature == digest)
+    return Commit(ObjectId(digest), issuer, parentIds, treeId, treeKey)
   }
 }
