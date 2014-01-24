@@ -122,14 +122,17 @@ private[objects] object CommitSerializer {
     writeIssuerIdentityBlock(ds, commit.issuer)
 
     writePublicBlock(ds) { bs =>
-      bs.writeList(commit.parentIds) {
-        p => bs.writeObjectId(p)
+      bs.writeList(commit.parents) {
+        p => bs.writeObjectId(p.id)
       }
-      bs.writeObjectId(commit.treeId)
+      bs.writeObjectId(commit.tree.id)
     }
 
     writePrivateBlock(ds, enc) { bs =>
-      writeSymmetricEncryptionParameters(bs, commit.treeKey)
+      bs.writeList(commit.parents) {
+        p => writeSymmetricEncryptionParameters(bs, p.key)
+      }
+      writeSymmetricEncryptionParameters(bs, commit.tree.key)
     }
 
     ds.flush()
@@ -153,15 +156,21 @@ private[objects] object CommitSerializer {
       (parentIds, treeId)
     }
 
-    val treeKey = readPrivateBlock(ds, dec) { bs =>
+    val (parentKeys, treeKey) = readPrivateBlock(ds, dec) { bs =>
+      val parentIds = bs.readList() {
+        readSymmetricEncryptionParameters(bs)
+      }
       val treeKey = readSymmetricEncryptionParameters(bs)
-      treeKey
+      (parentIds, treeKey)
     }
 
+    val parents = parentIds.zip(parentKeys)
+      .map(p => CommitParent(p._1, p._2))
+    val tree = TreeEntry(treeId, DirectoryTreeEntryMode, "", treeKey)
     val digest = ds.getMessageDigest().digest.toSeq
     val signature = readIssuerSignatureBlock(input)
     // TODO: validate signature with hash
     assert("Signature invalid", signature == digest)
-    return Commit(ObjectId(digest), issuer, parentIds, treeId, treeKey)
+    return Commit(ObjectId(digest), issuer, parents, tree)
   }
 }

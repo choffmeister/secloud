@@ -16,9 +16,9 @@ class Repository(val config: RepositoryConfig, val database: RepositoryDatabase)
   }
 
   def commit() {
-    val rootTreeEntry = iterateFiles(database, config.issuer, config.workingDir)
+    val rootTreeEntry = iterateFiles(database, config.issuer, config.workingDir).copy(name = "")
     val headKey = algo.generateKey()
-    val commit = Commit(ObjectId.empty, config.issuer, Nil, rootTreeEntry.id, rootTreeEntry.key)
+    val commit = Commit(ObjectId.empty, config.issuer, Nil, rootTreeEntry)
     val headId = database.write(s => writeCommit(s, commit, headKey).id)
 
     saveHead(headId, headKey)

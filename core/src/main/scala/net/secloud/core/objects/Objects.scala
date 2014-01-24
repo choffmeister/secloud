@@ -42,12 +42,16 @@ case class Tree(
   val objectType = TreeObjectType
 }
 
+case class CommitParent(
+  id: ObjectId,
+  key: SymmetricEncryptionParameters
+)
+
 case class Commit(
   id: ObjectId,
   issuer: Issuer,
-  parentIds: List[ObjectId],
-  treeId: ObjectId,
-  treeKey: SymmetricEncryptionParameters
+  parents: List[CommitParent],
+  tree: TreeEntry
 ) extends BaseObject {
   val objectType = CommitObjectType
 }

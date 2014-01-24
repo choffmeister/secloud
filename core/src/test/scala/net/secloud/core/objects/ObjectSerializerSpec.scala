@@ -50,17 +50,20 @@ class ObjectSerializerSpec extends Specification {
 
     "serialize commits" in {
       val key = `AES-128`.generateKey()
+      val parents = List(CommitParent(ObjectId(), NullEncryption.generateKey()), CommitParent(ObjectId("00aaff"), `AES-128`.generateKey()))
+      val tree = TreeEntry(ObjectId("ffee0011"), DirectoryTreeEntryMode, "", `AES-128`.generateKey())
 
-      val commit1 = Commit(ObjectId.empty, Issuer(Array[Byte](0, 1, -2, -1), "owner"), List(ObjectId(), ObjectId("00aaff")), ObjectId("0011feff"), `AES-128`.generateKey())
+      val commit1 = Commit(ObjectId.empty, Issuer(Array[Byte](0, 1, -2, -1), "owner"), parents, tree)
       val intermediate1 = new ByteArrayOutputStream()
       CommitSerializer.write(intermediate1, commit1, key)
       val intermediate2 = new ByteArrayInputStream(intermediate1.toByteArray)
       val commit2 = CommitSerializer.read(intermediate2, key)
 
       commit1.issuer === commit2.issuer
-      commit1.parentIds === commit2.parentIds
-      commit1.treeId === commit2.treeId
-      compareSymmetricEncryptionKeys(commit1.treeKey, commit2.treeKey) === true
+      commit1.parents.map(_.id) === commit2.parents.map(_.id)
+      commit1.parents.zip(commit2.parents).forall(p => compareSymmetricEncryptionKeys(p._1.key, p._2.key)) === true
+      commit1.tree.id === commit2.tree.id
+      compareSymmetricEncryptionKeys(commit1.tree.key, commit2.tree.key) === true
     }
   }
 
