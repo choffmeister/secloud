@@ -1,4 +1,4 @@
-package net.secloud.core
+package net.secloud.core.objects
 
 import org.apache.commons.codec.binary.Hex
 import org.apache.commons.codec.binary.Base64

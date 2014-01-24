@@ -5,7 +5,7 @@ import org.junit.runner.RunWith
 import org.specs2.runner.JUnitRunner
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
-import net.secloud.core.ObjectId
+import net.secloud.core.objects.ObjectId
 
 @RunWith(classOf[JUnitRunner])
 class BinaryReaderWriterSpec extends Specification {

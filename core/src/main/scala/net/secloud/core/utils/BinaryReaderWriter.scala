@@ -4,7 +4,7 @@ import java.io.OutputStream
 import java.io.InputStream
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
-import net.secloud.core.ObjectId
+import net.secloud.core.objects.ObjectId
 import scala.language.implicitConversions
 import scala.annotation.tailrec
 

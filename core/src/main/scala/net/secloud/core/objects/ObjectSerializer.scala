@@ -1,4 +1,4 @@
-package net.secloud.core
+package net.secloud.core.objects
 
 import java.io.OutputStream
 import java.io.InputStream
@@ -44,7 +44,7 @@ class ObjectSerializationException(msg: String) extends Exception(msg)
 
 object ObjectSerializer {
   import ObjectSerializerConstants._
-  import security.CryptographicAlgorithms._
+  import net.secloud.core.security.CryptographicAlgorithms._
 
   def readHeader(stream: InputStream): ObjectType = {
     val magicBytes = stream.readInt32()

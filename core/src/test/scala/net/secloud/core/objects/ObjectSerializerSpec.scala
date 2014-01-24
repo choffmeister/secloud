@@ -1,4 +1,4 @@
-package net.secloud.core
+package net.secloud.core.objects
 
 import org.junit.runner.RunWith
 import org.specs2.mutable._
