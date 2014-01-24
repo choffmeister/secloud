@@ -10,6 +10,8 @@ import java.io.BufferedInputStream
 import java.io.BufferedOutputStream
 
 trait ObjectDatabase {
+  def init(): Unit
+
   def createReader(): ObjectReader
   def createWriter(): ObjectWriter
   def find(idPrefix: String): Option[ObjectId]
@@ -53,7 +55,10 @@ trait ObjectWriter {
 class DirectoryObjectDatabase(val base: File) extends ObjectDatabase {
   def this(base: String) = this(new File(base))
 
-  ensureDirectory(base)
+  def init() {
+    if (base.exists()) throw new Exception(s"Cannot initialize database: Directory '$base' already exists")
+    base.mkdirs()
+  }
 
   def createReader(): ObjectReader = new DirectoryObjectReader(this)
 

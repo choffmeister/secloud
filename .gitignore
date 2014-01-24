@@ -1,6 +1,9 @@
 # Simple Build Tool
 target/
 
+# secloud
+.secloud/
+
 # Eclipse
 .classpath
 .project
