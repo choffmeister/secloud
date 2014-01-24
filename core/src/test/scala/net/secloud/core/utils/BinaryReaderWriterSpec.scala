@@ -291,9 +291,9 @@ class BinaryReaderWriterSpec extends Specification {
       val streamRead = new ByteArrayInputStream(buf)
       val reader = new BinaryReader(streamRead)
 
-      reader.readList(reader.readInt32()) === List[Int](1,2,3)
-      reader.readList(reader.readInt32()) === List[Int]()
-      reader.readList(reader.readInt32()) === List[Int](1234,5678,9012345,67890123)
+      reader.readList()(reader.readInt32()) === List[Int](1,2,3)
+      reader.readList()(reader.readInt32()) === List[Int]()
+      reader.readList()(reader.readInt32()) === List[Int](1234,5678,9012345,67890123)
     }
   }
 }

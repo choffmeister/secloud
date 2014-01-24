@@ -156,7 +156,7 @@ class BinaryReader(val stream: InputStream) {
     return ObjectId(readBinary)
   }
 
-  def readList[T](inner: => T): List[T] = {
+  def readList[T]()(inner: => T): List[T] = {
     (1 to readInt7().toInt).map(i => inner).toList
   }
 

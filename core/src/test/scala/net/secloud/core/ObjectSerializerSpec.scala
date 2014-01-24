@@ -51,13 +51,14 @@ class ObjectSerializerSpec extends Specification {
     "serialize commits" in {
       val key = `AES-128`.generateKey()
 
-      val commit1 = Commit(ObjectId.empty, Issuer(Array[Byte](0, 1, -2, -1), "owner"), ObjectId("0011feff"), `AES-128`.generateKey())
+      val commit1 = Commit(ObjectId.empty, Issuer(Array[Byte](0, 1, -2, -1), "owner"), List(ObjectId(), ObjectId("00aaff")), ObjectId("0011feff"), `AES-128`.generateKey())
       val intermediate1 = new ByteArrayOutputStream()
       Commit.write(intermediate1, commit1, key)
       val intermediate2 = new ByteArrayInputStream(intermediate1.toByteArray)
       val commit2 = Commit.read(intermediate2, key)
 
       commit1.issuer === commit2.issuer
+      commit1.parentIds === commit2.parentIds
       commit1.treeId === commit2.treeId
       compareSymmetricEncryptionKeys(commit1.treeKey, commit2.treeKey) === true
     }

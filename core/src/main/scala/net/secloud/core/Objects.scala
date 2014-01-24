@@ -42,6 +42,7 @@ case class Tree(
 case class Commit(
   id: ObjectId,
   issuer: Issuer,
+  parentIds: List[ObjectId],
   treeId: ObjectId,
   treeKey: SymmetricEncryptionParameters
 ) extends BaseObject {
@@ -53,14 +54,17 @@ object Blob {
     val ds = `SHA-2-256`.wrapStream(output)
     writeHeader(ds, blob.objectType)
     writeIssuerIdentityBlock(ds, blob.issuer)
+
     writePublicBlock(ds) { bs =>
     }
+
     writePrivateBlock(ds, enc) { bs =>
       val gzip = new GZIPOutputStream(bs)
       content.pipeTo(gzip)
       gzip.flush()
       gzip.close()
     }
+
     ds.flush()
     val digest = ds.getMessageDigest().digest.toSeq
     // TODO: sign hash
@@ -74,13 +78,16 @@ object Blob {
     val objectType = readHeader(ds)
     assert("Expected blob", objectType == BlobObjectType)
     val issuer = readIssuerIdentityBlock(ds)
-    val publicBlock = readPublicBlock(ds) { bs =>
+
+    readPublicBlock(ds) { bs =>
     }
-    val privateBlock = readPrivateBlock(ds, dec) { bs =>
+
+    readPrivateBlock(ds, dec) { bs =>
       val gzip = new GZIPInputStream(bs)
       gzip.pipeTo(content)
       gzip.close()
     }
+
     val digest = ds.getMessageDigest.digest.toSeq
     val signature = readIssuerSignatureBlock(input)
     // TODO: validate signature with hash
@@ -94,17 +101,20 @@ object Tree {
     val ds = `SHA-2-256`.wrapStream(output)
     writeHeader(ds, tree.objectType)
     writeIssuerIdentityBlock(ds, tree.issuer)
+
     writePublicBlock(ds) { bs =>
       bs.writeList(tree.entries) {
         e => bs.writeObjectId(e.id)
       }
     }
+
     writePrivateBlock(ds, enc) { bs =>
       bs.writeList(tree.entries) { e =>
         bs.writeString(e.name)
         writeSymmetricEncryptionParameters(bs, e.key)
       }
     }
+
     ds.flush()
     val digest = ds.getMessageDigest().digest.toSeq
     // TODO: sign hash
@@ -117,17 +127,22 @@ object Tree {
     val objectType = readHeader(ds)
     assert("Expected tree", objectType == TreeObjectType)
     val issuer = readIssuerIdentityBlock(ds)
-    val publicBlock = readPublicBlock(ds) { bs =>
-      bs.readList {
+
+    val entryIds = readPublicBlock(ds) { bs =>
+      val entryIds = bs.readList() {
         bs.readObjectId()
       }
+      entryIds
     }
-    val privateBlock = readPrivateBlock(ds, dec) { bs =>
-      bs.readList {
+
+    val entryNamesAndKey = readPrivateBlock(ds, dec) { bs =>
+      val entryNamesAndKey = bs.readList() {
         (bs.readString(), readSymmetricEncryptionParameters(bs))
       }
+      entryNamesAndKey
     }
-    val entries = publicBlock.zip(privateBlock).map(e => TreeEntry(e._1, e._2._1, e._2._2))
+
+    val entries = entryIds.zip(entryNamesAndKey).map(e => TreeEntry(e._1, e._2._1, e._2._2))
     val digest = ds.getMessageDigest().digest.toSeq
     val signature = readIssuerSignatureBlock(input)
     // TODO: validate signature with hash
@@ -141,12 +156,18 @@ object Commit {
     val ds = `SHA-2-256`.wrapStream(output)
     writeHeader(ds, commit.objectType)
     writeIssuerIdentityBlock(ds, commit.issuer)
+
     writePublicBlock(ds) { bs =>
+      bs.writeList(commit.parentIds) {
+        p => bs.writeObjectId(p)
+      }
       bs.writeObjectId(commit.treeId)
     }
+
     writePrivateBlock(ds, enc) { bs =>
       writeSymmetricEncryptionParameters(bs, commit.treeKey)
     }
+
     ds.flush()
     val digest = ds.getMessageDigest().digest.toSeq
     // TODO: sign hash
@@ -159,18 +180,24 @@ object Commit {
     val objectType = readHeader(ds)
     assert("Expected commit", objectType == CommitObjectType)
     val issuer = readIssuerIdentityBlock(ds)
-    val publicBlock = readPublicBlock(ds) { bs =>
-      bs.readObjectId()
+
+    val (parentIds, treeId) = readPublicBlock(ds) { bs =>
+      val parentIds = bs.readList() {
+        bs.readObjectId()
+      }
+      val treeId = bs.readObjectId()
+      (parentIds, treeId)
     }
-    val privateBlock = readPrivateBlock(ds, dec) { bs =>
-      readSymmetricEncryptionParameters(bs)
+
+    val treeKey = readPrivateBlock(ds, dec) { bs =>
+      val treeKey = readSymmetricEncryptionParameters(bs)
+      treeKey
     }
-    val treeId = publicBlock
-    val treeKey = privateBlock
+
     val digest = ds.getMessageDigest().digest.toSeq
     val signature = readIssuerSignatureBlock(input)
     // TODO: validate signature with hash
     assert("Signature invalid", signature == digest)
-    return Commit(ObjectId(digest), issuer, treeId, treeKey)
+    return Commit(ObjectId(digest), issuer, parentIds, treeId, treeKey)
   }
 }
