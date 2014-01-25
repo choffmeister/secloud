@@ -8,9 +8,8 @@ import net.secloud.core.objects._
 
 case class RepositoryConfig(val issuer: Issuer)
 
-class Repository(val workingDir: RepositoryWorkingDir, val database: RepositoryDatabase, val config: RepositoryConfig) {
+class Repository(val workingDir: VirtualFileSystem, val database: RepositoryDatabase, val config: RepositoryConfig) {
   def init() {
-    workingDir.init()
     database.init()
   }
 
@@ -24,11 +23,11 @@ class Repository(val workingDir: RepositoryWorkingDir, val database: RepositoryD
   }
 
   private def iterateFiles(path: String): TreeEntry = {
-    val element = workingDir.pathToElement(path)
+    val file = VirtualFile(workingDir, path)
 
-    element.mode match {
-      case DirectoryElementMode =>
-        val entries = workingDir.list(element)
+    file.mode match {
+      case Directory =>
+        val entries = file.children
           .filter(e => !e.name.startsWith(".") && e.name != "target")
           .map(e => iterateFiles(e.path))
           .toList
@@ -36,18 +35,14 @@ class Repository(val workingDir: RepositoryWorkingDir, val database: RepositoryD
         val tree = Tree(ObjectId.empty, config.issuer, entries)
         val oid = database.write(s => writeTree(s, tree, key).id)
 
-        TreeEntry(oid, DirectoryTreeEntryMode, element.name, key)
-      case NonExecutableFileElementMode =>
+        TreeEntry(oid, DirectoryTreeEntryMode, file.name, key)
+      case NonExecutableFile =>
         val key = generateKey()
         val blob = Blob(ObjectId.empty, config.issuer)
-        val oid = database.write { s1 =>
-          workingDir.read(element) { s2 =>
-            writeBlob(s1, blob, s2, key).id
-          }
-        }
+        val oid = database.write(dbs => file.read(fs => writeBlob(dbs, blob, fs, key).id))
 
-        TreeEntry(oid, NonExecutableFileTreeEntryMode, element.name, key)
-      case _ => throw new Exception(element.toString)
+        TreeEntry(oid, NonExecutableFileTreeEntryMode, file.name, key)
+      case _ => throw new Exception(file.toString)
     }
   }
 
@@ -55,9 +50,9 @@ class Repository(val workingDir: RepositoryWorkingDir, val database: RepositoryD
 }
 
 object Repository {
-  def apply(workingDir: RepositoryWorkingDir, database: RepositoryDatabase, config: RepositoryConfig): Repository =
+  def apply(workingDir: VirtualFileSystem, database: RepositoryDatabase, config: RepositoryConfig): Repository =
     new Repository(workingDir, database, config)
 
   def apply(dir: File, config: RepositoryConfig): Repository =
-    new Repository(new DirectoryRepositoryWorkingDir(dir), new DirectoryRepositoryDatabase(new File(dir, ".secloud")), config)
+    new Repository(new RealVirtualFileSystem(dir), new DirectoryRepositoryDatabase(new File(dir, ".secloud")), config)
 }

@@ -13,12 +13,19 @@ case object Directory extends VirtualFileMode
 case class VirtualFile(vfs: VirtualFileSystem, path: String) {
   VirtualFile.checkPath(path)
   def segments = VirtualFile.splitPath(path)
+  def name = segments.lastOption.getOrElse("")
 
   def exists: Boolean = vfs.exists(this)
   def mode: VirtualFileMode = vfs.mode(this)
+  def children: List[VirtualFile] = vfs.children(this)
+  def read[T](inner: InputStream => T): T = vfs.read(this)(inner)
+  def write(inner: OutputStream => Any): Unit = vfs.write(this)(inner)
 }
 
 object VirtualFile {
+  def apply(vfs: VirtualFileSystem, segments: List[String]): VirtualFile =
+    VirtualFile(vfs, "/" + segments.mkString("/"))
+
   def normalize(path: String): String =
     "/" + splitPath(path).mkString("/")
 
@@ -37,6 +44,7 @@ class VirtualFileSystemException(message: String, inner: Option[Throwable]) exte
 trait VirtualFileSystem {
   def exists(f: VirtualFile): Boolean
   def mode(f: VirtualFile): VirtualFileMode
+  def children(f: VirtualFile): List[VirtualFile]
   def openRead(f: VirtualFile): InputStream
   def openWrite(f: VirtualFile): OutputStream
 
@@ -55,14 +63,12 @@ trait VirtualFileSystem {
 class RealVirtualFileSystem(base: File) extends VirtualFileSystem {
   def exists(f: VirtualFile) = <<(f).exists()
   def mode(f: VirtualFile) = if (<<(f).isDirectory) Directory else NonExecutableFile // TODO: handle ExecutableFile
+  def children(f: VirtualFile) = <<(f).listFiles.map(c => VirtualFile(this, f.segments ++ List(c.getName))).toList
   def openRead(f: VirtualFile) = new FileInputStream(<<(f))
   def openWrite(f: VirtualFile) = new FileOutputStream(<<(f))
 
-  private def /(): String =
-    File.separator
-
-  private def <<(f: VirtualFile): File =
-    new File(base.getAbsolutePath + / + f.segments.mkString(/))
+  private def /(): String = File.separator
+  private def <<(f: VirtualFile): File = new File(base.getAbsolutePath + / + f.segments.mkString(/))
 }
 
 object RealVirtualFileSystem {
