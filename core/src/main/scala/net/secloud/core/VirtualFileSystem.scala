@@ -10,24 +10,18 @@ case object NonExecutableFile extends VirtualFileMode
 case object ExecutableFile extends VirtualFileMode
 case object Directory extends VirtualFileMode
 
-case class VirtualFile(vfs: VirtualFileSystem, path: String) {
+case class VirtualFile(path: String) {
   VirtualFile.checkPath(path)
   def segments = VirtualFile.splitPath(path)
   def name = segments.lastOption.getOrElse("")
 
-  def child(name: String) = VirtualFile.fromSegments(vfs, segments ++ List(name))
-  def parent = VirtualFile.fromSegments(vfs, segments.take(segments.length - 1).toList)
-
-  def exists: Boolean = vfs.exists(this)
-  def mode: VirtualFileMode = vfs.mode(this)
-  def children: List[VirtualFile] = vfs.children(this)
-  def read[T](inner: InputStream => T): T = vfs.read(this)(inner)
-  def write(inner: OutputStream => Any): Unit = vfs.write(this)(inner)
+  def child(name: String) = VirtualFile.fromSegments(segments ++ List(name))
+  def parent = VirtualFile.fromSegments(segments.take(segments.length - 1).toList)
 }
 
 object VirtualFile {
-  def fromSegments(vfs: VirtualFileSystem, segments: List[String]): VirtualFile =
-    VirtualFile(vfs, "/" + segments.mkString("/"))
+  def fromSegments(segments: List[String]): VirtualFile =
+    VirtualFile("/" + segments.mkString("/"))
 
   def normalize(path: String): String =
     "/" + splitPath(path).mkString("/")
@@ -69,11 +63,6 @@ class NativeFileSystem(base: File) extends VirtualFileSystem {
       closable.close()
     }
   }
-}
-
-object NativeFileSystem {
-  implicit def pathToVirtalFile(path: String)(implicit vfs: NativeFileSystem): VirtualFile =
-    new VirtualFile(vfs, path)
 }
 
 object NullFileSystem extends VirtualFileSystem {

@@ -17,13 +17,13 @@ class VirtualFileSystemSpec extends Specification {
       build(base)
       val vfs = new NativeFileSystem(base)
 
-      val f1 = VirtualFile(vfs, "/a.txt")
+      val f1 = VirtualFile("/a.txt")
       vfs.read(f1)(s => read(s)) === "Hello World a"
 
-      val f2 = VirtualFile(vfs, "/new.txt")
-      f2.exists must beFalse
+      val f2 = VirtualFile("/new.txt")
+      vfs.exists(f2) must beFalse
       vfs.write(f2)(s => write(s, "NEW.TXT"))
-      f2.exists must beTrue
+      vfs.exists(f2) must beTrue
       vfs.read(f2)(s => read(s)) === "NEW.TXT"
     }
   }

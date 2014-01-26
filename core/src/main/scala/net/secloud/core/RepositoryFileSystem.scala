@@ -27,7 +27,7 @@ class RepositoryFileSystem(db: RepositoryDatabase, commitId: ObjectId, commitKey
       case next :: rest =>
         val entry = t.entries.find(_.name == next).get
         val innerTree = db.read(entry.id)(dbs => readTree(dbs, entry.key))
-        recursion(innerTree, VirtualFile.fromSegments(this, f.segments.tail))
+        recursion(innerTree, VirtualFile.fromSegments(f.segments.tail))
     }
 
     recursion(tree, f)

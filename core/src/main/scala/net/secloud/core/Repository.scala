@@ -22,11 +22,11 @@ class Repository(val workingDir: VirtualFileSystem, val database: RepositoryData
   }
 
   private def iterateFiles(path: String): TreeEntry = {
-    val file = VirtualFile(workingDir, path)
+    val file = VirtualFile(path)
 
-    file.mode match {
+    workingDir.mode(file) match {
       case Directory =>
-        val entries = file.children
+        val entries = workingDir.children(file)
           .filter(e => !e.name.startsWith(".") && e.name != "target")
           .map(e => iterateFiles(e.path))
           .toList
@@ -38,7 +38,7 @@ class Repository(val workingDir: VirtualFileSystem, val database: RepositoryData
       case NonExecutableFile =>
         val key = generateKey()
         val blob = Blob(ObjectId.empty, config.issuer)
-        val oid = database.write(dbs => file.read(fs => writeBlob(dbs, blob, fs, key).id))
+        val oid = database.write(dbs => workingDir.read(file)(fs => writeBlob(dbs, blob, fs, key).id))
 
         TreeEntry(oid, NonExecutableFileTreeEntryMode, file.name, key)
       case _ => throw new Exception(file.toString)

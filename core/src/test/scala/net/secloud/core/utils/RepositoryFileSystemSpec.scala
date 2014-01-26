@@ -26,10 +26,10 @@ class RepositoryFileSystemSpec extends Specification {
       val (commit, commitKey) = repo.commit()
 
       val rfs = new RepositoryFileSystem(db, commit.id, commitKey)
-      val root = VirtualFile(rfs, "/")
+      val root = VirtualFile("/")
 
-      VirtualFile(rfs, "/a.txt").read(s => read(s)) === "Hello World a"
-      VirtualFile(rfs, "/first/first-2/d.txt").read(s => read(s)) === "Hello World d"
+      rfs.read(VirtualFile("/a.txt"))(s => read(s)) === "Hello World a"
+      rfs.read(VirtualFile("/first/first-2/d.txt"))(s => read(s)) === "Hello World d"
     }
   }
 
