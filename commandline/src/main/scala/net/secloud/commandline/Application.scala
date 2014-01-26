@@ -30,7 +30,8 @@ object Application {
         repo.init()
         println("init")
       case Some(cli.commit) =>
-        repo.commit()
+        val (commit, commitKey) = repo.commit()
+        println(commit.id)
         println("commit")
       case Some(cli.environment) =>
         println(s"Current directory: ${env.currentDirectory}")

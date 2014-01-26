@@ -13,13 +13,12 @@ class Repository(val workingDir: VirtualFileSystem, val database: RepositoryData
     database.init()
   }
 
-  def commit() {
+  def commit(): (Commit, SymmetricEncryptionParameters) = {
     val rootTreeEntry = iterateFiles("/").copy(name = "")
     val headKey = generateKey()
     val commit = Commit(ObjectId.empty, config.issuer, Nil, rootTreeEntry)
     val headId = database.write(s => writeCommit(s, commit, headKey).id)
-
-    println(headId)
+    (commit.copy(id = headId), headKey)
   }
 
   private def iterateFiles(path: String): TreeEntry = {

@@ -15,6 +15,9 @@ case class VirtualFile(vfs: VirtualFileSystem, path: String) {
   def segments = VirtualFile.splitPath(path)
   def name = segments.lastOption.getOrElse("")
 
+  def child(name: String) = VirtualFile.fromSegments(vfs, segments ++ List(name))
+  def parent = VirtualFile.fromSegments(vfs, segments.take(segments.length - 1).toList)
+
   def exists: Boolean = vfs.exists(this)
   def mode: VirtualFileMode = vfs.mode(this)
   def children: List[VirtualFile] = vfs.children(this)
@@ -23,7 +26,7 @@ case class VirtualFile(vfs: VirtualFileSystem, path: String) {
 }
 
 object VirtualFile {
-  def apply(vfs: VirtualFileSystem, segments: List[String]): VirtualFile =
+  def fromSegments(vfs: VirtualFileSystem, segments: List[String]): VirtualFile =
     VirtualFile(vfs, "/" + segments.mkString("/"))
 
   def normalize(path: String): String =
@@ -45,11 +48,19 @@ trait VirtualFileSystem {
   def exists(f: VirtualFile): Boolean
   def mode(f: VirtualFile): VirtualFileMode
   def children(f: VirtualFile): List[VirtualFile]
-  def openRead(f: VirtualFile): InputStream
-  def openWrite(f: VirtualFile): OutputStream
+  def read[T](f: VirtualFile)(inner: InputStream => T): T
+  def write(f: VirtualFile)(inner: OutputStream => Any): Unit
+}
 
-  def read[T](f: VirtualFile)(inner: InputStream => T): T = using(openRead(f))(s => inner(s))
-  def write(f: VirtualFile)(inner: OutputStream => Any): Unit = using(openWrite(f))(s => inner(s))
+class NativeFileSystem(base: File) extends VirtualFileSystem {
+  def exists(f: VirtualFile) = <<(f).exists()
+  def mode(f: VirtualFile) = if (<<(f).isDirectory) Directory else NonExecutableFile // TODO: handle ExecutableFile
+  def children(f: VirtualFile) = <<(f).listFiles.map(c => f.child(c.getName)).toList
+  def read[T](f: VirtualFile)(inner: InputStream => T): T = using(new FileInputStream(<<(f)))(s => inner(s))
+  def write(f: VirtualFile)(inner: OutputStream => Any): Unit = using(new FileOutputStream(<<(f)))(s => inner(s))
+
+  private def /(): String = File.separator
+  private def <<(f: VirtualFile): File = new File(base.getAbsolutePath + / + f.segments.mkString(/))
 
   private def using[A <: { def close(): Unit }, B](closable: A)(inner: A => B): B = {
     try {
@@ -58,17 +69,6 @@ trait VirtualFileSystem {
       closable.close()
     }
   }
-}
-
-class NativeFileSystem(base: File) extends VirtualFileSystem {
-  def exists(f: VirtualFile) = <<(f).exists()
-  def mode(f: VirtualFile) = if (<<(f).isDirectory) Directory else NonExecutableFile // TODO: handle ExecutableFile
-  def children(f: VirtualFile) = <<(f).listFiles.map(c => VirtualFile(this, f.segments ++ List(c.getName))).toList
-  def openRead(f: VirtualFile) = new FileInputStream(<<(f))
-  def openWrite(f: VirtualFile) = new FileOutputStream(<<(f))
-
-  private def /(): String = File.separator
-  private def <<(f: VirtualFile): File = new File(base.getAbsolutePath + / + f.segments.mkString(/))
 }
 
 object NativeFileSystem {
