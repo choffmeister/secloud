@@ -54,5 +54,5 @@ object Repository {
     new Repository(workingDir, database, config)
 
   def apply(dir: File, config: RepositoryConfig): Repository =
-    new Repository(new RealVirtualFileSystem(dir), new DirectoryRepositoryDatabase(new File(dir, ".secloud")), config)
+    new Repository(new NativeFileSystem(dir), new DirectoryRepositoryDatabase(new File(dir, ".secloud")), config)
 }

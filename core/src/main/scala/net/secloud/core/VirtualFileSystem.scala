@@ -60,7 +60,7 @@ trait VirtualFileSystem {
   }
 }
 
-class RealVirtualFileSystem(base: File) extends VirtualFileSystem {
+class NativeFileSystem(base: File) extends VirtualFileSystem {
   def exists(f: VirtualFile) = <<(f).exists()
   def mode(f: VirtualFile) = if (<<(f).isDirectory) Directory else NonExecutableFile // TODO: handle ExecutableFile
   def children(f: VirtualFile) = <<(f).listFiles.map(c => VirtualFile(this, f.segments ++ List(c.getName))).toList
@@ -71,8 +71,8 @@ class RealVirtualFileSystem(base: File) extends VirtualFileSystem {
   private def <<(f: VirtualFile): File = new File(base.getAbsolutePath + / + f.segments.mkString(/))
 }
 
-object RealVirtualFileSystem {
-  implicit def pathToVirtalFile(path: String)(implicit vfs: RealVirtualFileSystem): VirtualFile =
+object NativeFileSystem {
+  implicit def pathToVirtalFile(path: String)(implicit vfs: NativeFileSystem): VirtualFile =
     new VirtualFile(vfs, path)
 }
 

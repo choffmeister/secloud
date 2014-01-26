@@ -11,11 +11,11 @@ import java.io.{File, FileInputStream, FileOutputStream}
 class VirtualFileSystemSpec extends Specification {
   def getTempDir = new File(new File(System.getProperty("java.io.tmpdir")), UUID.randomUUID().toString())
 
-  "RealVirtualFileSystem" should {
+  "NativeFileSystem" should {
     "read and write files" in {
       val base = getTempDir
       build(base)
-      val vfs = new RealVirtualFileSystem(base)
+      val vfs = new NativeFileSystem(base)
 
       val f1 = VirtualFile(vfs, "/a.txt")
       vfs.read(f1)(s => read(s)) === "Hello World a"
