@@ -76,3 +76,10 @@ object NativeFileSystem {
     new VirtualFile(vfs, path)
 }
 
+object NullFileSystem extends VirtualFileSystem {
+  def exists(f: VirtualFile) = f.path == "/"
+  def mode(f: VirtualFile) = Directory
+  def children(f: VirtualFile) = List.empty[VirtualFile]
+  def read[T](f: VirtualFile)(inner: InputStream => T) = throw new Exception("Not supported")
+  def write(f: VirtualFile)(inner: OutputStream => Any) = throw new Exception("Not supported")
+}
