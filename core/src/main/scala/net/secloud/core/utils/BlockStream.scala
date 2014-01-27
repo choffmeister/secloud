@@ -5,31 +5,30 @@ import net.secloud.core.utils.BinaryReaderWriter._
 import scala.language.implicitConversions
 
 class BlockInputStream(val inner: InputStream, val ownsInner: Boolean = true) extends InputStream {
-  private var startedReading = false
   private var block = Array.empty[Byte]
   private var blockSize = 0
   private var blockPosition = 0
   private var closed = false
+  readBlock()
 
   override def read(): Int = {
-    if (!startedReading || (blockSize > 0 && blockPosition == blockSize)) readBlock()
-
     if (blockSize > 0) {
       val b = block(blockPosition) & 0xff // change range from [-128,127] to [0,255]  
       blockPosition += 1
+      if (blockSize > 0 && blockPosition == blockSize) readBlock()
       b
     } else -1
   }
 
   override def close(): Unit = {
     if (!closed) {
-      // consume the whole remaining block stream
-      while (read() >= 0) {}
-
       if (ownsInner) inner.close()
       closed = true
     }
+  }
 
+  def skipToEnd(): Unit = {
+    while (read() >= 0) {}
   }
 
   private def readBlock() {
@@ -39,7 +38,6 @@ class BlockInputStream(val inner: InputStream, val ownsInner: Boolean = true) ex
     inner.read(block, 0, size)
     blockSize = size
     blockPosition = 0
-    startedReading = true
   }
 }
 

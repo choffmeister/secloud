@@ -31,6 +31,7 @@ class BlockStreamSpec extends Specification {
       val readBlock1 = new BlockInputStream(readRaw)
       readBlock1.read() === 0
       readBlock1.read() === 1
+      readBlock1.skipToEnd()
       readBlock1.close()
 
       val readBlock2 = new BlockInputStream(readRaw)
