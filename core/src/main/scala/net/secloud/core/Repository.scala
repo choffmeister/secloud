@@ -17,7 +17,7 @@ class Repository(val workingDir: RepositoryWorkingDir, val database: RepositoryD
 
   def commit() {
     val rootTreeEntry = iterateFiles("/").copy(name = "")
-    val headKey = generateKey()
+    val headKey = generateParameters()
     val commit = Commit(ObjectId.empty, config.issuer, Nil, rootTreeEntry)
     val headId = database.write(dbs => signObject(dbs)(ss => writeCommit(ss, commit, headKey)))
 
@@ -33,7 +33,7 @@ class Repository(val workingDir: RepositoryWorkingDir, val database: RepositoryD
           .filter(e => !e.name.startsWith(".") && e.name != "target")
           .map(e => iterateFiles(e.path))
           .toList
-        val key = generateKey()
+        val key = generateParameters()
         val tree = Tree(ObjectId.empty, config.issuer, entries)
         val oid = database.write { dbs =>
           signObject(dbs) { ss =>
@@ -43,7 +43,7 @@ class Repository(val workingDir: RepositoryWorkingDir, val database: RepositoryD
 
         TreeEntry(oid, DirectoryTreeEntryMode, element.name, key)
       case NonExecutableFileElementMode =>
-        val key = generateKey()
+        val key = generateParameters()
         val blob = Blob(ObjectId.empty, config.issuer)
         val oid = database.write { dbs =>
           signObject(dbs) { ss =>
@@ -59,7 +59,7 @@ class Repository(val workingDir: RepositoryWorkingDir, val database: RepositoryD
     }
   }
 
-  private def generateKey() = `AES-128`.generateKey()
+  private def generateParameters() = `AES-128`.generateParameters()
 }
 
 object Repository {

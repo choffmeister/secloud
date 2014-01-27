@@ -65,14 +65,14 @@ private[objects] object ObjectSerializerCommons {
     }
   }
 
-  def readPrivateBlock[T](stream: InputStream, decrypt: SymmetricEncryptionParameters)(inner: InputStream => T): T = {
+  def readPrivateBlock[T](stream: InputStream, decrypt: SymmetricParams)(inner: InputStream => T): T = {
     readBlock(stream, PrivateBlockType) { bs =>
       val ds = decrypt.algorithm.wrapStream(bs, decrypt)
       inner(ds)
     }
   }
 
-  def writePrivateBlock(stream: OutputStream, encrypt: SymmetricEncryptionParameters)(inner: OutputStream => Any): Unit = {
+  def writePrivateBlock(stream: OutputStream, encrypt: SymmetricParams)(inner: OutputStream => Any): Unit = {
     writeBlock(stream, PrivateBlockType) { bs =>
       val ds = encrypt.algorithm.wrapStream(bs, encrypt)
       inner(ds)

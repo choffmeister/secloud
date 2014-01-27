@@ -61,9 +61,9 @@ object Benchmark {
     return (toMegaBytesPerSecond(byteCount, runtime1), toMegaBytesPerSecond(byteCount, runtime2))
   }
 
-  def benchmark(algorithm: SymmetricEncryptionAlgorithm): (Double, Double) = {
+  def benchmark(algorithm: SymmetricAlgorithm): (Double, Double) = {
     val buf = new Array[Byte](8192)
-    val params = algorithm.generateKey()
+    val params = algorithm.generateParameters()
 
     val ba1 = new ByteArrayOutputStream(byteCount + 100)
     val cs1 = algorithm.wrapStream(ba1, params)

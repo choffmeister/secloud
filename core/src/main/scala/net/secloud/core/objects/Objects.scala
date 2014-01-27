@@ -31,7 +31,7 @@ case class TreeEntry(
   id: ObjectId,
   mode: TreeEntryMode,
   name: String,
-  key: SymmetricEncryptionParameters
+  key: SymmetricParams
 )
 
 case class Tree(
@@ -44,7 +44,7 @@ case class Tree(
 
 case class CommitParent(
   id: ObjectId,
-  key: SymmetricEncryptionParameters
+  key: SymmetricParams
 )
 
 case class Commit(
