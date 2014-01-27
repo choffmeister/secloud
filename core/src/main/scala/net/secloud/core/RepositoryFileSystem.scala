@@ -14,9 +14,12 @@ class RepositoryFileSystem(db: RepositoryDatabase, commitId: ObjectId, commitKey
   def read[T](f: VirtualFile)(inner: InputStream => T): T = {
     val tree = walkTree(f.parent)
     val blobEntry = tree.entries.find(_.name == f.name).get
-    val buffer = new ByteArrayOutputStream()
-    val blob = db.read(blobEntry.id)(dbs => readBlob(dbs, buffer, blobEntry.key))
-    inner(new ByteArrayInputStream(buffer.toByteArray))
+    db.read(blobEntry.id) { dbs =>
+      readBlob(dbs)
+      readBlobContent(dbs, blobEntry.key) { cs =>
+        inner(cs)
+      }
+    }
   }
   def write(f: VirtualFile)(inner: OutputStream => Any): Unit = throw new Exception("Not supported")
 

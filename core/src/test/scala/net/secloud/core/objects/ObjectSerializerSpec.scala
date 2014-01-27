@@ -8,6 +8,7 @@ import java.io.OutputStream
 import java.io.InputStream
 import java.io.ByteArrayInputStream
 import net.secloud.core.utils.BinaryReaderWriter._
+import net.secloud.core.utils.RichStream._
 import net.secloud.core.security.CryptographicAlgorithms._
 import java.io.FileInputStream
 
@@ -21,10 +22,12 @@ class ObjectSerializerSpec extends Specification {
       val content1 = new ByteArrayInputStream(content.getBytes("ASCII"))
       val blob1 = Blob(ObjectId.empty, Issuer(Array[Byte](0, 1, -2, -1), "owner"))
       val intermediate1 = new ByteArrayOutputStream()
-      BlobSerializer.write(intermediate1, blob1, content1, key)
+      BlobSerializer.write(intermediate1, blob1)
+      BlobSerializer.writeContent(intermediate1, key)(cs => content1.pipeTo(cs))
       val intermediate2 = new ByteArrayInputStream(intermediate1.toByteArray)
       val content2 = new ByteArrayOutputStream()
-      val blob2 = BlobSerializer.read(intermediate2, content2, key)
+      val blob2 = BlobSerializer.read(intermediate2)
+      BlobSerializer.readContent(intermediate2, key)(cs => cs.pipeTo(content2))
 
       blob1.issuer === blob2.issuer
       new String(content2.toByteArray, "ASCII") === content
