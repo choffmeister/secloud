@@ -1,6 +1,6 @@
 package net.secloud.core.objects
 
-import net.secloud.core.security.CryptographicAlgorithms._
+import net.secloud.core.security._
 
 sealed abstract class ObjectType
 case object BlobObjectType extends ObjectType

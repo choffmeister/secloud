@@ -1,7 +1,7 @@
 package net.secloud.core
 
 import java.io.{InputStream, OutputStream}
-import net.secloud.core.security.CryptographicAlgorithms._
+import net.secloud.core.security._
 
 package object objects {
   def writeBlob(output: OutputStream, blob: Blob): Unit =
