@@ -18,7 +18,7 @@ class Repository(val workingDir: VirtualFileSystem, val database: RepositoryData
     def commit(f: VirtualFile, head: VirtualFileSystem, wd: VirtualFileSystem): TreeEntry = {
       wd.mode(f) match {
         case Directory =>
-          val key = generateKey()
+          val key = generateParameters()
           val entries = wd.children(f)
             .filter(e => !e.name.startsWith(".") && e.name != "target")
             .map(e => commit(f.child(e.name), head, wd))
@@ -32,7 +32,7 @@ class Repository(val workingDir: VirtualFileSystem, val database: RepositoryData
           TreeEntry(id, DirectoryTreeEntryMode, f.name, key)
 
         case NonExecutableFile =>
-          val key = generateKey()
+          val key = generateParameters()
           val blob = Blob(ObjectId(), config.issuer)
           val id = database.write { dbs =>
             signObject(dbs) { ss =>
@@ -53,7 +53,7 @@ class Repository(val workingDir: VirtualFileSystem, val database: RepositoryData
     commit(VirtualFile("/"), NullFileSystem, workingDir)
   }
 
-  private def generateKey() = `AES-128`.generateKey()
+  private def generateParameters() = `AES-128`.generateParameters()
 }
 
 object Repository {

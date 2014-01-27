@@ -14,7 +14,7 @@ import org.apache.commons.codec.binary.Hex
 
 @RunWith(classOf[JUnitRunner])
 class CryptographicAlgorithmsSpec extends Specification {
-  "SymmetricEncryptionAlgorithm" should {
+  "SymmetricAlgorithm" should {
     "wrap streams with AES-128" in {
       testForConcreteAlgorithm(`AES-128`, "") === ""
       testForConcreteAlgorithm(`AES-128`, "Hello") === "Hello"
@@ -68,8 +68,8 @@ class CryptographicAlgorithmsSpec extends Specification {
     }
   }
 
-  def testForConcreteAlgorithm(algorithm: SymmetricEncryptionAlgorithm, text: String): String = {
-    val key = algorithm.generateKey()
+  def testForConcreteAlgorithm(algorithm: SymmetricAlgorithm, text: String): String = {
+    val key = algorithm.generateParameters()
     val ms1 = new ByteArrayOutputStream()
     val cs1 = algorithm.wrapStream(ms1, key)
     cs1.writeString(text)
@@ -83,8 +83,8 @@ class CryptographicAlgorithmsSpec extends Specification {
     cs2.readString()
   }
 
-  def testForConcreteAlgorithmWithSerialization(algorithm: SymmetricEncryptionAlgorithm, text: String): String = {
-    val key1 = algorithm.generateKey()
+  def testForConcreteAlgorithmWithSerialization(algorithm: SymmetricAlgorithm, text: String): String = {
+    val key1 = algorithm.generateParameters()
     val ms1 = new ByteArrayOutputStream()
     val cs1 = algorithm.wrapStream(ms1, key1)
     cs1.writeString(text)
@@ -93,10 +93,10 @@ class CryptographicAlgorithmsSpec extends Specification {
     val binary = ms1.toByteArray
 
     val keyStreamOut = new ByteArrayOutputStream()
-    writeSymmetricEncryptionParameters(keyStreamOut, key1)
+    writeSymmetricParams(keyStreamOut, key1)
     val keyStreamIn = new ByteArrayInputStream(keyStreamOut.toByteArray)
 
-    val key2 = readSymmetricEncryptionParameters(keyStreamIn)
+    val key2 = readSymmetricParams(keyStreamIn)
     val ms2 = new ByteArrayInputStream(binary)
     val cs2 = algorithm.wrapStream(ms2, key2)
 
