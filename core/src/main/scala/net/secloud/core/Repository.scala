@@ -40,7 +40,7 @@ class Repository(val workingDir: VirtualFileSystem, val database: RepositoryData
         val blob = Blob(ObjectId.empty, config.issuer)
         val oid = database.write(dbs => workingDir.read(file)(fs => writeBlob(dbs, blob, fs, key).id))
 
-        TreeEntry(oid, NonExecutableFileTreeEntryMode, file.name, key)
+        TreeEntry(oid, FileTreeEntryMode, file.name, key)
       case _ => throw new Exception(file.toString)
     }
   }

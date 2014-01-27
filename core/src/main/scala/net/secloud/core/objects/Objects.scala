@@ -23,8 +23,7 @@ case class Blob(
 }
 
 sealed abstract class TreeEntryMode
-case object NonExecutableFileTreeEntryMode extends TreeEntryMode
-case object ExecutableFileTreeEntryMode extends TreeEntryMode
+case object FileTreeEntryMode extends TreeEntryMode
 case object DirectoryTreeEntryMode extends TreeEntryMode
 
 case class TreeEntry(
