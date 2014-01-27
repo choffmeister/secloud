@@ -18,7 +18,7 @@ class Repository(val workingDir: RepositoryWorkingDir, val database: RepositoryD
     val rootTreeEntry = iterateFiles("/").copy(name = "")
     val headKey = generateKey()
     val commit = Commit(ObjectId.empty, config.issuer, Nil, rootTreeEntry)
-    val headId = database.write(s => writeCommit(s, commit, headKey).id)
+    val headId = database.write(dbs => signObject(dbs)(ss => writeCommit(ss, commit, headKey)))
 
     println(headId)
   }
@@ -34,15 +34,21 @@ class Repository(val workingDir: RepositoryWorkingDir, val database: RepositoryD
           .toList
         val key = generateKey()
         val tree = Tree(ObjectId.empty, config.issuer, entries)
-        val oid = database.write(s => writeTree(s, tree, key).id)
+        val oid = database.write { dbs =>
+          signObject(dbs) { ss =>
+            writeTree(ss, tree, key)
+          }
+        }
 
         TreeEntry(oid, DirectoryTreeEntryMode, element.name, key)
       case NonExecutableFileElementMode =>
         val key = generateKey()
         val blob = Blob(ObjectId.empty, config.issuer)
-        val oid = database.write { s1 =>
-          workingDir.read(element) { s2 =>
-            writeBlob(s1, blob, s2, key).id
+        val oid = database.write { dbs =>
+          workingDir.read(element) { bs =>
+            signObject(dbs) { ss =>
+              writeBlob(ss, blob, bs, key)
+            }
           }
         }
 
