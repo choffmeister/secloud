@@ -1,6 +1,6 @@
 package net.secloud.core
 
-import net.secloud.core.security.CryptographicAlgorithms._
+import net.secloud.core.security._
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
 import com.jcraft.jzlib.{GZIPInputStream, GZIPOutputStream}
 

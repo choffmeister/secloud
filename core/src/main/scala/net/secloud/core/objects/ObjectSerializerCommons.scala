@@ -7,13 +7,13 @@ import java.io.ByteArrayInputStream
 import net.secloud.core.utils._
 import net.secloud.core.utils.BlockStream._
 import net.secloud.core.utils.BinaryReaderWriter._
+import net.secloud.core.security._
 import com.jcraft.jzlib.{GZIPInputStream, GZIPOutputStream}
 
 class ObjectSerializationException(msg: String) extends Exception(msg)
 
 private[objects] object ObjectSerializerCommons {
   import ObjectSerializerConstants._
-  import net.secloud.core.security.CryptographicAlgorithms._
 
   def readHeader(stream: InputStream): ObjectType = {
     val magicBytes = stream.readInt32()

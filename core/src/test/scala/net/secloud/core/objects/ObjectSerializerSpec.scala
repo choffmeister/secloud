@@ -9,7 +9,7 @@ import java.io.InputStream
 import java.io.ByteArrayInputStream
 import net.secloud.core.utils.BinaryReaderWriter._
 import net.secloud.core.utils.RichStream._
-import net.secloud.core.security.CryptographicAlgorithms._
+import net.secloud.core.security._
 import java.io.FileInputStream
 
 @RunWith(classOf[JUnitRunner])
