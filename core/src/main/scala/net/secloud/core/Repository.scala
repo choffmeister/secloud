@@ -1,6 +1,7 @@
 package net.secloud.core
 
 import java.io.{File, FileInputStream, FileOutputStream}
+import net.secloud.core.utils.RichStream._
 import net.secloud.core.utils.BinaryReaderWriter._
 import net.secloud.core.security.CryptographicAlgorithms._
 import net.secloud.core.security.CryptographicAlgorithmSerializer._
@@ -45,9 +46,10 @@ class Repository(val workingDir: RepositoryWorkingDir, val database: RepositoryD
         val key = generateKey()
         val blob = Blob(ObjectId.empty, config.issuer)
         val oid = database.write { dbs =>
-          workingDir.read(element) { bs =>
-            signObject(dbs) { ss =>
-              writeBlob(ss, blob, bs, key)
+          signObject(dbs) { ss =>
+            writeBlob(ss, blob)
+            workingDir.read(element) { bs =>
+              writeBlobContent(ss, key)(cs => bs.pipeTo(cs))
             }
           }
         }

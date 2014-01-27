@@ -4,10 +4,14 @@ import java.io.{InputStream, OutputStream}
 import net.secloud.core.security.CryptographicAlgorithms._
 
 package object objects {
-  def writeBlob(output: OutputStream, blob: Blob, content: InputStream, dec: SymmetricEncryptionParameters): Unit =
-    BlobSerializer.write(output, blob, content, dec)
-  def readBlob(input: InputStream, content: OutputStream, enc: SymmetricEncryptionParameters): Blob =
-    BlobSerializer.read(input, content, enc)
+  def writeBlob(output: OutputStream, blob: Blob): Unit =
+    BlobSerializer.write(output, blob)
+  def readBlob(input: InputStream): Blob =
+    BlobSerializer.read(input)
+  def writeBlobContent(output: OutputStream, dec: SymmetricEncryptionParameters)(inner: OutputStream => Any): Unit =
+    BlobSerializer.writeContent(output, dec)(inner)
+  def readBlobContent[T](input: InputStream, enc: SymmetricEncryptionParameters)(inner: InputStream => T): T =
+    BlobSerializer.readContent(input, enc)(inner)
 
   def writeTree(output: OutputStream, tree: Tree, dec: SymmetricEncryptionParameters): Unit =
     TreeSerializer.write(output, tree, dec)

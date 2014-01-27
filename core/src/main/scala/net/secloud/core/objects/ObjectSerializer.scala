@@ -11,23 +11,17 @@ import net.secloud.core.utils.BinaryReaderWriter._
 import com.jcraft.jzlib.{GZIPInputStream, GZIPOutputStream}
 
 private[objects] object BlobSerializer {
-  def write(output: OutputStream, blob: Blob, content: InputStream, enc: SymmetricEncryptionParameters): Unit = {
+  def write(output: OutputStream, blob: Blob): Unit = {
     writeHeader(output, blob.objectType)
     writeIssuerIdentityBlock(output, blob.issuer)
 
     writePublicBlock(output) { bs =>
     }
 
-    writePrivateBlock(output, enc) { bs =>
-      writeCompressed(bs) { cs =>
-        content.pipeTo(cs)
-      }
-    }
-
     output.flush()
   }
 
-  def read(input: InputStream, content: OutputStream, dec: SymmetricEncryptionParameters): Blob = {
+  def read(input: InputStream): Blob = {
     val objectType = readHeader(input)
     assert("Expected blob", objectType == BlobObjectType)
     val issuer = readIssuerIdentityBlock(input)
@@ -35,13 +29,25 @@ private[objects] object BlobSerializer {
     readPublicBlock(input) { bs =>
     }
 
-    readPrivateBlock(input, dec) { bs =>
-      readCompressed(bs) { cs =>
-        cs.pipeTo(content)
+    return Blob(ObjectId(), issuer)
+  }
+
+  def writeContent(output: OutputStream, enc: SymmetricEncryptionParameters)(inner: OutputStream => Any): Unit = {
+    writePrivateBlock(output, enc) { bs =>
+      writeCompressed(bs) { cs =>
+        inner(cs)
       }
     }
 
-    return Blob(ObjectId(), issuer)
+    output.flush()
+  }
+
+  def readContent[T](input: InputStream, dec: SymmetricEncryptionParameters)(inner: InputStream => T): T = {
+    readPrivateBlock(input, dec) { bs =>
+      readCompressed(bs) { cs =>
+        inner(cs)
+      }
+    }
   }
 }
 
