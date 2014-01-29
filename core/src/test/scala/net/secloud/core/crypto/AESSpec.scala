@@ -7,11 +7,12 @@ import net.secloud.core.utils.BinaryReaderWriter._
 import java.io._
 
 @RunWith(classOf[JUnitRunner])
-class ApplicationSpec extends Specification {
+class AESSpec extends Specification {
   val plains = List(
     "", "a", "abc", "123456789012345", "1234567890123456",
     "12345678901234567", "123456789012345678901234567891",
-    "1234567890123456789012345678912", "12345678901234567890123456789123"
+    "1234567890123456789012345678912", "12345678901234567890123456789123",
+    "\0\0\0abc"
   ).map(_.getBytes("ASCII"))
 
   "AES" should {
