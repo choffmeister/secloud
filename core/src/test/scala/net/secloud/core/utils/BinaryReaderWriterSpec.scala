@@ -295,5 +295,29 @@ class BinaryReaderWriterSpec extends Specification {
       reader.readList()(reader.readInt32()) === List[Int]()
       reader.readList()(reader.readInt32()) === List[Int](1234,5678,9012345,67890123)
     }
+
+    "read and write Map" in {
+      val streamWrite = new ByteArrayOutputStream()
+      val writer = new BinaryWriter(streamWrite)
+
+      writer.writeMap(Map[String, Int]("First" -> 1,"Second" -> 2,"Third" -> 3)) { (k, v) =>
+        writer.writeString(k)
+        writer.writeInt32(v)
+      }
+      writer.writeMap(Map[String, Int]()) { (k, v) =>
+        writer.writeString(k)
+        writer.writeInt32(v)
+      }
+      writer.close()
+
+      val buf = streamWrite.toByteArray()
+      buf.length === 33
+
+      val streamRead = new ByteArrayInputStream(buf)
+      val reader = new BinaryReader(streamRead)
+
+      reader.readMap()((reader.readString(), reader.readInt32())) === Map[String, Int]("First" -> 1,"Second" -> 2,"Third" -> 3)
+      reader.readMap()((reader.readString(), reader.readInt32())) === Map[String, Int]()
+    }
   }
 }

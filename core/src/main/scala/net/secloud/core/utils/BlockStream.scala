@@ -13,7 +13,7 @@ class BlockInputStream(val inner: InputStream, val ownsInner: Boolean = true) ex
 
   override def read(): Int = {
     if (blockSize > 0) {
-      val b = block(blockPosition) & 0xff // change range from [-128,127] to [0,255]  
+      val b = block(blockPosition) & 0xff // change range from [-128,127] to [0,255]
       blockPosition += 1
       if (blockSize > 0 && blockPosition == blockSize) readBlock()
       b
@@ -70,9 +70,4 @@ class BlockOutputStream(val inner: OutputStream, val bufferSize: Int = 8192, val
     inner.write(block, 0, blockPosition)
     blockPosition = 0
   }
-}
-
-object BlockStream {
-  implicit def inputStreamToBlockInputStream(stream: InputStream) = new BlockInputStream(stream)
-  implicit def outputStreamToBlockOutputStream(stream: OutputStream) = new BlockOutputStream(stream)
 }
