@@ -3,7 +3,6 @@ package net.secloud.core.utils
 import org.specs2.mutable._
 import org.junit.runner.RunWith
 import org.specs2.runner.JUnitRunner
-import net.secloud.core.utils.BlockStream._
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 

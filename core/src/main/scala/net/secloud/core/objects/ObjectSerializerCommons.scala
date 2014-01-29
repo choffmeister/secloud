@@ -5,7 +5,6 @@ import java.io.InputStream
 import java.io.ByteArrayOutputStream
 import java.io.ByteArrayInputStream
 import net.secloud.core.utils._
-import net.secloud.core.utils.BlockStream._
 import net.secloud.core.utils.BinaryReaderWriter._
 import net.secloud.core.security._
 import com.jcraft.jzlib.{GZIPInputStream, GZIPOutputStream}
