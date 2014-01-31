@@ -7,10 +7,10 @@ import net.secloud.core.utils.BinaryReaderWriter._
 import java.io._
 
 @RunWith(classOf[JUnitRunner])
-class SymmetricAlgorithmSpec extends Specification {
+class NullEncryptionSpec extends Specification {
   "NullEncryption" should {
     "en- and decrypt" in {
-      val nu = NullEncryption
+      val nu = NullEncryption.generate(0)
 
       val plainIn = "Hello World".getBytes("UTF-8")
       val encrypted = streamToBytes(bs => nu.encrypt(bs)(es => es.writeBinary(plainIn)))

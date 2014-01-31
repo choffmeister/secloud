@@ -19,7 +19,7 @@ class AESSpec extends Specification {
     "en- and decrypt with 128, 192 and 256 bit key size" in {
       for (keySize <- List(16, 24, 32)) {
         for (plain <- plains) {
-          val aes = AES.generate(keySize)
+          val aes = AES.generate(keySize).asInstanceOf[AES]
           encryptThenDecrypt(aes, aes, plain)
         }
       }
@@ -30,8 +30,8 @@ class AESSpec extends Specification {
     "save and load parameters" in {
       for (keySize <- List(16, 24, 32)) {
         for (plain <- plains) {
-          val aes1 = AES.generate(keySize)
-          val aes2 = AES.load(bytesToStream(streamToBytes(bs => AES.save(bs, aes1))))
+          val aes1 = AES.generate(keySize).asInstanceOf[AES]
+          val aes2 = AES.load(bytesToStream(streamToBytes(bs => AES.save(bs, aes1)))).asInstanceOf[AES]
           aes1 !== aes2
           encryptThenDecrypt(aes1, aes2, plain)
         }

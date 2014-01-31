@@ -18,10 +18,11 @@ import org.bouncycastle.crypto.params._
 import org.bouncycastle.crypto.util._
 import org.bouncycastle.openssl._
 
-class RSA(keyPair: AsymmetricCipherKeyPair) extends AsymmetricAlgorithm {
+class RSA(keyPair: AsymmetricCipherKeyPair) extends AsymmetricAlgorithmInstance {
   private val pub: RSAKeyParameters = keyPair.getPublic.asInstanceOf[RSAKeyParameters]
   private val priv: Option[RSAKeyParameters] = Option(keyPair.getPrivate.asInstanceOf[RSAKeyParameters])
 
+  val algorithm = RSA
   val name = s"RSA-${pub.getModulus.bitLength}"
   def isPublic = true
   def isPrivate = !priv.isEmpty
@@ -87,8 +88,9 @@ class RSA(keyPair: AsymmetricCipherKeyPair) extends AsymmetricAlgorithm {
   }
 }
 
-object RSA {
-  def generate(strength: Int, certainty: Int): RSA = {
+object RSA extends AsymmetricAlgorithm {
+  def generate(strength: Int) = generate(strength, 75)
+  def generate(strength: Int, certainty: Int): AsymmetricAlgorithmInstance = {
     val random = RandomGenerator.random
     val generator = new RSAKeyPairGenerator()
     generator.init(new RSAKeyGenerationParameters(BigInteger.valueOf(0x10001), random, strength, certainty))

@@ -26,7 +26,7 @@ class RSASpec extends Specification {
   "RSA" should {
     "en- and decrypt with 512, 1024 and 2048 bit RSA key size" in {
       for (strength <- List(512, 1024, 2048)) {
-        val rsa = RSA.generate(strength, 25)
+        val rsa = RSA.generate(strength, 25).asInstanceOf[RSA]
         for (plain <- plains) {
           encryptThenDecrypt(rsa, rsa, plain)
         }

@@ -7,7 +7,8 @@ import org.bouncycastle.crypto.paddings.{PaddedBufferedBlockCipher, PKCS7Padding
 import org.bouncycastle.crypto.params.{KeyParameter, ParametersWithIV}
 import net.secloud.core.utils.BinaryReaderWriter._
 
-class AES(protected override val params: ParametersWithIV) extends BouncyCastleSymmetricAlgorithm(params) {
+class AES(protected override val params: ParametersWithIV) extends BouncyCastleSymmetricAlgorithmInstance(params) {
+  val algorithm = AES
   val blockSize = 16
   val keySize = params.getIV.length
   val name = s"AES-${keySize * 8}"
@@ -18,19 +19,16 @@ class AES(protected override val params: ParametersWithIV) extends BouncyCastleS
   }
 }
 
-object AES {
-  def generate(keySize: Int): AES = {
+object AES extends SymmetricAlgorithm {
+  def generate(keySize: Int): SymmetricAlgorithmInstance = {
     val key = RandomGenerator.nextBytes(keySize)
     val iv = RandomGenerator.nextBytes(16)
 
     create(key, iv)
   }
 
-  def create(key: Array[Byte], iv: Array[Byte]): AES = {
-    new AES(new ParametersWithIV(new KeyParameter(key), iv))
-  }
-
-  def save(output: OutputStream, aes: AES): Unit = {
+  def save(output: OutputStream, instance: SymmetricAlgorithmInstance): Unit = {
+    val aes = instance.asInstanceOf[AES]
     val key = aes.params.getParameters.asInstanceOf[KeyParameter].getKey
     val iv = aes.params.getIV
 
@@ -38,10 +36,12 @@ object AES {
     output.writeBinary(iv)
   }
 
-  def load(input: InputStream): AES = {
+  def load(input: InputStream): SymmetricAlgorithmInstance = {
     val key = input.readBinary()
     val iv = input.readBinary()
 
     create(key, iv)
   }
+
+  private def create(key: Array[Byte], iv: Array[Byte]): AES = new AES(new ParametersWithIV(new KeyParameter(key), iv))
 }
