@@ -13,7 +13,12 @@ object Build extends sbt.Build {
     EclipseKeys.withSource := true
   )
 
-  val commonProjectSettings = commonSettings ++ ScctPlugin.instrumentSettings ++ CoveragePlugin.coverageSettings
+  val scctSettings = ScctPlugin.instrumentSettings ++ Seq(
+    resourceDirectory in ScctPlugin.ScctTest <<= (resourceDirectory in Test),
+    unmanagedResources in ScctPlugin.ScctTest <<= (unmanagedResources in Test)
+  )
+
+  val commonProjectSettings = commonSettings ++ scctSettings ++ CoveragePlugin.coverageSettings
 
   val commonDependencies = Seq(
     "junit" % "junit" % "4.11" % "test",
