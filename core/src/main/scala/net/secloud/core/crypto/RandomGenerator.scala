@@ -4,7 +4,7 @@ import java.util.Random
 import java.security.SecureRandom
 
 object RandomGenerator {
-  lazy val random: Random = new SecureRandom()
+  lazy val random: SecureRandom = new SecureRandom()
 
   def nextBytes(length: Int): Array[Byte] = {
     val buffer = new Array[Byte](length)
