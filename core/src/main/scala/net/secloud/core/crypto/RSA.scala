@@ -18,6 +18,7 @@ import org.bouncycastle.crypto.params._
 import org.bouncycastle.crypto.util._
 import org.bouncycastle.openssl._
 import org.bouncycastle.util.Arrays
+import org.bouncycastle.asn1.pkcs._
 
 class RSA(keyPair: AsymmetricCipherKeyPair) extends AsymmetricAlgorithmInstance {
   private val pub: RSAKeyParameters = keyPair.getPublic.asInstanceOf[RSAKeyParameters]
@@ -117,6 +118,35 @@ object RSA extends AsymmetricAlgorithm {
     val keyPair = generator.generateKeyPair()
 
     new RSA(keyPair)
+  }
+
+  def save(output: OutputStream, key: AsymmetricAlgorithmInstance, includePrivate: Boolean): Unit = {
+    val rsa = key.asInstanceOf[RSA]
+
+    val publicKeyEncoded = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(rsa.pub).toASN1Primitive().getEncoded("DER")
+    val privateKeyEncoded = if (includePrivate) {
+      PrivateKeyInfoFactory.createPrivateKeyInfo(rsa.priv.get).toASN1Primitive.getEncoded("DER")
+    } else Array.empty[Byte]
+
+    output.writeBinary(publicKeyEncoded)
+    output.writeBinary(privateKeyEncoded)
+  }
+
+  def load(input: InputStream): AsymmetricAlgorithmInstance = {
+    val publicKeyEncoded = input.readBinary()
+    val privateKeyEncoded = input.readBinary()
+
+    val publicKey = PublicKeyFactory.createKey(publicKeyEncoded)
+    val privateKey = if (privateKeyEncoded.length > 0) {
+      Some(PrivateKeyFactory.createKey(privateKeyEncoded))
+    } else None
+
+    new RSA(new AsymmetricCipherKeyPair(publicKey, privateKey.orNull))
+  }
+
+  def fingerprint(key: AsymmetricAlgorithmInstance): Array[Byte] = {
+    val publicKeyEncoded = streamAsBytes(bs => save(bs, key, false))
+    SHA1.create().hash(publicKeyEncoded)
   }
 
   def loadFromPEM(input: InputStream, password: Option[Array[Char]] = None): RSA = {

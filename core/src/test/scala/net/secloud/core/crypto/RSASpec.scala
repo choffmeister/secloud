@@ -50,6 +50,54 @@ class RSASpec extends Specification {
       ok
     }
 
+    "(de)serialize public keys" in {
+      val rsa1 = RSA.generate(512, 25)
+      val bs1 = new ByteArrayOutputStream()
+      RSA.save(bs1, rsa1, false)
+      val bs2 = new ByteArrayInputStream(bs1.toByteArray)
+      val rsa2 = RSA.load(bs2)
+
+      rsa1.isPrivate === true
+      rsa2.isPrivate === false
+
+      val plain = Array[Byte](0,1,2,3,4)
+      val encrypted = rsa2.encrypt(plain)
+      val decrypted = rsa1.decrypt(encrypted)
+
+      plain === decrypted
+      plain !== encrypted
+    }
+
+    "(de)serialize private keys" in {
+      val rsa1 = RSA.generate(512, 25)
+      val bs1 = new ByteArrayOutputStream()
+      RSA.save(bs1, rsa1, true)
+      val bs2 = new ByteArrayInputStream(bs1.toByteArray)
+      val rsa2 = RSA.load(bs2)
+
+      rsa1.isPrivate === true
+      rsa2.isPrivate === true
+
+      val plain = Array[Byte](0,1,2,3,4)
+      val encrypted = rsa1.encrypt(plain)
+      val decrypted = rsa2.decrypt(encrypted)
+
+      plain === decrypted
+      plain !== encrypted
+    }
+
+    "create proper fingerprints" in {
+      val rsa1a = RSA.generate(512, 25)
+      val bs1 = new ByteArrayOutputStream()
+      RSA.save(bs1, rsa1a, false)
+      val bs2 = new ByteArrayInputStream(bs1.toByteArray)
+      val rsa1b = RSA.load(bs2)
+      val rsa2 = RSA.generate(512)
+
+      RSA.fingerprint(rsa1a) === RSA.fingerprint(rsa1b)
+      RSA.fingerprint(rsa1a) !== RSA.fingerprint(rsa2)
+    }
+
     "sign and validate with 512, 1024 and 2048 bit RSA key size" in {
       for (strength <- List(512, 1024, 2048)) {
         def changeFirst(arr: Array[Byte]) = Array((arr.head ^ 1).toByte) ++ arr.tail

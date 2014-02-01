@@ -1,7 +1,12 @@
 package net.secloud.core.crypto
 
+import java.io._
+
 trait AsymmetricAlgorithm {
   def generate(strength: Int): AsymmetricAlgorithmInstance
+  def save(output: OutputStream, key: AsymmetricAlgorithmInstance, includePrivate: Boolean): Unit
+  def load(input: InputStream): AsymmetricAlgorithmInstance
+  def fingerprint(key: AsymmetricAlgorithmInstance): Array[Byte]
 }
 
 trait AsymmetricAlgorithmInstance {
