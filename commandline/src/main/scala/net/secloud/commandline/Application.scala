@@ -42,6 +42,10 @@ object Application {
       case Some(cli.init) =>
         repo.init()
         println("init")
+      case Some(cli.keygen) =>
+        println("generating RSA 2048-bit key...")
+        KeyGenerator.generate(env, 2048, 128)
+        println("done")
       case Some(cli.commit) =>
         println("commit")
         val rootTreeId = repo.commit()
@@ -61,6 +65,7 @@ object Application {
     version(s"${Secloud.name} v${Secloud.version} (c) ${Secloud.year} ${Secloud.copyright}")
 
     val init = new Subcommand("init")
+    val keygen = new Subcommand("keygen")
     val commit = new Subcommand("commit")
     val environment = new Subcommand("environment")
     val benchmark = new Subcommand("benchmark")
