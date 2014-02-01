@@ -23,26 +23,8 @@ package object objects {
   def readCommit(input: InputStream, enc: SymmetricAlgorithmInstance): Commit =
     CommitSerializer.read(input, enc)
 
-  def signObject(output: OutputStream)(inner: OutputStream => Any): ObjectId = {
-    val hashAlgorithm = SHA1.create()
-    val hash = hashAlgorithm.hash(output)(inner(_))
-
-    // TODO: sign with a private key
-    val signature = hash
-    ObjectSerializerCommons.writeIssuerSignatureBlock(output, hash)
-    output.flush()
-
-    return ObjectId(hash)
-  }
-
-  def validateObject[T](input: InputStream)(inner: InputStream => T): T = {
-    val hashAlgorithm = SHA1.create()
-    val (hash, result) = hashAlgorithm.hash(input)(inner(_))
-
-    val signature = ObjectSerializerCommons.readIssuerSignatureBlock(input)
-    // TODO: validate signature against a public key
-    if (hash.toSeq != signature) throw new Exception("Invalid signature")
-
-    return result
-  }
+  def signObject(output: OutputStream, privateKey: AsymmetricAlgorithmInstance)(inner: OutputStream => Any): ObjectId =
+    ObjectSerializerCommons.signObject(output, privateKey)(inner)
+  def validateObject[T](input: InputStream, publicKeys: Map[Seq[Byte], AsymmetricAlgorithmInstance])(inner: InputStream => T): T =
+    ObjectSerializerCommons.validateObject(input, publicKeys)(inner)
 }

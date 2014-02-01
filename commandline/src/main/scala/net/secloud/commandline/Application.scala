@@ -6,6 +6,7 @@ import java.util.Date
 import org.rogach.scallop._
 import net.secloud.core._
 import net.secloud.core.objects._
+import net.secloud.core.crypto._
 
 object Application {
   def main(args: Array[String]): Unit = {
@@ -21,8 +22,10 @@ object Application {
   )
 
   def execute(env: Environment, cli: CommandLineInterface): Unit = {
-    val issuer = Issuer(Array[Byte](0, 1, -2, -1), "owner")
-    val config = RepositoryConfig(issuer)
+    val asymmetricKey = RSA.generate(1024)
+    val symmetricAlgorithm = AES
+    val symmetricAlgorithmKeySize = 32
+    val config = RepositoryConfig(asymmetricKey, symmetricAlgorithm, symmetricAlgorithmKeySize)
     val repo = Repository(env.currentDirectory, config)
 
     cli.subcommand match {
@@ -31,6 +34,8 @@ object Application {
         println("init")
       case Some(cli.commit) =>
         println("commit")
+        val rootTreeId = repo.commit()
+        println("root tree " + rootTreeId)
       case Some(cli.environment) =>
         println(s"Current directory: ${env.currentDirectory}")
         println(s"Home directory ${env.userDirectory}")

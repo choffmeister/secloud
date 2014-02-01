@@ -7,17 +7,13 @@ case object BlobObjectType extends ObjectType
 case object TreeObjectType extends ObjectType
 case object CommitObjectType extends ObjectType
 
-case class Issuer(id: Seq[Byte], name: String)
-
 sealed abstract class BaseObject {
   val id: ObjectId
-  val issuer: Issuer
   val objectType: ObjectType
 }
 
 case class Blob(
-  id: ObjectId,
-  issuer: Issuer
+  id: ObjectId
 ) extends BaseObject {
   val objectType = BlobObjectType
 }
@@ -35,7 +31,6 @@ case class TreeEntry(
 
 case class Tree(
   id: ObjectId,
-  issuer: Issuer,
   entries: List[TreeEntry]
 ) extends BaseObject {
   val objectType = TreeObjectType
@@ -48,7 +43,6 @@ case class CommitParent(
 
 case class Commit(
   id: ObjectId,
-  issuer: Issuer,
   parents: List[CommitParent],
   tree: TreeEntry
 ) extends BaseObject {

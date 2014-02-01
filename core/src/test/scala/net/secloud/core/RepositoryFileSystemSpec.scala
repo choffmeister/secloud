@@ -7,6 +7,7 @@ import java.util.UUID
 import java.io.{InputStream, OutputStream}
 import java.io.{File, FileInputStream, FileOutputStream}
 import net.secloud.core.objects._
+import net.secloud.core.crypto._
 
 @RunWith(classOf[JUnitRunner])
 class RepositoryFileSystemSpec extends Specification {
@@ -19,10 +20,12 @@ class RepositoryFileSystemSpec extends Specification {
 
       val vfs = new NativeFileSystem(base)
       val db = new DirectoryRepositoryDatabase(new File(base, ".secloud"))
-      val issuer = Issuer(Array[Byte](0, 1, -2, -1), "owner")
-      val config = RepositoryConfig(issuer)
+      val asymmetricKey = RSA.generate(512, 25)
+      val symmetricAlgorithm = AES
+      val symmetricAlgorithmKeySize = 16
+      val config = RepositoryConfig(asymmetricKey, symmetricAlgorithm, symmetricAlgorithmKeySize)
       val repo = new Repository(vfs, db, config)
-      
+
       skipped
     }
   }

@@ -12,7 +12,6 @@ import com.jcraft.jzlib.{GZIPInputStream, GZIPOutputStream}
 private[objects] object BlobSerializer {
   def write(output: OutputStream, blob: Blob): Unit = {
     writeHeader(output, blob.objectType)
-    writeIssuerIdentityBlock(output, blob.issuer)
 
     writePublicBlock(output) { bs =>
     }
@@ -23,12 +22,11 @@ private[objects] object BlobSerializer {
   def read(input: InputStream): Blob = {
     val objectType = readHeader(input)
     assert("Expected blob", objectType == BlobObjectType)
-    val issuer = readIssuerIdentityBlock(input)
 
     readPublicBlock(input) { bs =>
     }
 
-    return Blob(ObjectId(), issuer)
+    return Blob(ObjectId())
   }
 
   def writeContent(output: OutputStream, key: SymmetricAlgorithmInstance)(inner: OutputStream => Any): Unit = {
@@ -53,7 +51,6 @@ private[objects] object BlobSerializer {
 private[objects] object TreeSerializer {
   def write(output: OutputStream, tree: Tree, key: SymmetricAlgorithmInstance): Unit = {
     writeHeader(output, tree.objectType)
-    writeIssuerIdentityBlock(output, tree.issuer)
 
     writePublicBlock(output) { bs =>
       bs.writeList(tree.entries) { e =>
@@ -75,7 +72,6 @@ private[objects] object TreeSerializer {
   def read(input: InputStream, key: SymmetricAlgorithmInstance): Tree = {
     val objectType = readHeader(input)
     assert("Expected tree", objectType == TreeObjectType)
-    val issuer = readIssuerIdentityBlock(input)
 
     val entryIdsAndModes = readPublicBlock(input) { bs =>
       val entryIdsAndModes = bs.readList() {
@@ -96,14 +92,13 @@ private[objects] object TreeSerializer {
     val entries = entryIdsAndModes.zip(entryNamesAndKey)
       .map(e => TreeEntry(e._1._1, e._1._2, e._2._1, e._2._2))
 
-    return Tree(ObjectId(), issuer, entries)
+    return Tree(ObjectId(), entries)
   }
 }
 
 private[objects] object CommitSerializer {
   def write(output: OutputStream, commit: Commit, key: SymmetricAlgorithmInstance): Unit = {
     writeHeader(output, commit.objectType)
-    writeIssuerIdentityBlock(output, commit.issuer)
 
     writePublicBlock(output) { bs =>
       bs.writeList(commit.parents) {
@@ -125,7 +120,6 @@ private[objects] object CommitSerializer {
   def read(input: InputStream, key: SymmetricAlgorithmInstance): Commit = {
     val objectType = readHeader(input)
     assert("Expected commit", objectType == CommitObjectType)
-    val issuer = readIssuerIdentityBlock(input)
 
     val (parentIds, treeId) = readPublicBlock(input) { bs =>
       val parentIds = bs.readList() {
@@ -147,6 +141,6 @@ private[objects] object CommitSerializer {
       .map(p => CommitParent(p._1, p._2))
     val tree = TreeEntry(treeId, DirectoryTreeEntryMode, "", treeKey)
 
-    return Commit(ObjectId(), issuer, parents, tree)
+    return Commit(ObjectId(), parents, tree)
   }
 }

@@ -6,14 +6,18 @@ import net.secloud.core.utils.BinaryReaderWriter._
 import net.secloud.core.objects._
 import net.secloud.core.crypto._
 
-case class RepositoryConfig(val issuer: Issuer)
+case class RepositoryConfig(
+  val asymmetricKey: AsymmetricAlgorithmInstance,
+  val symmetricAlgorithm: SymmetricAlgorithm,
+  val symmetricAlgorithmKeySize: Int
+)
 
 class Repository(val workingDir: VirtualFileSystem, val database: RepositoryDatabase, val config: RepositoryConfig) {
   def init() {
     database.init()
   }
 
-  def commit() {
+  def commit(): ObjectId = {
     def commit(f: VirtualFile, head: VirtualFileSystem, wd: VirtualFileSystem): TreeEntry = {
       wd.mode(f) match {
         case Directory =>
@@ -22,9 +26,9 @@ class Repository(val workingDir: VirtualFileSystem, val database: RepositoryData
             .filter(e => !e.name.startsWith(".") && e.name != "target")
             .map(e => commit(f.child(e.name), head, wd))
             .toList
-          val tree = Tree(ObjectId(), config.issuer, entries)
+          val tree = Tree(ObjectId(), entries)
           val id = database.write { dbs =>
-            signObject(dbs) { ss =>
+            signObject(dbs, config.asymmetricKey) { ss =>
               writeTree(ss, tree, key)
             }
           }
@@ -32,9 +36,9 @@ class Repository(val workingDir: VirtualFileSystem, val database: RepositoryData
 
         case NonExecutableFile =>
           val key = generateKey()
-          val blob = Blob(ObjectId(), config.issuer)
+          val blob = Blob(ObjectId())
           val id = database.write { dbs =>
-            signObject(dbs) { ss =>
+            signObject(dbs, config.asymmetricKey) { ss =>
               writeBlob(ss, blob)
               writeBlobContent(ss, key) { bs =>
                 wd.read(f) { fs =>
@@ -49,10 +53,10 @@ class Repository(val workingDir: VirtualFileSystem, val database: RepositoryData
       }
     }
 
-    commit(VirtualFile("/"), NullFileSystem, workingDir)
+    commit(VirtualFile("/"), NullFileSystem, workingDir).id
   }
 
-  private def generateKey() = AES.generate(32)
+  private def generateKey() = config.symmetricAlgorithm.generate(config.symmetricAlgorithmKeySize)
 }
 
 object Repository {

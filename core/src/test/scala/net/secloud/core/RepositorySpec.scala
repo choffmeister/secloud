@@ -7,6 +7,7 @@ import java.util.UUID
 import java.io.{InputStream, OutputStream}
 import java.io.{File, FileInputStream, FileOutputStream}
 import net.secloud.core.objects._
+import net.secloud.core.crypto._
 
 @RunWith(classOf[JUnitRunner])
 class RepositorySpec extends Specification {
@@ -16,8 +17,10 @@ class RepositorySpec extends Specification {
     "work" in {
       val base = getTempDir
       build(base)
-      val issuer = Issuer(Array[Byte](0, 1, 2, -2, -1), "owner")
-      val config = RepositoryConfig(issuer)
+      val asymmetricKey = RSA.generate(512, 25)
+      val symmetricAlgorithm = AES
+      val symmetricAlgorithmKeySize = 16
+      val config = RepositoryConfig(asymmetricKey, symmetricAlgorithm, symmetricAlgorithmKeySize)
       val repo = Repository(base, config)
       repo.init()
       repo.commit()

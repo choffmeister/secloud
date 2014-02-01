@@ -25,29 +25,19 @@ private[objects] object ObjectSerializerCommons {
     stream.writeInt8(objectTypeMap(objectType))
   }
 
-  def readIssuerIdentityBlock(stream: InputStream): Issuer = {
-    readBlock(stream, IssuerIdentityBlockType) { bs =>
-      val id = bs.readBinary()
-      val name = bs.readString()
-      Issuer(id, name)
+  def readSignatureBlock(stream: InputStream): (Seq[Byte], Seq[Byte], Seq[Byte]) = {
+    readBlock(stream, SignatureBlockType) { bs =>
+      val issuerFingerprint = bs.readBinary().toSeq
+      val hash = bs.readBinary().toSeq
+      val signature = bs.readBinary().toSeq
+      (issuerFingerprint, hash, signature)
     }
   }
 
-  def writeIssuerIdentityBlock(stream: OutputStream, issuer: Issuer) {
-    writeBlock(stream, IssuerIdentityBlockType) { bs =>
-      bs.writeBinary(issuer.id)
-      bs.writeString(issuer.name)
-    }
-  }
-
-  def readIssuerSignatureBlock(stream: InputStream): Seq[Byte] = {
-    readBlock(stream, IssuerSignatureBlockType) { bs =>
-      bs.readBinary().toSeq
-    }
-  }
-
-  def writeIssuerSignatureBlock(stream: OutputStream, signature: Seq[Byte]) {
-    writeBlock(stream, IssuerSignatureBlockType) { bs =>
+  def writeSignatureBlock(stream: OutputStream, issuerFingerprint: Seq[Byte], hash: Seq[Byte], signature: Seq[Byte]) {
+    writeBlock(stream, SignatureBlockType) { bs =>
+      bs.writeBinary(issuerFingerprint)
+      bs.writeBinary(hash)
       bs.writeBinary(signature)
     }
   }
@@ -111,6 +101,42 @@ private[objects] object ObjectSerializerCommons {
     } finally {
       gzip.close()
     }
+  }
+
+  def signObject(output: OutputStream, privateKey: AsymmetricAlgorithmInstance)(inner: OutputStream => Any): ObjectId = {
+    def hash(os: OutputStream)(inner: OutputStream => Any): Array[Byte] = SHA1.create().hash(os)(hs => inner(hs))
+
+    val totalHash = hash(output) { ths =>
+      val signatureHash = hash(ths)(inner)
+
+      writeSignatureBlock(ths, privateKey.algorithm.fingerprint(privateKey), signatureHash, privateKey.signHash(signatureHash))
+    }
+
+    output.writeBinary(totalHash)
+    output.flush()
+
+    return ObjectId(totalHash)
+  }
+
+  def validateObject[T](input: InputStream, publicKeys: Map[Seq[Byte], AsymmetricAlgorithmInstance])(inner: InputStream => T): T = {
+    def hash(is: InputStream)(inner: InputStream => T): (Array[Byte], T) = SHA1.create().hash(is)(hs => inner(hs))
+
+    val (totalHash, result) = hash(input) { ths =>
+      val (signatureHash, result) = hash(ths)(inner)
+
+      val (readIssuerFingerprint, readSignatureHash, readSignature) = readSignatureBlock(ths)
+      assert("Unknown issuer fingerprint", publicKeys.contains(readIssuerFingerprint) == true)
+      val publicKey = publicKeys(readIssuerFingerprint)
+      assert("Invalid signature", publicKey.validateHash(readSignatureHash.toArray, readSignature.toArray) == true)
+
+      result
+    }
+
+    val readTotalHash = input.readBinary()
+    assert("Invalid object hash", readTotalHash.toSeq == totalHash.toSeq)
+    assert("Additional data behind object", input.read() < 0)
+
+    return result
   }
 
   def assert(errorMessage: String, cond: Boolean): Unit = assert(errorMessage)(cond == true)

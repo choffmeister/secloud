@@ -4,16 +4,14 @@ private[objects] object ObjectSerializerConstants {
   val MagicBytes = 0x12345678
 
   sealed abstract class BlockType
-  case object IssuerIdentityBlockType extends BlockType
-  case object IssuerSignatureBlockType extends BlockType
   case object PublicBlockType extends BlockType
   case object PrivateBlockType extends BlockType
+  case object SignatureBlockType extends BlockType
 
   val blockTypeMap = Map[BlockType, Byte](
-    IssuerIdentityBlockType -> 0x00,
-    IssuerSignatureBlockType -> 0x01,
-    PublicBlockType -> 0x02,
-    PrivateBlockType -> 0x03
+    PublicBlockType -> 0x00,
+    PrivateBlockType -> 0x01,
+    SignatureBlockType -> 0x02
   )
   val blockTypeMapInverse = blockTypeMap.map(entry => (entry._2, entry._1))
 
