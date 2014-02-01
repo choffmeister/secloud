@@ -2,9 +2,9 @@ package net.secloud.core
 
 import java.io._
 import net.secloud.core.objects._
-import net.secloud.core.security._
+import net.secloud.core.crypto._
 
-class RepositoryFileSystem(db: RepositoryDatabase, commitId: ObjectId, commitKey: SymmetricParams) extends VirtualFileSystem {
+class RepositoryFileSystem(db: RepositoryDatabase, commitId: ObjectId, commitKey: SymmetricAlgorithmInstance) extends VirtualFileSystem {
   private val commit = db.read(commitId)(dbs => readCommit(dbs, commitKey))
   private val tree = db.read(commit.tree.id)(dbs => readTree(dbs, commit.tree.key))
 

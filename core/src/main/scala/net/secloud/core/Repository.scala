@@ -4,7 +4,7 @@ import java.io.{File, FileInputStream, FileOutputStream}
 import net.secloud.core.utils.RichStream._
 import net.secloud.core.utils.BinaryReaderWriter._
 import net.secloud.core.objects._
-import net.secloud.core.security._
+import net.secloud.core.crypto._
 
 case class RepositoryConfig(val issuer: Issuer)
 
@@ -17,7 +17,7 @@ class Repository(val workingDir: VirtualFileSystem, val database: RepositoryData
     def commit(f: VirtualFile, head: VirtualFileSystem, wd: VirtualFileSystem): TreeEntry = {
       wd.mode(f) match {
         case Directory =>
-          val key = generateParameters()
+          val key = generateKey()
           val entries = wd.children(f)
             .filter(e => !e.name.startsWith(".") && e.name != "target")
             .map(e => commit(f.child(e.name), head, wd))
@@ -31,7 +31,7 @@ class Repository(val workingDir: VirtualFileSystem, val database: RepositoryData
           TreeEntry(id, DirectoryTreeEntryMode, f.name, key)
 
         case NonExecutableFile =>
-          val key = generateParameters()
+          val key = generateKey()
           val blob = Blob(ObjectId(), config.issuer)
           val id = database.write { dbs =>
             signObject(dbs) { ss =>
@@ -52,7 +52,7 @@ class Repository(val workingDir: VirtualFileSystem, val database: RepositoryData
     commit(VirtualFile("/"), NullFileSystem, workingDir)
   }
 
-  private def generateParameters() = `AES-128`.generateParameters()
+  private def generateKey() = AES.generate(32)
 }
 
 object Repository {

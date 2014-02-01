@@ -1,50 +1,47 @@
 package net.secloud.core
 
 import java.io.{InputStream, OutputStream}
-import net.secloud.core.security._
+import net.secloud.core.crypto._
 
 package object objects {
   def writeBlob(output: OutputStream, blob: Blob): Unit =
     BlobSerializer.write(output, blob)
   def readBlob(input: InputStream): Blob =
     BlobSerializer.read(input)
-  def writeBlobContent(output: OutputStream, dec: SymmetricParams)(inner: OutputStream => Any): Unit =
-    BlobSerializer.writeContent(output, dec)(inner)
-  def readBlobContent[T](input: InputStream, enc: SymmetricParams)(inner: InputStream => T): T =
-    BlobSerializer.readContent(input, enc)(inner)
+  def writeBlobContent(output: OutputStream, key: SymmetricAlgorithmInstance)(inner: OutputStream => Any): Unit =
+    BlobSerializer.writeContent(output, key)(inner)
+  def readBlobContent[T](input: InputStream, key: SymmetricAlgorithmInstance)(inner: InputStream => T): T =
+    BlobSerializer.readContent(input, key)(inner)
 
-  def writeTree(output: OutputStream, tree: Tree, dec: SymmetricParams): Unit =
-    TreeSerializer.write(output, tree, dec)
-  def readTree(input: InputStream, enc: SymmetricParams): Tree =
+  def writeTree(output: OutputStream, tree: Tree, key: SymmetricAlgorithmInstance): Unit =
+    TreeSerializer.write(output, tree, key)
+  def readTree(input: InputStream, enc: SymmetricAlgorithmInstance): Tree =
     TreeSerializer.read(input, enc)
 
-  def writeCommit(output: OutputStream, commit: Commit, dec: SymmetricParams): Unit =
-    CommitSerializer.write(output, commit, dec)
-  def readCommit(input: InputStream, enc: SymmetricParams): Commit =
+  def writeCommit(output: OutputStream, commit: Commit, key: SymmetricAlgorithmInstance): Unit =
+    CommitSerializer.write(output, commit, key)
+  def readCommit(input: InputStream, enc: SymmetricAlgorithmInstance): Commit =
     CommitSerializer.read(input, enc)
 
   def signObject(output: OutputStream)(inner: OutputStream => Any): ObjectId = {
-    val hashStream = `SHA-1`.wrapStream(output)
-    inner(hashStream)
-    hashStream.flush()
+    val hashAlgorithm = SHA1.create()
+    val hash = hashAlgorithm.hash(output)(inner(_))
 
-    val digest = hashStream.getMessageDigest.digest.toSeq
     // TODO: sign with a private key
-    val signature = digest
-    ObjectSerializerCommons.writeIssuerSignatureBlock(output, digest)
+    val signature = hash
+    ObjectSerializerCommons.writeIssuerSignatureBlock(output, hash)
     output.flush()
 
-    return ObjectId(digest)
+    return ObjectId(hash)
   }
 
   def validateObject[T](input: InputStream)(inner: InputStream => T): T = {
-    val hashStream = `SHA-1`.wrapStream(input)
-    val result = inner(hashStream)
+    val hashAlgorithm = SHA1.create()
+    val (hash, result) = hashAlgorithm.hash(input)(inner(_))
 
-    val digest = hashStream.getMessageDigest.digest.toSeq
     val signature = ObjectSerializerCommons.readIssuerSignatureBlock(input)
     // TODO: validate signature against a public key
-    if (digest != signature) throw new Exception("Invalid signature")
+    if (hash.toSeq != signature) throw new Exception("Invalid signature")
 
     return result
   }

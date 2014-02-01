@@ -4,7 +4,7 @@ import java.io.InputStream
 import java.io.OutputStream
 import net.secloud.core.objects.ObjectSerializerConstants._
 import net.secloud.core.objects.ObjectSerializerCommons._
-import net.secloud.core.security._
+import net.secloud.core.crypto._
 import net.secloud.core.utils.RichStream._
 import net.secloud.core.utils.BinaryReaderWriter._
 import com.jcraft.jzlib.{GZIPInputStream, GZIPOutputStream}
@@ -31,8 +31,8 @@ private[objects] object BlobSerializer {
     return Blob(ObjectId(), issuer)
   }
 
-  def writeContent(output: OutputStream, enc: SymmetricParams)(inner: OutputStream => Any): Unit = {
-    writePrivateBlock(output, enc) { bs =>
+  def writeContent(output: OutputStream, key: SymmetricAlgorithmInstance)(inner: OutputStream => Any): Unit = {
+    writePrivateBlock(output, key) { bs =>
       writeCompressed(bs) { cs =>
         inner(cs)
       }
@@ -41,8 +41,8 @@ private[objects] object BlobSerializer {
     output.flush()
   }
 
-  def readContent[T](input: InputStream, dec: SymmetricParams)(inner: InputStream => T): T = {
-    readPrivateBlock(input, dec) { bs =>
+  def readContent[T](input: InputStream, key: SymmetricAlgorithmInstance)(inner: InputStream => T): T = {
+    readPrivateBlock(input, key) { bs =>
       readCompressed(bs) { cs =>
         inner(cs)
       }
@@ -51,7 +51,7 @@ private[objects] object BlobSerializer {
 }
 
 private[objects] object TreeSerializer {
-  def write(output: OutputStream, tree: Tree, enc: SymmetricParams): Unit = {
+  def write(output: OutputStream, tree: Tree, key: SymmetricAlgorithmInstance): Unit = {
     writeHeader(output, tree.objectType)
     writeIssuerIdentityBlock(output, tree.issuer)
 
@@ -62,17 +62,17 @@ private[objects] object TreeSerializer {
       }
     }
 
-    writePrivateBlock(output, enc) { bs =>
+    writePrivateBlock(output, key) { bs =>
       bs.writeList(tree.entries) { e =>
         bs.writeString(e.name)
-        writeSymmetricParams(bs, e.key)
+        writeSymmetricAlgorithm(bs, e.key)
       }
     }
 
     output.flush()
   }
 
-  def read(input: InputStream, dec: SymmetricParams): Tree = {
+  def read(input: InputStream, key: SymmetricAlgorithmInstance): Tree = {
     val objectType = readHeader(input)
     assert("Expected tree", objectType == TreeObjectType)
     val issuer = readIssuerIdentityBlock(input)
@@ -86,9 +86,9 @@ private[objects] object TreeSerializer {
       entryIdsAndModes
     }
 
-    val entryNamesAndKey = readPrivateBlock(input, dec) { bs =>
+    val entryNamesAndKey = readPrivateBlock(input, key) { bs =>
       val entryNamesAndKey = bs.readList() {
-        (bs.readString(), readSymmetricParams(bs))
+        (bs.readString(), readSymmetricAlgorithm(bs))
       }
       entryNamesAndKey
     }
@@ -101,7 +101,7 @@ private[objects] object TreeSerializer {
 }
 
 private[objects] object CommitSerializer {
-  def write(output: OutputStream, commit: Commit, enc: SymmetricParams): Unit = {
+  def write(output: OutputStream, commit: Commit, key: SymmetricAlgorithmInstance): Unit = {
     writeHeader(output, commit.objectType)
     writeIssuerIdentityBlock(output, commit.issuer)
 
@@ -112,17 +112,17 @@ private[objects] object CommitSerializer {
       bs.writeObjectId(commit.tree.id)
     }
 
-    writePrivateBlock(output, enc) { bs =>
+    writePrivateBlock(output, key) { bs =>
       bs.writeList(commit.parents) {
-        p => writeSymmetricParams(bs, p.key)
+        p => writeSymmetricAlgorithm(bs, p.key)
       }
-      writeSymmetricParams(bs, commit.tree.key)
+      writeSymmetricAlgorithm(bs, commit.tree.key)
     }
 
     output.flush()
   }
 
-  def read(input: InputStream, dec: SymmetricParams): Commit = {
+  def read(input: InputStream, key: SymmetricAlgorithmInstance): Commit = {
     val objectType = readHeader(input)
     assert("Expected commit", objectType == CommitObjectType)
     val issuer = readIssuerIdentityBlock(input)
@@ -135,11 +135,11 @@ private[objects] object CommitSerializer {
       (parentIds, treeId)
     }
 
-    val (parentKeys, treeKey) = readPrivateBlock(input, dec) { bs =>
+    val (parentKeys, treeKey) = readPrivateBlock(input, key) { bs =>
       val parentIds = bs.readList() {
-        readSymmetricParams(bs)
+        readSymmetricAlgorithm(bs)
       }
-      val treeKey = readSymmetricParams(bs)
+      val treeKey = readSymmetricAlgorithm(bs)
       (parentIds, treeKey)
     }
 

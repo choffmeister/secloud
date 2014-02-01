@@ -6,7 +6,7 @@ import java.io.ByteArrayOutputStream
 import java.io.ByteArrayInputStream
 import net.secloud.core.utils._
 import net.secloud.core.utils.BinaryReaderWriter._
-import net.secloud.core.security._
+import net.secloud.core.crypto._
 import com.jcraft.jzlib.{GZIPInputStream, GZIPOutputStream}
 
 class ObjectSerializationException(msg: String) extends Exception(msg)
@@ -64,19 +64,15 @@ private[objects] object ObjectSerializerCommons {
     }
   }
 
-  def readPrivateBlock[T](stream: InputStream, decrypt: SymmetricParams)(inner: InputStream => T): T = {
+  def readPrivateBlock[T](stream: InputStream, key: SymmetricAlgorithmInstance)(inner: InputStream => T): T = {
     readBlock(stream, PrivateBlockType) { bs =>
-      val ds = decrypt.algorithm.wrapStream(bs, decrypt)
-      inner(ds)
+      key.decrypt(bs)(inner(_))
     }
   }
 
-  def writePrivateBlock(stream: OutputStream, encrypt: SymmetricParams)(inner: OutputStream => Any): Unit = {
+  def writePrivateBlock(stream: OutputStream, key: SymmetricAlgorithmInstance)(inner: OutputStream => Any): Unit = {
     writeBlock(stream, PrivateBlockType) { bs =>
-      val ds = encrypt.algorithm.wrapStream(bs, encrypt)
-      inner(ds)
-      ds.flush()
-      ds.close()
+      key.encrypt(bs)(inner(_))
     }
   }
 

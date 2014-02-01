@@ -1,6 +1,6 @@
 package net.secloud.core.objects
 
-import net.secloud.core.security._
+import net.secloud.core.crypto._
 
 sealed abstract class ObjectType
 case object BlobObjectType extends ObjectType
@@ -30,7 +30,7 @@ case class TreeEntry(
   id: ObjectId,
   mode: TreeEntryMode,
   name: String,
-  key: SymmetricParams
+  key: SymmetricAlgorithmInstance
 )
 
 case class Tree(
@@ -43,7 +43,7 @@ case class Tree(
 
 case class CommitParent(
   id: ObjectId,
-  key: SymmetricParams
+  key: SymmetricAlgorithmInstance
 )
 
 case class Commit(

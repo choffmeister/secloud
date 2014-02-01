@@ -9,7 +9,7 @@ import java.io.InputStream
 import java.io.ByteArrayInputStream
 import net.secloud.core.utils.BinaryReaderWriter._
 import net.secloud.core.utils.RichStream._
-import net.secloud.core.security._
+import net.secloud.core.crypto._
 import java.io.FileInputStream
 
 @RunWith(classOf[JUnitRunner])
@@ -17,7 +17,7 @@ class ObjectSerializerSpec extends Specification {
   "ObjectSerializer" should {
     "serialize blobs" in {
       val content = "Hello World!"
-      val key = `AES-128`.generateParameters()
+      val key = AES.generate(32)
 
       val content1 = new ByteArrayInputStream(content.getBytes("ASCII"))
       val blob1 = Blob(ObjectId.empty, Issuer(Array[Byte](0, 1, -2, -1), "owner"))
@@ -34,12 +34,12 @@ class ObjectSerializerSpec extends Specification {
     }
 
     "serialize trees" in {
-      val key = `AES-128`.generateParameters()
+      val key = AES.generate(32)
 
       val tree1 = Tree(ObjectId.empty, Issuer(Array[Byte](0, 1, -2, -1), "owner"), List(
-        TreeEntry(ObjectId("000102"), FileTreeEntryMode, "test1", `AES-128`.generateParameters()),
-        TreeEntry(ObjectId("1231231212"), FileTreeEntryMode, "test2", `AES-128`.generateParameters()),
-        TreeEntry(ObjectId("00"), DirectoryTreeEntryMode, "test3", NullEncryption.generateParameters())
+        TreeEntry(ObjectId("000102"), FileTreeEntryMode, "test1", AES.generate(16)),
+        TreeEntry(ObjectId("1231231212"), FileTreeEntryMode, "test2", AES.generate(24)),
+        TreeEntry(ObjectId("00"), DirectoryTreeEntryMode, "test3", NullEncryption.generate(0))
       ))
       val intermediate1 = new ByteArrayOutputStream()
       TreeSerializer.write(intermediate1, tree1, key)
@@ -52,9 +52,9 @@ class ObjectSerializerSpec extends Specification {
     }
 
     "serialize commits" in {
-      val key = `AES-128`.generateParameters()
-      val parents = List(CommitParent(ObjectId(), NullEncryption.generateParameters()), CommitParent(ObjectId("00aaff"), `AES-128`.generateParameters()))
-      val tree = TreeEntry(ObjectId("ffee0011"), DirectoryTreeEntryMode, "", `AES-128`.generateParameters())
+      val key = AES.generate(32)
+      val parents = List(CommitParent(ObjectId(), NullEncryption.generate(0)), CommitParent(ObjectId("00aaff"), AES.generate(16)))
+      val tree = TreeEntry(ObjectId("ffee0011"), DirectoryTreeEntryMode, "", AES.generate(24))
 
       val commit1 = Commit(ObjectId.empty, Issuer(Array[Byte](0, 1, -2, -1), "owner"), parents, tree)
       val intermediate1 = new ByteArrayOutputStream()
@@ -70,17 +70,13 @@ class ObjectSerializerSpec extends Specification {
     }
   }
 
-  def compareSymmetricEncryptionKeys(key1: SymmetricParams, key2: SymmetricParams): Boolean = {
+  def compareSymmetricEncryptionKeys(key1: SymmetricAlgorithmInstance, key2: SymmetricAlgorithmInstance): Boolean = {
     val ms1 = new ByteArrayOutputStream()
-    val cs1 = key1.algorithm.wrapStream(ms1, key1)
-    cs1.writeString("Hello World Foobar Buzzy")
-    cs1.close()
+    key1.encrypt(ms1)(cs => cs.writeString("Hello World Foobar Buzzy"))
 
     val binary = ms1.toByteArray
 
     val ms2 = new ByteArrayInputStream(binary)
-    val cs2 = key2.algorithm.wrapStream(ms2, key2)
-
-    return cs2.readString() == "Hello World Foobar Buzzy"
+    key2.decrypt(ms2)(cs => cs.readString()) == "Hello World Foobar Buzzy"
   }
 }
