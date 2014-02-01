@@ -8,7 +8,7 @@ import java.io.ByteArrayOutputStream
 
 @RunWith(classOf[JUnitRunner])
 class BlockStreamSpec extends Specification {
-  "RlockInputStream" should {
+  "BlockInputStream" should {
     "read properly" in {
       testRead(List[Byte](0)) === List[Byte]()
       testRead(List[Byte](1,0,1,1,1,2,1,3,0)) === List[Byte](0,1,2,3)

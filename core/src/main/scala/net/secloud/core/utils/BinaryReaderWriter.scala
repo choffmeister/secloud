@@ -7,6 +7,7 @@ import java.nio.ByteOrder
 import net.secloud.core.objects.ObjectId
 import scala.language.implicitConversions
 import scala.annotation.tailrec
+import java.io.EOFException
 
 class BinaryWriter(val stream: OutputStream) {
   private val bufRaw = new Array[Byte](8)
@@ -175,6 +176,7 @@ class BinaryReader(val stream: InputStream) {
   private def readFromStream(stream: InputStream, buffer: Array[Byte], offset: Int, length: Int) {
     if (length > 0) {
       val read = stream.read(buffer, offset, length)
+      if (read <= 0) throw new EOFException()
       readFromStream(stream, buffer, offset + read, length - read)
     }
   }
