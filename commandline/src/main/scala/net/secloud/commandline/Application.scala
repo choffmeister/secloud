@@ -37,12 +37,7 @@ object Application {
       case Some(cli.commit) =>
         val repo = openRepository(env)
         println("commiting...")
-        val commit = repo.commit()
-        println("id: " + commit.id)
-        println("parentIds: " + commit.parentIds)
-        println("issuers: " + commit.issuers)
-        println("encapsulatedCommitKeys: " + commit.encapsulatedCommitKeys)
-        println("tree: " + commit.tree)
+        println(repo.commit())
       case Some(cli.environment) =>
         println(s"Current directory: ${env.currentDirectory}")
         println(s"Home directory ${env.userDirectory}")

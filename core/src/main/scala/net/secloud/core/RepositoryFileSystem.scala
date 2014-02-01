@@ -5,7 +5,7 @@ import net.secloud.core.objects._
 import net.secloud.core.crypto._
 
 class RepositoryFileSystem(db: RepositoryDatabase, commitId: ObjectId, commitKey: SymmetricAlgorithmInstance) extends VirtualFileSystem {
-  private val commit = db.read(commitId)(dbs => readCommit(dbs, commitKey))
+  private val commit = db.read(commitId)(dbs => readCommit(dbs, Left(commitKey)))
   private val tree = db.read(commit.tree.id)(dbs => readTree(dbs, commit.tree.key))
 
   def exists(f: VirtualFile) = throw new Exception("Not implemented yet")

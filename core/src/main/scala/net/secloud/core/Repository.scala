@@ -18,25 +18,24 @@ class Repository(val workingDir: VirtualFileSystem, val database: RepositoryData
     database.init()
   }
 
-  def commit(): Commit = {
+  def commit(): ObjectId = {
     val key = generateKey()
     val keyEncoded = streamAsBytes(s => key.algorithm.save(s, key))
 
     val parents = List.empty[ObjectId]
     val issuers = List(config.asymmetricKey).map(rsa => (RSA.fingerprint(rsa).toSeq, Issuer("Issuer", rsa))).toMap
-    val encapsulatedCommitKeys = issuers.map(i => (i._1, i._2.publicKey.wrapKey(keyEncoded).toSeq))
     val tree = snapshot()
 
-    val commitRaw = Commit(ObjectId.empty, parents, issuers, encapsulatedCommitKeys, tree)
+    val commitRaw = Commit(ObjectId.empty, parents, issuers, Map.empty, tree)
     val commitId = database.write { dbs =>
       signObject(dbs, config.asymmetricKey) { ss =>
         writeCommit(ss, commitRaw, key)
       }
     }
 
-    val commit = commitRaw.copy(id = commitId)
-    database.head = commit.id
-    commit
+    database.head = commitId
+    commitId
+  }
   }
 
   def snapshot(): TreeEntry = {

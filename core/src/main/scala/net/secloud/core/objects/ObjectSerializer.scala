@@ -6,6 +6,7 @@ import net.secloud.core.objects.ObjectSerializerConstants._
 import net.secloud.core.objects.ObjectSerializerCommons._
 import net.secloud.core.crypto._
 import net.secloud.core.utils.RichStream._
+import net.secloud.core.utils.StreamUtils._
 import net.secloud.core.utils.BinaryReaderWriter._
 import com.jcraft.jzlib.{GZIPInputStream, GZIPOutputStream}
 
@@ -107,7 +108,9 @@ private[objects] object CommitSerializer {
         bs.writeString(issuer.name)
         writeAsymmetricAlgorithm(bs, issuer.publicKey, false)
       }
-      bs.writeMap(commit.encapsulatedCommitKeys) { (issuerFingerprint, encapsulatedKey) =>
+      val keyEncoded = streamAsBytes(s => writeSymmetricAlgorithm(s, key))
+      val encapsulatedCommitKeys = commit.issuers.map(i => (i._1, i._2.publicKey.wrapKey(keyEncoded).toSeq))
+      bs.writeMap(encapsulatedCommitKeys) { (issuerFingerprint, encapsulatedKey) =>
         bs.writeBinary(issuerFingerprint)
         bs.writeBinary(encapsulatedKey)
       }
@@ -121,7 +124,7 @@ private[objects] object CommitSerializer {
     output.flush()
   }
 
-  def read(input: InputStream, key: SymmetricAlgorithmInstance): Commit = {
+  def read(input: InputStream, key: Either[SymmetricAlgorithmInstance, AsymmetricAlgorithmInstance]): Commit = {
     val objectType = readHeader(input)
     assert("Expected commit", objectType == CommitObjectType)
 
@@ -142,7 +145,13 @@ private[objects] object CommitSerializer {
       (parentIds, issuers, encapsulatedCommitKeys, treeId)
     }
 
-    val treeKey = readPrivateBlock(input, key) { bs =>
+    val commitKey = key match {
+      case Left(sk) => sk
+      case Right(apk) =>
+        val encapsulatedCommitKey = encapsulatedCommitKeys(apk.algorithm.fingerprint(apk).toSeq).toArray
+        bytesAsStream(apk.unwrapKey(encapsulatedCommitKey))(s => readSymmetricAlgorithm(s))
+    }
+    val treeKey = readPrivateBlock(input, commitKey) { bs =>
       readSymmetricAlgorithm(bs)
     }
 

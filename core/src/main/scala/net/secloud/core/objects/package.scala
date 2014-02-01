@@ -15,13 +15,13 @@ package object objects {
 
   def writeTree(output: OutputStream, tree: Tree, key: SymmetricAlgorithmInstance): Unit =
     TreeSerializer.write(output, tree, key)
-  def readTree(input: InputStream, enc: SymmetricAlgorithmInstance): Tree =
-    TreeSerializer.read(input, enc)
+  def readTree(input: InputStream, key: SymmetricAlgorithmInstance): Tree =
+    TreeSerializer.read(input, key)
 
   def writeCommit(output: OutputStream, commit: Commit, key: SymmetricAlgorithmInstance): Unit =
     CommitSerializer.write(output, commit, key)
-  def readCommit(input: InputStream, enc: SymmetricAlgorithmInstance): Commit =
-    CommitSerializer.read(input, enc)
+  def readCommit(input: InputStream, key: Either[SymmetricAlgorithmInstance, AsymmetricAlgorithmInstance]): Commit =
+    CommitSerializer.read(input, key)
 
   def signObject(output: OutputStream, privateKey: AsymmetricAlgorithmInstance)(inner: OutputStream => Any): ObjectId =
     ObjectSerializerCommons.signObject(output, privateKey)(inner)

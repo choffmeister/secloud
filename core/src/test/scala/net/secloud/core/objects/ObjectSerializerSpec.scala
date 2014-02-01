@@ -54,22 +54,21 @@ class ObjectSerializerSpec extends Specification {
       val parents = List(ObjectId("00aaff"))
       val issuers = List(RSA.generate(512, 25))
         .map(rsa => (RSA.fingerprint(rsa).toSeq, Issuer("Issuer", rsa))).toMap
-      val encapsulatedCommitKeys = issuers.map(i => (i._1, i._2.publicKey.wrapKey(Array.empty[Byte]).toSeq))
       val tree = TreeEntry(ObjectId("ffee0011"), DirectoryTreeEntryMode, "", AES.generate(24))
 
-      val commit1 = Commit(ObjectId.empty, parents, issuers, encapsulatedCommitKeys, tree)
+      val commit1 = Commit(ObjectId.empty, parents, issuers, Map.empty, tree)
       val intermediate1 = new ByteArrayOutputStream()
       CommitSerializer.write(intermediate1, commit1, key)
-      val intermediate2 = new ByteArrayInputStream(intermediate1.toByteArray)
-      val commit2 = CommitSerializer.read(intermediate2, key)
 
-      commit1.parentIds === commit2.parentIds
-      commit1.issuers.keys === commit2.issuers.keys
-      commit1.issuers.zip(commit2.issuers).forall(i => i._1._1 == i._2._1)
-      commit1.issuers.zip(commit2.issuers).forall(i => compareAsymmetricKeys(i._2._2.publicKey, i._1._2.publicKey))
-      commit1.encapsulatedCommitKeys == commit2.encapsulatedCommitKeys
-      commit1.tree.id === commit2.tree.id
-      compareSymmetricKeys(commit1.tree.key, commit2.tree.key) === true
+      val intermediate2 = new ByteArrayInputStream(intermediate1.toByteArray)
+      val commit2 = CommitSerializer.read(intermediate2, Left(key))
+      compareCommits(commit1, commit2)
+
+      val intermediate3 = new ByteArrayInputStream(intermediate1.toByteArray)
+      val commit3 = CommitSerializer.read(intermediate3, Right(issuers.head._2.publicKey))
+      compareCommits(commit1, commit3)
+
+      ok
     }
 
     "sign and validate objects" in {
@@ -86,6 +85,15 @@ class ObjectSerializerSpec extends Specification {
 
       ok
     }
+  }
+
+  def compareCommits(commit1: Commit, commit2: Commit): Unit = {
+    commit1.parentIds === commit2.parentIds
+    commit1.issuers.keys === commit2.issuers.keys
+    commit1.issuers.zip(commit2.issuers).forall(i => i._1._1 == i._2._1)
+    commit1.issuers.zip(commit2.issuers).forall(i => compareAsymmetricKeys(i._2._2.publicKey, i._1._2.publicKey))
+    commit1.tree.id === commit2.tree.id
+    compareSymmetricKeys(commit1.tree.key, commit2.tree.key) === true
   }
 
   def compareAsymmetricKeys(publicKey: AsymmetricAlgorithmInstance, privateKey: AsymmetricAlgorithmInstance): Boolean = {
