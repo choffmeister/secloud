@@ -34,7 +34,9 @@ class Repository(val workingDir: VirtualFileSystem, val database: RepositoryData
       }
     }
 
-    commitRaw.copy(id = commitId)
+    val commit = commitRaw.copy(id = commitId)
+    database.head = commit.id
+    commit
   }
 
   def snapshot(): TreeEntry = {

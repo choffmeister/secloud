@@ -18,4 +18,41 @@ object StreamUtils {
     s.close()
     result
   }
+
+  def writeBytes(output: OutputStream, bytes: Array[Byte]): Unit = {
+    output.write(bytes, 0, bytes.length)
+  }
+
+  def readBytes(input: InputStream): Array[Byte] = {
+    val bs = new ByteArrayOutputStream()
+    val buf = new Array[Byte](8192)
+    var done = false
+
+    while (!done) {
+      val read = input.read(buf, 0, buf.length)
+      if (read > 0) {
+        bs.write(buf, 0, read)
+      } else done = true
+    }
+
+    bs.toByteArray
+  }
+
+  def writeBytesToFile(file: File, bytes: Array[Byte]): Unit = {
+    val fs = new FileOutputStream(file)
+    try {
+      writeBytes(fs, bytes)
+    } finally {
+      fs.close()
+    }
+  }
+
+  def readBytesFromFile(file: File): Array[Byte] = {
+    val fs = new FileInputStream(file)
+    try {
+      readBytes(fs)
+    } finally {
+      fs.close()
+    }
+  }
 }

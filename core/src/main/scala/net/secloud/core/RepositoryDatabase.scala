@@ -9,9 +9,13 @@ import java.io.FileOutputStream
 import java.io.BufferedInputStream
 import java.io.BufferedOutputStream
 import net.secloud.core.objects._
+import net.secloud.core.utils.StreamUtils._
 
 trait RepositoryDatabase {
   def init(): Unit
+
+  def head: ObjectId
+  def head_=(id: ObjectId): Unit
 
   def createReader(): ObjectReader
   def createWriter(): ObjectWriter
@@ -61,8 +65,10 @@ class DirectoryRepositoryDatabase(val base: File) extends RepositoryDatabase {
     base.mkdirs()
   }
 
-  def createReader(): ObjectReader = new DirectoryObjectReader(this)
+  def head: ObjectId = ObjectId(new String(readBytesFromFile(pathJoin(base, "HEAD")), "ASCII"))
+  def head_=(id: ObjectId): Unit = writeBytesToFile(pathJoin(base, "HEAD"), id.hex.getBytes("ASCII"))
 
+  def createReader(): ObjectReader = new DirectoryObjectReader(this)
   def createWriter(): ObjectWriter = new DirectoryObjectWriter(this)
 
   def find(idPrefix: String): Option[ObjectId] = {
