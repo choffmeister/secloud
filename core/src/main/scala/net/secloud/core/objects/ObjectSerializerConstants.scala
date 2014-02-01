@@ -25,9 +25,8 @@ private[objects] object ObjectSerializerConstants {
   val objectTypeMapInverse = objectTypeMap.map(entry => (entry._2, entry._1))
 
   val treeEntryModeMap = Map[TreeEntryMode, Byte](
-    NonExecutableFileTreeEntryMode -> 0x00,
-    ExecutableFileTreeEntryMode -> 0x01,
-    DirectoryTreeEntryMode -> 0x10
+    FileTreeEntryMode -> 0x00,
+    DirectoryTreeEntryMode -> 0x01
   )
   val treeEntryModeMapInverse = treeEntryModeMap.map(entry => (entry._2, entry._1))
 }

@@ -8,63 +8,57 @@ import net.secloud.core.security._
 
 case class RepositoryConfig(val issuer: Issuer)
 
-class Repository(val workingDir: RepositoryWorkingDir, val database: RepositoryDatabase, val config: RepositoryConfig) {
+class Repository(val workingDir: VirtualFileSystem, val database: RepositoryDatabase, val config: RepositoryConfig) {
   def init() {
-    workingDir.init()
     database.init()
   }
 
   def commit() {
-    val rootTreeEntry = iterateFiles("/").copy(name = "")
-    val headKey = generateParameters()
-    val commit = Commit(ObjectId.empty, config.issuer, Nil, rootTreeEntry)
-    val headId = database.write(dbs => signObject(dbs)(ss => writeCommit(ss, commit, headKey)))
-
-    println(headId)
-  }
-
-  private def iterateFiles(path: String): TreeEntry = {
-    val element = workingDir.pathToElement(path)
-
-    element.mode match {
-      case DirectoryElementMode =>
-        val entries = workingDir.list(element)
-          .filter(e => !e.name.startsWith(".") && e.name != "target")
-          .map(e => iterateFiles(e.path))
-          .toList
-        val key = generateParameters()
-        val tree = Tree(ObjectId.empty, config.issuer, entries)
-        val oid = database.write { dbs =>
-          signObject(dbs) { ss =>
-            writeTree(ss, tree, key)
-          }
-        }
-
-        TreeEntry(oid, DirectoryTreeEntryMode, element.name, key)
-      case NonExecutableFileElementMode =>
-        val key = generateParameters()
-        val blob = Blob(ObjectId.empty, config.issuer)
-        val oid = database.write { dbs =>
-          signObject(dbs) { ss =>
-            writeBlob(ss, blob)
-            workingDir.read(element) { bs =>
-              writeBlobContent(ss, key)(cs => bs.pipeTo(cs))
+    def commit(f: VirtualFile, head: VirtualFileSystem, wd: VirtualFileSystem): TreeEntry = {
+      wd.mode(f) match {
+        case Directory =>
+          val key = generateParameters()
+          val entries = wd.children(f)
+            .filter(e => !e.name.startsWith(".") && e.name != "target")
+            .map(e => commit(f.child(e.name), head, wd))
+            .toList
+          val tree = Tree(ObjectId(), config.issuer, entries)
+          val id = database.write { dbs =>
+            signObject(dbs) { ss =>
+              writeTree(ss, tree, key)
             }
           }
-        }
+          TreeEntry(id, DirectoryTreeEntryMode, f.name, key)
 
-        TreeEntry(oid, NonExecutableFileTreeEntryMode, element.name, key)
-      case _ => throw new Exception(element.toString)
+        case NonExecutableFile =>
+          val key = generateParameters()
+          val blob = Blob(ObjectId(), config.issuer)
+          val id = database.write { dbs =>
+            signObject(dbs) { ss =>
+              writeBlob(ss, blob)
+              writeBlobContent(ss, key) { bs =>
+                wd.read(f) { fs =>
+                  fs.pipeTo(bs)
+                }
+              }
+            }
+          }
+          TreeEntry(id, FileTreeEntryMode, f.name, key)
+
+        case _ => throw new Exception()
+      }
     }
+
+    commit(VirtualFile("/"), NullFileSystem, workingDir)
   }
 
   private def generateParameters() = `AES-128`.generateParameters()
 }
 
 object Repository {
-  def apply(workingDir: RepositoryWorkingDir, database: RepositoryDatabase, config: RepositoryConfig): Repository =
+  def apply(workingDir: VirtualFileSystem, database: RepositoryDatabase, config: RepositoryConfig): Repository =
     new Repository(workingDir, database, config)
 
   def apply(dir: File, config: RepositoryConfig): Repository =
-    new Repository(new DirectoryRepositoryWorkingDir(dir), new DirectoryRepositoryDatabase(new File(dir, ".secloud")), config)
+    new Repository(new NativeFileSystem(dir), new DirectoryRepositoryDatabase(new File(dir, ".secloud")), config)
 }
