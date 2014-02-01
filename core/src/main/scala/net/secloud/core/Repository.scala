@@ -2,6 +2,7 @@ package net.secloud.core
 
 import java.io.{File, FileInputStream, FileOutputStream}
 import net.secloud.core.utils.RichStream._
+import net.secloud.core.utils.StreamUtils._
 import net.secloud.core.utils.BinaryReaderWriter._
 import net.secloud.core.objects._
 import net.secloud.core.crypto._
@@ -17,14 +18,33 @@ class Repository(val workingDir: VirtualFileSystem, val database: RepositoryData
     database.init()
   }
 
-  def commit(): ObjectId = {
-    def commit(f: VirtualFile, head: VirtualFileSystem, wd: VirtualFileSystem): TreeEntry = {
+  def commit(): Commit = {
+    val key = generateKey()
+    val keyEncoded = streamAsBytes(s => key.algorithm.save(s, key))
+
+    val parents = List.empty[ObjectId]
+    val issuers = List(config.asymmetricKey).map(rsa => (RSA.fingerprint(rsa).toSeq, Issuer("Issuer", rsa))).toMap
+    val encapsulatedCommitKeys = issuers.map(i => (i._1, i._2.publicKey.wrapKey(keyEncoded).toSeq))
+    val tree = snapshot()
+
+    val commitRaw = Commit(ObjectId.empty, parents, issuers, encapsulatedCommitKeys, tree)
+    val commitId = database.write { dbs =>
+      signObject(dbs, config.asymmetricKey) { ss =>
+        writeCommit(ss, commitRaw, key)
+      }
+    }
+
+    commitRaw.copy(id = commitId)
+  }
+
+  def snapshot(): TreeEntry = {
+    def recursion(f: VirtualFile, head: VirtualFileSystem, wd: VirtualFileSystem): TreeEntry = {
       wd.mode(f) match {
         case Directory =>
           val key = generateKey()
           val entries = wd.children(f)
             .filter(e => !e.name.startsWith(".") && e.name != "target")
-            .map(e => commit(f.child(e.name), head, wd))
+            .map(e => recursion(f.child(e.name), head, wd))
             .toList
           val tree = Tree(ObjectId(), entries)
           val id = database.write { dbs =>
@@ -53,7 +73,7 @@ class Repository(val workingDir: VirtualFileSystem, val database: RepositoryData
       }
     }
 
-    commit(VirtualFile("/"), NullFileSystem, workingDir).id
+    recursion(VirtualFile("/"), NullFileSystem, workingDir)
   }
 
   private def generateKey() = config.symmetricAlgorithm.generate(config.symmetricAlgorithmKeySize)

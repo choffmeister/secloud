@@ -1,7 +1,6 @@
 package net.secloud.commandline
 
-import java.io.File
-import java.io.FileInputStream
+import java.io._
 import java.util.Date
 import org.rogach.scallop._
 import net.secloud.core._
@@ -25,21 +24,10 @@ object Application {
     }
   }
 
-  def createEnvironment(): Environment = Environment(
-    new File(System.getProperty("user.dir")),
-    new File(System.getProperty("user.home")),
-    new Date(System.currentTimeMillis)
-  )
-
   def execute(env: Environment, cli: CommandLineInterface): Unit = {
-    val asymmetricKey = RSA.generate(1024)
-    val symmetricAlgorithm = AES
-    val symmetricAlgorithmKeySize = 32
-    val config = RepositoryConfig(asymmetricKey, symmetricAlgorithm, symmetricAlgorithmKeySize)
-    val repo = Repository(env.currentDirectory, config)
-
     cli.subcommand match {
       case Some(cli.init) =>
+        val repo = openRepository(env)
         repo.init()
         println("init")
       case Some(cli.keygen) =>
@@ -47,9 +35,14 @@ object Application {
         KeyGenerator.generate(env, 2048, 128)
         println("done")
       case Some(cli.commit) =>
-        println("commit")
-        val rootTreeId = repo.commit()
-        println("root tree " + rootTreeId)
+        val repo = openRepository(env)
+        println("commiting...")
+        val commit = repo.commit()
+        println("id: " + commit.id)
+        println("parentIds: " + commit.parentIds)
+        println("issuers: " + commit.issuers)
+        println("encapsulatedCommitKeys: " + commit.encapsulatedCommitKeys)
+        println("tree: " + commit.tree)
       case Some(cli.environment) =>
         println(s"Current directory: ${env.currentDirectory}")
         println(s"Home directory ${env.userDirectory}")
@@ -60,6 +53,34 @@ object Application {
         cli.printHelp()
     }
   }
+
+  def openRepository(env: Environment): Repository = {
+    val asymmetricKey = loadAsymmetricKey(env)
+    val symmetricAlgorithm = AES
+    val symmetricAlgorithmKeySize = 32
+    val config = RepositoryConfig(asymmetricKey, symmetricAlgorithm, symmetricAlgorithmKeySize)
+    Repository(env.currentDirectory, config)
+  }
+
+  def loadAsymmetricKey(env: Environment): AsymmetricAlgorithmInstance = {
+    val f = new File(new File(env.userDirectory, ".secloud"), "rsa.key")
+    try {
+      val fs = new FileInputStream(f)
+      try {
+        RSA.loadFromPEM(fs)
+      } finally {
+        fs.close()
+      }
+    } catch {
+      case e: Throwable => throw new Exception(s"Could not load RSA private key from ${f}", e)
+    }
+  }
+
+  def createEnvironment(): Environment = Environment(
+    new File(System.getProperty("user.dir")),
+    new File(System.getProperty("user.home")),
+    new Date(System.currentTimeMillis)
+  )
 
   class CommandLineInterface(val arguments: Seq[String]) extends ScallopConf(arguments) {
     version(s"${Secloud.name} v${Secloud.version} (c) ${Secloud.year} ${Secloud.copyright}")
