@@ -174,4 +174,19 @@ object RSA extends AsymmetricAlgorithm {
 
     new RSA(new AsymmetricCipherKeyPair(pub, priv.orNull))
   }
+
+  def saveToPEM(output: OutputStream, rsa: RSA, includePrivate: Boolean): Unit = {
+    val streamWriter = new OutputStreamWriter(output)
+    val pemWriter = new PEMWriter(streamWriter)
+
+    if (includePrivate) {
+      val privateKey = PrivateKeyInfoFactory.createPrivateKeyInfo(rsa.priv.get)
+      pemWriter.writeObject(privateKey)
+    } else {
+      val publicKey = SubjectPublicKeyInfoFactory.createSubjectPublicKeyInfo(rsa.pub)
+      pemWriter.writeObject(publicKey)
+    }
+
+    pemWriter.close()
+  }
 }

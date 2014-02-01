@@ -141,6 +141,29 @@ class RSASpec extends Specification {
 
       ok
     }
+
+    "save PEM encoded RSA keys (unencrypted)" in {
+      val rsa = RSA.generate(512, 25).asInstanceOf[RSA]
+
+      val bs1a = new ByteArrayOutputStream()
+      RSA.saveToPEM(bs1a, rsa, true)
+      val bs1b = new ByteArrayInputStream(bs1a.toByteArray)
+      val rsaPriv = RSA.loadFromPEM(bs1b)
+      rsaPriv.isPrivate === true
+
+      val bs2a = new ByteArrayOutputStream()
+      RSA.saveToPEM(bs2a, rsa, false)
+      val bs2b = new ByteArrayInputStream(bs2a.toByteArray)
+      val rsaPub = RSA.loadFromPEM(bs2b)
+      rsaPub.isPrivate === false
+
+      val plain = Array[Byte](0,1,2,3)
+      val encrypted = rsaPub.encrypt(plain)
+      val decrypted = rsaPriv.decrypt(encrypted)
+
+      plain === decrypted
+      plain !== encrypted
+    }
   }
 
   def encryptThenDecryptFromPEM(name: String, password: Option[Array[Char]], plainIn: Array[Byte]): Unit = {
