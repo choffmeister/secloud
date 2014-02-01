@@ -17,6 +17,7 @@ case class VirtualFile(path: String) {
 
   def child(name: String) = VirtualFile.fromSegments(segments ++ List(name))
   def parent = VirtualFile.fromSegments(segments.take(segments.length - 1).toList)
+  def tail = VirtualFile.fromSegments(segments.tail)
 }
 
 object VirtualFile {

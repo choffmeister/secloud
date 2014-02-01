@@ -38,6 +38,14 @@ object StreamUtils {
     bs.toByteArray
   }
 
+  def writeString(output: OutputStream, str: String): Unit = {
+    writeBytes(output, str.getBytes("UTF-8"))
+  }
+
+  def readString(input: InputStream): String = {
+    new String(readBytes(input), "UTF-8")
+  }
+
   def writeBytesToFile(file: File, bytes: Array[Byte]): Unit = {
     val fs = new FileOutputStream(file)
     try {

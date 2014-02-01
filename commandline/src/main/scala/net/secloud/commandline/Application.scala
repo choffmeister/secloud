@@ -6,6 +6,7 @@ import org.rogach.scallop._
 import net.secloud.core._
 import net.secloud.core.objects._
 import net.secloud.core.crypto._
+import scala.language.reflectiveCalls
 
 object Application {
   def main(args: Array[String]): Unit = {
@@ -19,7 +20,7 @@ object Application {
         System.err.println("Error: " + e.getMessage)
         System.err.println("Type: " + e.getClass.getName)
         System.err.println("Stack trace:")
-        e.getStackTrace.map("  " + _).foreach(println)
+        e.getStackTrace.map("  " + _).foreach(System.err.println)
         System.exit(1)
     }
   }
@@ -38,6 +39,24 @@ object Application {
         val repo = openRepository(env)
         println("commiting...")
         println(repo.commit())
+      case Some(cli.ls) =>
+        val file = VirtualFile(cli.ls.path())
+        val repo = openRepository(env)
+        val tree = repo.traverse(file).asInstanceOf[Tree]
+        tree.entries.foreach(e => println(e.name))
+      case Some(cli.cat) =>
+        val file = VirtualFile(cli.ls.path())
+        val repo = openRepository(env)
+        repo.read(file) { cs =>
+          val reader = new BufferedReader(new InputStreamReader(cs))
+          var done = false
+          while (!done) {
+            val line = Option(reader.readLine())
+            if (line.isDefined) {
+              println(line.get)
+            } else done = true
+          }
+        }
       case Some(cli.environment) =>
         println(s"Current directory: ${env.currentDirectory}")
         println(s"Home directory ${env.userDirectory}")
@@ -83,6 +102,14 @@ object Application {
     val init = new Subcommand("init")
     val keygen = new Subcommand("keygen")
     val commit = new Subcommand("commit")
+
+    val ls = new Subcommand("ls") {
+      val path = trailArg[String]("the path")
+    }
+    val cat = new Subcommand("cat") {
+      val path = trailArg[String]("the path")
+    }
+
     val environment = new Subcommand("environment")
     val benchmark = new Subcommand("benchmark")
   }

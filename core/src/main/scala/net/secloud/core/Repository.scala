@@ -1,6 +1,6 @@
 package net.secloud.core
 
-import java.io.{File, FileInputStream, FileOutputStream}
+import java.io._
 import net.secloud.core.utils.RichStream._
 import net.secloud.core.utils.StreamUtils._
 import net.secloud.core.utils.BinaryReaderWriter._
@@ -36,6 +36,45 @@ class Repository(val workingDir: VirtualFileSystem, val database: RepositoryData
     database.head = commitId
     commitId
   }
+
+  def traverse(f: VirtualFile, current: Option[BaseObject] = None): BaseObject = {
+    current match {
+      case Some(current) => current match {
+        case c: Commit => database.read(c.tree.id)(dbs => traverse(f, Some(readTree(dbs, c.tree.key))))
+        case t: Tree => f.segments match {
+          case first :: tail =>
+            t.entries.find(_.name == first) match {
+              case Some(e) => e.mode match {
+                case DirectoryTreeEntryMode => database.read(e.id)(dbs => traverse(f.tail, Some(readTree(dbs, e.key))))
+                case FileTreeEntryMode => database.read(e.id)(dbs => traverse(f.tail, Some(readBlob(dbs))))
+              }
+              case None => throw new Exception("Invalid path")
+            }
+
+          case Nil => t
+        }
+        case b: Blob => f.segments match {
+          case first :: tail => throw new Exception("Invalid path")
+          case Nil => b
+        }
+        case _ => throw new Exception("Unsupported object")
+      }
+      case None =>
+        val head = database.head
+        val commit = database.read(head)(dbs => readCommit(dbs, Right(config.asymmetricKey))).copy(id = head)
+        traverse(f, Some(commit))
+    }
+  }
+
+  def read[T](f: VirtualFile, commit: Option[Commit] = None)(inner: InputStream => T): T = {
+    val parentTree = traverse(f.parent, commit).asInstanceOf[Tree]
+    val blob = traverse(VirtualFile.fromSegments(List(f.name)), Some(parentTree)).asInstanceOf[Blob]
+    val blobEntry = parentTree.entries.find(_.name == f.name).get
+
+    database.read(blobEntry.id) { dbs =>
+      readBlob(dbs)
+      readBlobContent(dbs, blobEntry.key)(inner)
+    }
   }
 
   def snapshot(): TreeEntry = {
