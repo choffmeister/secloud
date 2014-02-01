@@ -10,7 +10,7 @@ import net.secloud.core.utils.BinaryReaderWriter._
 class AES(protected override val params: ParametersWithIV) extends BouncyCastleSymmetricAlgorithmInstance(params) {
   val algorithm = AES
   val blockSize = 16
-  val keySize = params.getIV.length
+  val keySize = params.getParameters.asInstanceOf[KeyParameter].getKey.length
   val name = s"AES-${keySize * 8}"
 
   protected def createCipher() = {
