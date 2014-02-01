@@ -12,7 +12,17 @@ object Application {
   def main(args: Array[String]): Unit = {
     val env = createEnvironment()
 
-    execute(env, new CommandLineInterface(args))
+    try {
+      execute(env, new CommandLineInterface(args))
+      System.exit(0)
+    } catch {
+      case e: Throwable =>
+        System.err.println("Error: " + e.getMessage)
+        System.err.println("Type: " + e.getClass.getName)
+        System.err.println("Stack trace:")
+        e.getStackTrace.map("  " + _).foreach(println)
+        System.exit(1)
+    }
   }
 
   def createEnvironment(): Environment = Environment(
