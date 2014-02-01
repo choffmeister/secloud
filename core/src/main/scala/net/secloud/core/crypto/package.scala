@@ -14,7 +14,7 @@ package object crypto {
   val asymmetricAlgorithmMap = Map[AsymmetricAlgorithm, Byte](
     RSA -> 0x00
   )
-  val asymmetricAlgorithmMapInverse = inverseMap(symmetricAlgorithmMap)
+  val asymmetricAlgorithmMapInverse = inverseMap(asymmetricAlgorithmMap)
 
   val hashAlgorithmMap = Map[HashAlgorithm, Byte](
     SHA1 -> 0x00,
@@ -32,6 +32,17 @@ package object crypto {
 
   def readSymmetricAlgorithm(input: InputStream): SymmetricAlgorithmInstance = {
     val algorithm = symmetricAlgorithmMapInverse(input.readInt8())
+    algorithm.load(input)
+  }
+
+  def writeAsymmetricAlgorithm(output: OutputStream, key: AsymmetricAlgorithmInstance, includePrivate: Boolean): Unit = {
+    val algorithm = key.algorithm
+    output.writeInt8(asymmetricAlgorithmMap(algorithm))
+    algorithm.save(output, key, includePrivate)
+  }
+
+  def readAsymmetricAlgorithm(input: InputStream): AsymmetricAlgorithmInstance = {
+    val algorithm = asymmetricAlgorithmMapInverse(input.readInt8())
     algorithm.load(input)
   }
 

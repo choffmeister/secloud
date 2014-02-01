@@ -7,6 +7,11 @@ case object BlobObjectType extends ObjectType
 case object TreeObjectType extends ObjectType
 case object CommitObjectType extends ObjectType
 
+case class Issuer(
+  name: String,
+  publicKey: AsymmetricAlgorithmInstance
+)
+
 sealed abstract class BaseObject {
   val id: ObjectId
   val objectType: ObjectType
@@ -36,14 +41,11 @@ case class Tree(
   val objectType = TreeObjectType
 }
 
-case class CommitParent(
-  id: ObjectId,
-  key: SymmetricAlgorithmInstance
-)
-
 case class Commit(
   id: ObjectId,
-  parents: List[CommitParent],
+  parentIds: List[ObjectId],
+  issuers: Map[Seq[Byte], Issuer],
+  encapsulatedCommitKeys: Map[Seq[Byte], Seq[Byte]],
   tree: TreeEntry
 ) extends BaseObject {
   val objectType = CommitObjectType

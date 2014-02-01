@@ -101,16 +101,20 @@ private[objects] object CommitSerializer {
     writeHeader(output, commit.objectType)
 
     writePublicBlock(output) { bs =>
-      bs.writeList(commit.parents) {
-        p => bs.writeObjectId(p.id)
+      bs.writeList(commit.parentIds)(id => bs.writeObjectId(id))
+      bs.writeMap(commit.issuers) { (fingerprint, issuer) =>
+        bs.writeBinary(fingerprint)
+        bs.writeString(issuer.name)
+        writeAsymmetricAlgorithm(bs, issuer.publicKey, false)
+      }
+      bs.writeMap(commit.encapsulatedCommitKeys) { (issuerFingerprint, encapsulatedKey) =>
+        bs.writeBinary(issuerFingerprint)
+        bs.writeBinary(encapsulatedKey)
       }
       bs.writeObjectId(commit.tree.id)
     }
 
     writePrivateBlock(output, key) { bs =>
-      bs.writeList(commit.parents) {
-        p => writeSymmetricAlgorithm(bs, p.key)
-      }
       writeSymmetricAlgorithm(bs, commit.tree.key)
     }
 
@@ -121,26 +125,29 @@ private[objects] object CommitSerializer {
     val objectType = readHeader(input)
     assert("Expected commit", objectType == CommitObjectType)
 
-    val (parentIds, treeId) = readPublicBlock(input) { bs =>
-      val parentIds = bs.readList() {
-        bs.readObjectId()
+    val (parentIds, issuers, encapsulatedCommitKeys, treeId) = readPublicBlock(input) { bs =>
+      val parentIds = bs.readList()(bs.readObjectId())
+      val issuers = bs.readMap() {
+        val fingerprint = bs.readBinary().toSeq
+        val name = bs.readString()
+        val publicKey = readAsymmetricAlgorithm(bs)
+        (fingerprint, Issuer(name, publicKey))
+      }
+      val encapsulatedCommitKeys = bs.readMap() {
+        val issuerFingerprint = bs.readBinary().toSeq
+        val encapsulatedCommitKey = bs.readBinary().toSeq
+        (issuerFingerprint, encapsulatedCommitKey)
       }
       val treeId = bs.readObjectId()
-      (parentIds, treeId)
+      (parentIds, issuers, encapsulatedCommitKeys, treeId)
     }
 
-    val (parentKeys, treeKey) = readPrivateBlock(input, key) { bs =>
-      val parentIds = bs.readList() {
-        readSymmetricAlgorithm(bs)
-      }
-      val treeKey = readSymmetricAlgorithm(bs)
-      (parentIds, treeKey)
+    val treeKey = readPrivateBlock(input, key) { bs =>
+      readSymmetricAlgorithm(bs)
     }
 
-    val parents = parentIds.zip(parentKeys)
-      .map(p => CommitParent(p._1, p._2))
     val tree = TreeEntry(treeId, DirectoryTreeEntryMode, "", treeKey)
 
-    return Commit(ObjectId(), parents, tree)
+    return Commit(ObjectId(), parentIds, issuers, encapsulatedCommitKeys, tree)
   }
 }

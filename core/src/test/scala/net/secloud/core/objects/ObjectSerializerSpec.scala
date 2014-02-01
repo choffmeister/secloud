@@ -46,24 +46,30 @@ class ObjectSerializerSpec extends Specification {
       val tree2 = TreeSerializer.read(intermediate2, key)
 
       tree1.entries.map(e => (e.id, e.name)) === tree2.entries.map(e => (e.id, e.name))
-      tree1.entries.zip(tree2.entries).forall(e => compareSymmetricEncryptionKeys(e._1.key, e._2.key)) === true
+      tree1.entries.zip(tree2.entries).forall(e => compareSymmetricKeys(e._1.key, e._2.key)) === true
     }
 
     "serialize commits" in {
       val key = AES.generate(32)
-      val parents = List(CommitParent(ObjectId(), NullEncryption.generate(0)), CommitParent(ObjectId("00aaff"), AES.generate(16)))
+      val parents = List(ObjectId("00aaff"))
+      val issuers = List(RSA.generate(512, 25))
+        .map(rsa => (RSA.fingerprint(rsa).toSeq, Issuer("Issuer", rsa))).toMap
+      val encapsulatedCommitKeys = issuers.map(i => (i._1, i._2.publicKey.wrapKey(Array.empty[Byte]).toSeq))
       val tree = TreeEntry(ObjectId("ffee0011"), DirectoryTreeEntryMode, "", AES.generate(24))
 
-      val commit1 = Commit(ObjectId.empty, parents, tree)
+      val commit1 = Commit(ObjectId.empty, parents, issuers, encapsulatedCommitKeys, tree)
       val intermediate1 = new ByteArrayOutputStream()
       CommitSerializer.write(intermediate1, commit1, key)
       val intermediate2 = new ByteArrayInputStream(intermediate1.toByteArray)
       val commit2 = CommitSerializer.read(intermediate2, key)
 
-      commit1.parents.map(_.id) === commit2.parents.map(_.id)
-      commit1.parents.zip(commit2.parents).forall(p => compareSymmetricEncryptionKeys(p._1.key, p._2.key)) === true
+      commit1.parentIds === commit2.parentIds
+      commit1.issuers.keys === commit2.issuers.keys
+      commit1.issuers.zip(commit2.issuers).forall(i => i._1._1 == i._2._1)
+      commit1.issuers.zip(commit2.issuers).forall(i => compareAsymmetricKeys(i._2._2.publicKey, i._1._2.publicKey))
+      commit1.encapsulatedCommitKeys == commit2.encapsulatedCommitKeys
       commit1.tree.id === commit2.tree.id
-      compareSymmetricEncryptionKeys(commit1.tree.key, commit2.tree.key) === true
+      compareSymmetricKeys(commit1.tree.key, commit2.tree.key) === true
     }
 
     "sign and validate objects" in {
@@ -82,7 +88,15 @@ class ObjectSerializerSpec extends Specification {
     }
   }
 
-  def compareSymmetricEncryptionKeys(key1: SymmetricAlgorithmInstance, key2: SymmetricAlgorithmInstance): Boolean = {
+  def compareAsymmetricKeys(publicKey: AsymmetricAlgorithmInstance, privateKey: AsymmetricAlgorithmInstance): Boolean = {
+    val plain = Array[Byte](0,1,2,3,-125,-126,-127)
+    val encrpyted = publicKey.encrypt(plain)
+    val decrypted = privateKey.decrypt(encrpyted)
+
+    encrpyted.toSeq == decrypted.toSeq
+  }
+
+  def compareSymmetricKeys(key1: SymmetricAlgorithmInstance, key2: SymmetricAlgorithmInstance): Boolean = {
     val ms1 = new ByteArrayOutputStream()
     key1.encrypt(ms1)(cs => cs.writeString("Hello World Foobar Buzzy"))
 
