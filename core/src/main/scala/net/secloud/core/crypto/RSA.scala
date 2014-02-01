@@ -10,13 +10,14 @@ import org.bouncycastle.crypto.AsymmetricCipherKeyPair
 import org.bouncycastle.crypto.CipherParameters
 import org.bouncycastle.crypto.digests.SHA512Digest
 import org.bouncycastle.crypto.encodings.PKCS1Encoding
-import org.bouncycastle.crypto.engines.RSAEngine
+import org.bouncycastle.crypto.engines.{RSAEngine, RSABlindedEngine}
 import org.bouncycastle.crypto.generators.KDF2BytesGenerator
 import org.bouncycastle.crypto.generators.RSAKeyPairGenerator
 import org.bouncycastle.crypto.kems.RSAKeyEncapsulation
 import org.bouncycastle.crypto.params._
 import org.bouncycastle.crypto.util._
 import org.bouncycastle.openssl._
+import org.bouncycastle.util.Arrays
 
 class RSA(keyPair: AsymmetricCipherKeyPair) extends AsymmetricAlgorithmInstance {
   private val pub: RSAKeyParameters = keyPair.getPublic.asInstanceOf[RSAKeyParameters]
@@ -37,6 +38,25 @@ class RSA(keyPair: AsymmetricCipherKeyPair) extends AsymmetricAlgorithmInstance 
     val cipher = new PKCS1Encoding(new RSAEngine())
     cipher.init(false, priv.get)
     cipher.processBlock(encryptedBytes, 0, encryptedBytes.length)
+  }
+
+  def signHash(hash: Array[Byte]): Array[Byte] = {
+    val cipher = new PKCS1Encoding(new RSABlindedEngine())
+    cipher.init(true, priv.get)
+    cipher.processBlock(hash, 0, hash.length)
+  }
+
+  def validateHash(hash: Array[Byte], signature: Array[Byte]): Boolean = {
+    val cipher = new PKCS1Encoding(new RSABlindedEngine())
+    cipher.init(false, pub)
+
+    try {
+      val signature2 = cipher.processBlock(signature, 0, signature.length)
+
+      Arrays.constantTimeAreEqual(hash, signature2)
+    } catch {
+      case e: Throwable => false
+    }
   }
 
   def wrapKey(plainKey: Array[Byte]): Array[Byte] = {

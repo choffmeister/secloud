@@ -5,6 +5,7 @@ import org.junit.runner.RunWith
 import org.specs2.mutable._
 import org.specs2.runner.JUnitRunner
 import net.secloud.core.utils.BinaryReaderWriter._
+import org.apache.commons.codec.binary.Hex
 
 @RunWith(classOf[JUnitRunner])
 class RSASpec extends Specification {
@@ -43,6 +44,31 @@ class RSASpec extends Specification {
           val unwrappedKey = rsa.unwrapKey(wrappedKey)
 
           key === unwrappedKey
+        }
+      }
+
+      ok
+    }
+
+    "sign and validate with 512, 1024 and 2048 bit RSA key size" in {
+      for (strength <- List(512, 1024, 2048)) {
+        def changeFirst(arr: Array[Byte]) = Array((arr.head ^ 1).toByte) ++ arr.tail
+        def changeLast(arr: Array[Byte]) = arr.take(arr.length - 1) ++ Array((arr.last ^ 1).toByte)
+
+        val rsa = RSA.generate(strength, 25)
+
+        for (hash <- List("00", "0000", "ff", "ffff", "295a8b3afafedca56bbc11bca7e1c1ac8521cf93").map(hex => Hex.decodeHex(hex.toCharArray))) {
+          val sig = rsa.signHash(hash)
+
+          rsa.validateHash(Array[Byte](0) ++ hash, sig) === false
+          rsa.validateHash(hash ++ Array[Byte](0), sig) === false
+          rsa.validateHash(hash, Array[Byte](0) ++ sig) === false
+          rsa.validateHash(hash, sig ++ Array[Byte](0)) === false
+          rsa.validateHash(changeFirst(hash), sig) === false
+          rsa.validateHash(changeLast(hash), sig) === false
+          rsa.validateHash(hash, changeFirst(sig)) === false
+          rsa.validateHash(hash, changeLast(sig)) === false
+          rsa.validateHash(hash, sig) === true
         }
       }
 

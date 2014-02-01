@@ -13,6 +13,8 @@ trait AsymmetricAlgorithmInstance {
 
   def encrypt(plainBytes: Array[Byte]): Array[Byte]
   def decrypt(encryptedBytes: Array[Byte]): Array[Byte]
+  def signHash(hash: Array[Byte]): Array[Byte]
+  def validateHash(hash: Array[Byte], signature: Array[Byte]): Boolean
   def wrapKey(plainKey: Array[Byte]): Array[Byte]
   def unwrapKey(wrappedKey: Array[Byte]): Array[Byte]
 }
