@@ -8,7 +8,9 @@ object Build extends sbt.Build {
     organization := "net.secloud",
     version := "0.0.1",
     scalaVersion := "2.10.3",
-    scalacOptions := Seq("-unchecked", "-feature", "-deprecation", "-language:postfixOps", "-encoding", "utf8"),
+    scalacOptions <<= baseDirectory map { bd =>
+      Seq("-unchecked", "-feature", "-deprecation", "-language:postfixOps", "-encoding", "utf8", "-sourcepath", bd.getAbsolutePath)
+    },
     testOptions in Test += Tests.Argument("junitxml", "console"),
     EclipseKeys.withSource := true
   )
