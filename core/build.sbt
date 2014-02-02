@@ -1,5 +1,3 @@
-name := "secloud-core"
-
 resolvers ++= Seq(
   "netbeans" at "http://bits.netbeans.org/maven2/"
 )

@@ -1,6 +1,8 @@
 import sbt._
 import Keys._
 import xerial.sbt.Pack._
+import sbtunidoc.Plugin._
+import DocPublishPlugin._
 import com.typesafe.sbteclipse.plugin.EclipsePlugin._
 
 object Build extends sbt.Build {
@@ -8,9 +10,8 @@ object Build extends sbt.Build {
     organization := "net.secloud",
     version := "0.0.1",
     scalaVersion := "2.10.3",
-    scalacOptions <<= baseDirectory map { bd =>
-      Seq("-unchecked", "-feature", "-deprecation", "-language:postfixOps", "-encoding", "utf8", "-sourcepath", bd.getAbsolutePath)
-    },
+    scalacOptions ++= Seq("-unchecked", "-feature", "-deprecation", "-language:postfixOps", "-encoding", "utf8"),
+    scalacOptions <<= baseDirectory.map(bd => Seq("-sourcepath", bd.getAbsolutePath)),
     testOptions in Test += Tests.Argument("junitxml", "console"),
     EclipseKeys.withSource := true
   )
@@ -27,27 +28,32 @@ object Build extends sbt.Build {
     "org.specs2" %% "specs2" % "2.2.3" % "test"
   )
 
-  lazy val root = Project(
-    id = "secloud",
-    base = file("."),
-    settings = commonSettings ++ packSettings ++ Seq(
-      packMain := Map("secloud" -> "net.secloud.commandline.Application")
-    )
-  ) aggregate(core, commandline)
-
-  lazy val core = Project(
-    id = "core",
-    base = file("core"),
-    settings = commonProjectSettings ++ Seq(
+  lazy val core = (project in file("core"))
+    .settings(commonProjectSettings: _*)
+    .settings(
+      name := "secloud-core",
       libraryDependencies ++= commonDependencies
     )
-  )
 
-  lazy val commandline = Project(
-    id = "commandline",
-    base = file("commandline"),
-    settings = commonProjectSettings ++ Seq(
+  lazy val commandline = (project in file("commandline"))
+    .settings(commonProjectSettings: _*)
+    .settings(
+      name := "secloud-commandline",
       libraryDependencies ++= commonDependencies
+    ).dependsOn(core)
+
+  lazy val root = (project in file("."))
+    .settings(commonSettings: _*)
+    .settings(packSettings: _*)
+    .settings(unidocSettings: _*)
+    .settings(docPublishSettings: _*)
+    .settings(
+      name := "secloud",
+      packMain := Map("secloud" -> "net.secloud.commandline.Application"),
+      //docPublishHost := "",
+      //docPublishUserName := "",
+      //docPublishRemoteDir := "",
+      EclipseKeys.skipParents in ThisBuild := false
     )
-  ) dependsOn(core)
+    .aggregate(core, commandline)
 }
