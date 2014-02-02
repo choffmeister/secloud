@@ -90,6 +90,12 @@ class BinaryStreamWriter(val stream: OutputStream) extends StreamWriter {
     value.foreach(item => inner(item._1, item._2))
   }
 
+  def writeStream(inner: OutputStream => Any): Unit = {
+    val bs = new BlockOutputStream(stream, ownsInner = false)
+    inner(bs)
+    bs.close()
+  }
+
   def close(): Unit = stream.close()
 
   private def writeToStream(stream: OutputStream, buffer: Array[Byte], offset: Int, length: Int) {
@@ -167,6 +173,13 @@ class BinaryStreamReader(val stream: InputStream) extends StreamReader {
 
   def readMap[A, B]()(inner: => (A, B)): Map[A, B] = {
     (1 to readInt7().toInt).map(i => inner).toMap
+  }
+
+  def readStream[T](inner: InputStream => T): T = {
+    val bs = new BlockInputStream(stream, ownsInner = false)
+    val result = inner(bs)
+    bs.close()
+    result
   }
 
   def close(): Unit = stream.close()

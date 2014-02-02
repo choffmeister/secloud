@@ -16,6 +16,7 @@ trait StreamWriter {
   def writeObjectId(value: ObjectId): Unit
   def writeList[T](value: List[T])(inner: T => Any): Unit
   def writeMap[A, B](value: Map[A, B])(inner: (A, B) => Any): Unit
+  def writeStream(inner: OutputStream => Any): Unit
   def close(): Unit
 }
 
@@ -31,5 +32,6 @@ trait StreamReader {
   def readObjectId(): ObjectId
   def readList[T]()(inner: => T): List[T]
   def readMap[A, B]()(inner: => (A, B)): Map[A, B]
+  def readStream[T](inner: InputStream => T): T
   def close(): Unit
 }

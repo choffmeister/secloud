@@ -319,5 +319,29 @@ class BinaryStreamReaderWriterSpec extends Specification {
       reader.readMap()((reader.readString(), reader.readInt32())) === Map[String, Int]("First" -> 1,"Second" -> 2,"Third" -> 3)
       reader.readMap()((reader.readString(), reader.readInt32())) === Map[String, Int]()
     }
+
+    "read and write Stream" in {
+      val streamWrite = new ByteArrayOutputStream()
+      val writer = new BinaryStreamWriter(streamWrite)
+
+      writer.writeStream { bs =>
+        bs.writeString("Hello")
+        bs.writeInt32(1)
+      }
+      writer.writeStream { bs =>
+        bs.writeInt32(2)
+        bs.writeString("World")
+      }
+      writer.close()
+
+      val buf = streamWrite.toByteArray()
+      buf.length === 24 // (1 + (1 + 5 + 4) + 1) + (1 + (4 + 1 + 5) + 1)
+
+      val streamRead = new ByteArrayInputStream(buf)
+      val reader = new BinaryStreamReader(streamRead)
+
+      reader.readStream(bs => (bs.readString(), bs.readInt32())) === ("Hello", 1)
+      reader.readStream(bs => (bs.readInt32(), bs.readString())) === (2, "World")
+    }
   }
 }

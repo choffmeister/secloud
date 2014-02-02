@@ -4,7 +4,7 @@ import java.io.{InputStream, OutputStream}
 import net.secloud.core.utils._
 import scala.language.implicitConversions
 
-class BlockInputStream(val inner: InputStream, val ownsInner: Boolean = true) extends InputStream {
+private[utils] class BlockInputStream(val inner: InputStream, val ownsInner: Boolean = true) extends InputStream {
   private var block = Array.empty[Byte]
   private var blockSize = 0
   private var blockPosition = 0
@@ -41,7 +41,7 @@ class BlockInputStream(val inner: InputStream, val ownsInner: Boolean = true) ex
   }
 }
 
-class BlockOutputStream(val inner: OutputStream, val bufferSize: Int = 8192, val ownsInner: Boolean = true) extends OutputStream {
+private[utils] class BlockOutputStream(val inner: OutputStream, val bufferSize: Int = 8192, val ownsInner: Boolean = true) extends OutputStream {
   private val block = new Array[Byte](bufferSize)
   private var blockPosition = 0
   private var closed = false

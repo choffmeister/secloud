@@ -68,19 +68,12 @@ private[objects] object ObjectSerializerCommons {
   def readBlock[T](stream: InputStream, expectedBlockType: BlockType)(inner: InputStream => T): T = {
     val actualBlockType = blockTypeMapInverse(stream.readInt8())
     assert(s"Expected block of type '${expectedBlockType.getClass.getSimpleName}'", expectedBlockType == actualBlockType)
-
-    val blockStream = new BlockInputStream(stream, ownsInner = false)
-    val result = inner(blockStream)
-    blockStream.close()
-    result
+    stream.readStream(inner)
   }
 
   def writeBlock(stream: OutputStream, blockType: BlockType)(inner: OutputStream => Any) {
     stream.writeInt8(blockTypeMap(blockType))
-
-    val blockStream = new BlockOutputStream(stream, ownsInner = false)
-    inner(blockStream)
-    blockStream.close()
+    stream.writeStream(inner)
   }
 
   def readCompressed[T](stream: InputStream)(inner: InputStream => T): T = {
