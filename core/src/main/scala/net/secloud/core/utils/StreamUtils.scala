@@ -3,6 +3,17 @@ package net.secloud.core.utils
 import java.io._
 
 object StreamUtils {
+  def pipeStream(source: InputStream, target: OutputStream): Unit = {
+    val buf = new Array[Byte](1024)
+    var done = false
+
+    while (!done) {
+      val read = source.read(buf, 0, buf.length)
+      if (read > 0) target.write(buf, 0, read)
+      else done = true
+    }
+  }
+
   def bytesAsStream[T](bytes: Array[Byte])(inner: InputStream => T): T = {
     val s = new ByteArrayInputStream(bytes)
     val result = inner(s)

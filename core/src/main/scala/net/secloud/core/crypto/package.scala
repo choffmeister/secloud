@@ -1,7 +1,7 @@
 package net.secloud.core
 
 import java.io._
-import net.secloud.core.utils.BinaryReaderWriter._
+import net.secloud.core.utils._
 import net.secloud.core.crypto.SymmetricAlgorithmInstance
 
 package object crypto {

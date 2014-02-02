@@ -5,11 +5,10 @@ import java.io.InputStream
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import net.secloud.core.objects.ObjectId
-import scala.language.implicitConversions
 import scala.annotation.tailrec
 import java.io.EOFException
 
-class BinaryWriter(val stream: OutputStream) {
+class BinaryStreamWriter(val stream: OutputStream) extends StreamWriter {
   private val bufRaw = new Array[Byte](8)
   private val buf = ByteBuffer.wrap(bufRaw)
   buf.order(ByteOrder.BIG_ENDIAN)
@@ -98,7 +97,7 @@ class BinaryWriter(val stream: OutputStream) {
   }
 }
 
-class BinaryReader(val stream: InputStream) {
+class BinaryStreamReader(val stream: InputStream) extends StreamReader {
   private val bufRaw = new Array[Byte](8)
   private val buf = ByteBuffer.wrap(bufRaw)
   buf.order(ByteOrder.BIG_ENDIAN)
@@ -180,9 +179,4 @@ class BinaryReader(val stream: InputStream) {
       readFromStream(stream, buffer, offset + read, length - read)
     }
   }
-}
-
-object BinaryReaderWriter {
-  implicit def inputStreamToBinaryReader(stream: InputStream) = new BinaryReader(stream)
-  implicit def outputStreamToBinaryWriter(stream: OutputStream) = new BinaryWriter(stream)
 }

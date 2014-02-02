@@ -1,9 +1,8 @@
 package net.secloud.core
 
 import java.io._
-import net.secloud.core.utils.RichStream._
+import net.secloud.core.utils._
 import net.secloud.core.utils.StreamUtils._
-import net.secloud.core.utils.BinaryReaderWriter._
 import net.secloud.core.objects._
 import net.secloud.core.crypto._
 
@@ -102,7 +101,7 @@ class Repository(val workingDir: VirtualFileSystem, val database: RepositoryData
               writeBlob(ss, blob)
               writeBlobContent(ss, key) { bs =>
                 wd.read(f) { fs =>
-                  fs.pipeTo(bs)
+                  pipeStream(fs, bs)
                 }
               }
             }

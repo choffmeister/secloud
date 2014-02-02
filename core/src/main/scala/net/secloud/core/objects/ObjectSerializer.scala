@@ -5,9 +5,8 @@ import java.io.OutputStream
 import net.secloud.core.objects.ObjectSerializerConstants._
 import net.secloud.core.objects.ObjectSerializerCommons._
 import net.secloud.core.crypto._
-import net.secloud.core.utils.RichStream._
+import net.secloud.core.utils._
 import net.secloud.core.utils.StreamUtils._
-import net.secloud.core.utils.BinaryReaderWriter._
 import com.jcraft.jzlib.{GZIPInputStream, GZIPOutputStream}
 
 private[objects] object BlobSerializer {

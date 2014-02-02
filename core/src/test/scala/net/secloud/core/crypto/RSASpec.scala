@@ -4,7 +4,7 @@ import java.io._
 import org.junit.runner.RunWith
 import org.specs2.mutable._
 import org.specs2.runner.JUnitRunner
-import net.secloud.core.utils.BinaryReaderWriter._
+import net.secloud.core.utils._
 import org.apache.commons.codec.binary.Hex
 
 @RunWith(classOf[JUnitRunner])

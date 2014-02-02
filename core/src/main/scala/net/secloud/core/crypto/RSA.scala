@@ -3,7 +3,7 @@ package net.secloud.core.crypto
 import java.io._
 import java.math.BigInteger
 import java.security._
-import net.secloud.core.utils.BinaryReaderWriter._
+import net.secloud.core.utils._
 import net.secloud.core.utils.StreamUtils._
 import org.bouncycastle.asn1.x509._
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair

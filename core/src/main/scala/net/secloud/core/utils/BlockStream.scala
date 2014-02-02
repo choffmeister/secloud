@@ -1,7 +1,7 @@
 package net.secloud.core.utils
 
 import java.io.{InputStream, OutputStream}
-import net.secloud.core.utils.BinaryReaderWriter._
+import net.secloud.core.utils._
 import scala.language.implicitConversions
 
 class BlockInputStream(val inner: InputStream, val ownsInner: Boolean = true) extends InputStream {
