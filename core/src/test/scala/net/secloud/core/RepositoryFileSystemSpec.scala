@@ -16,7 +16,7 @@ class RepositoryFileSystemSpec extends Specification {
   "RepositoryFileSystem" should {
     "read files" in {
       val base = getTempDir
-      build(base)
+      TestWorkingDirectory.create(base)
 
       val vfs = new NativeFileSystem(base)
       val db = new DirectoryRepositoryDatabase(new File(base, ".secloud"))
@@ -28,39 +28,5 @@ class RepositoryFileSystemSpec extends Specification {
 
       skipped
     }
-  }
-
-  def build(base: File) {
-    mkdirs(base, Nil)
-    mkdirs(base, List("first", "first-1"))
-    mkdirs(base, List("first", "first-2"))
-    mkdirs(base, List("second", "second-1"))
-    mkdirs(base, List("second", "second-2"))
-    put(base, List("a.txt"), "Hello World a")
-    put(base, List("first", "b.txt"), "Hello World b")
-    put(base, List("first", "first-1", "c.txt"), "Hello World c")
-    put(base, List("first", "first-2", "d.txt"), "Hello World d")
-    put(base, List("second", "second-1", "e.txt"), "Hello World e")
-  }
-
-  def mkdirs(base: File, path: List[String]) {
-    val file = new File(base, path.mkString(File.separator))
-    file.mkdirs()
-  }
-
-  def put(base: File, path: List[String], content: String) {
-    val file = new File(base, path.mkString(File.separator))
-    val stream = new FileOutputStream(file)
-    write(stream, content)
-    stream.close()
-  }
-
-  def write(s: OutputStream, content: String): Unit = {
-    val buffer = content.getBytes("ASCII")
-    s.write(buffer, 0, buffer.length)
-  }
-
-  def read(s: InputStream): String = {
-    scala.io.Source.fromInputStream(s).mkString("")
   }
 }

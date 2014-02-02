@@ -31,7 +31,8 @@ class AESSpec extends Specification {
       for (keySize <- List(16, 24, 32)) {
         for (plain <- plains) {
           val aes1 = AES.generate(keySize).asInstanceOf[AES]
-          val aes2 = AES.load(bytesToStream(streamToBytes(bs => AES.save(bs, aes1)))).asInstanceOf[AES]
+          val encodedKey = StreamUtils.streamAsBytes(bs => AES.save(bs, aes1))
+          val aes2 = StreamUtils.bytesAsStream(encodedKey)(ks => AES.load(ks)).asInstanceOf[AES]
           aes1 !== aes2
           encryptThenDecrypt(aes1, aes2, plain)
         }
@@ -42,20 +43,10 @@ class AESSpec extends Specification {
   }
 
   def encryptThenDecrypt(aes1: AES, aes2: AES, plainIn: Array[Byte]): Unit = {
-    val encrypted = streamToBytes(bs => aes1.encrypt(bs)(es => es.writeBinary(plainIn)))
-    val plainOut = aes2.decrypt(bytesToStream(encrypted))(ds => ds.readBinary())
+    val encrypted = StreamUtils.streamAsBytes(bs => aes1.encrypt(bs)(es => es.writeBinary(plainIn)))
+    val plainOut = StreamUtils.bytesAsStream(encrypted)(bs => aes2.decrypt(bs)(ds => ds.readBinary()))
 
     plainIn === plainOut
     plainIn !== encrypted
-  }
-
-  def bytesToStream(bytes: Array[Byte]): InputStream = {
-    new ByteArrayInputStream(bytes)
-  }
-
-  def streamToBytes(inner: OutputStream => Any): Array[Byte] = {
-    val s = new ByteArrayOutputStream()
-    inner(s)
-    s.toByteArray
   }
 }

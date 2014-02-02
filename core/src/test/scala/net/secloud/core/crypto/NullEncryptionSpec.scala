@@ -13,21 +13,11 @@ class NullEncryptionSpec extends Specification {
       val nu = NullEncryption.generate(0)
 
       val plainIn = "Hello World".getBytes("UTF-8")
-      val encrypted = streamToBytes(bs => nu.encrypt(bs)(es => StreamUtils.writeBytes(es, plainIn)))
-      val plainOut = nu.decrypt(bytesToStream(encrypted))(ds => StreamUtils.readBytes(ds))
+      val encrypted = StreamUtils.streamAsBytes(bs => nu.encrypt(bs)(es => StreamUtils.writeBytes(es, plainIn)))
+      val plainOut = StreamUtils.bytesAsStream(encrypted)(bs => nu.decrypt(bs)(ds => StreamUtils.readBytes(ds)))
 
       plainIn === encrypted
       plainIn === plainOut
     }
-  }
-
-  def bytesToStream(bytes: Array[Byte]): InputStream = {
-    new ByteArrayInputStream(bytes)
-  }
-
-  def streamToBytes(inner: OutputStream => Any): Array[Byte] = {
-    val s = new ByteArrayOutputStream()
-    inner(s)
-    s.toByteArray
   }
 }
