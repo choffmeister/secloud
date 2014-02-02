@@ -13,10 +13,10 @@ class NullEncryptionSpec extends Specification {
       val nu = NullEncryption.generate(0)
 
       val plainIn = "Hello World".getBytes("UTF-8")
-      val encrypted = streamToBytes(bs => nu.encrypt(bs)(es => es.writeBinary(plainIn)))
-      val plainOut = nu.decrypt(bytesToStream(encrypted))(ds => ds.readBinary())
+      val encrypted = streamToBytes(bs => nu.encrypt(bs)(es => StreamUtils.writeBytes(es, plainIn)))
+      val plainOut = nu.decrypt(bytesToStream(encrypted))(ds => StreamUtils.readBytes(ds))
 
-      Array(plainIn.length.toByte) ++ plainIn === encrypted
+      plainIn === encrypted
       plainIn === plainOut
     }
   }
