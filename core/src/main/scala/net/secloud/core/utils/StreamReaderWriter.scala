@@ -3,7 +3,7 @@ package net.secloud.core.utils
 import java.io._
 import net.secloud.core.objects.ObjectId
 
-trait StreamWriter {
+trait StreamWriter extends Any {
   def writeInt8(value: Byte): Unit
   def writeInt16(value: Short): Unit
   def writeInt32(value: Int): Unit
@@ -20,7 +20,7 @@ trait StreamWriter {
   def close(): Unit
 }
 
-trait StreamReader {
+trait StreamReader extends Any {
   def readInt8(): Byte
   def readInt16(): Short
   def readInt32(): Int

@@ -8,34 +8,48 @@ import net.secloud.core.objects.ObjectId
 import scala.annotation.tailrec
 import java.io.EOFException
 
-class BinaryStreamWriter(val stream: OutputStream) extends StreamWriter {
-  private val bufRaw = new Array[Byte](8)
-  private val buf = ByteBuffer.wrap(bufRaw)
-  buf.order(ByteOrder.BIG_ENDIAN)
-
+class BinaryStreamWriter(val stream: OutputStream) extends AnyVal with StreamWriter {
   def writeInt8(value: Byte): Unit = {
+    val bufRaw = new Array[Byte](1)
+    val buf = ByteBuffer.wrap(bufRaw)
+    buf.order(ByteOrder.BIG_ENDIAN)
+
     buf.put(0, value)
-    writeToStream(stream, bufRaw, 0, 1)
+    StreamUtils.writeBytes(stream, bufRaw, 0, 1)
   }
 
   def writeInt16(value: Short): Unit = {
+    val bufRaw = new Array[Byte](2)
+    val buf = ByteBuffer.wrap(bufRaw)
+    buf.order(ByteOrder.BIG_ENDIAN)
+
     buf.putShort(0, value)
-    writeToStream(stream, bufRaw, 0, 2)
+    StreamUtils.writeBytes(stream, bufRaw, 0, 2)
   }
 
   def writeInt32(value: Int): Unit = {
+    val bufRaw = new Array[Byte](4)
+    val buf = ByteBuffer.wrap(bufRaw)
+    buf.order(ByteOrder.BIG_ENDIAN)
+
     buf.putInt(0, value)
-    writeToStream(stream, bufRaw, 0, 4)
+    StreamUtils.writeBytes(stream, bufRaw, 0, 4)
   }
 
   def writeInt64(value: Long): Unit = {
+    val bufRaw = new Array[Byte](8)
+    val buf = ByteBuffer.wrap(bufRaw)
+    buf.order(ByteOrder.BIG_ENDIAN)
+
     buf.putLong(0, value)
-    writeToStream(stream, bufRaw, 0, 8)
+    StreamUtils.writeBytes(stream, bufRaw, 0, 8)
   }
 
   def writeInt7(value: Long): Unit = {
     assert(value >= 0L)
     assert(value < 72057594037927936L)
+
+    val bufRaw = new Array[Byte](8)
 
     if (value > 0L) {
       var v = value
@@ -49,7 +63,7 @@ class BinaryStreamWriter(val stream: OutputStream) extends StreamWriter {
         l += 1
       }
 
-      writeToStream(stream, bufRaw, 8 - l, l)
+      StreamUtils.writeBytes(stream, bufRaw, 8 - l, l)
     } else {
       writeInt8(0)
     }
@@ -63,17 +77,17 @@ class BinaryStreamWriter(val stream: OutputStream) extends StreamWriter {
   def writeString(value: String): Unit = {
     val bytes = value.getBytes("UTF-8")
     writeInt7(bytes.length)
-    writeToStream(stream, bytes, 0, bytes.length)
+    StreamUtils.writeBytes(stream, bytes, 0, bytes.length)
   }
 
   def writeBinary(value: Seq[Byte]): Unit = {
     writeInt7(value.length)
-    writeToStream(stream, value.toArray, 0, value.length)
+    StreamUtils.writeBytes(stream, value.toArray, 0, value.length)
   }
 
   def writeBinary(value: Array[Byte]): Unit = {
     writeInt7(value.length)
-    writeToStream(stream, value, 0, value.length)
+    StreamUtils.writeBytes(stream, value, 0, value.length)
   }
 
   def writeObjectId(value: ObjectId): Unit = {
@@ -97,34 +111,42 @@ class BinaryStreamWriter(val stream: OutputStream) extends StreamWriter {
   }
 
   def close(): Unit = stream.close()
-
-  private def writeToStream(stream: OutputStream, buffer: Array[Byte], offset: Int, length: Int) {
-    stream.write(buffer, offset, length)
-  }
 }
 
-class BinaryStreamReader(val stream: InputStream) extends StreamReader {
-  private val bufRaw = new Array[Byte](8)
-  private val buf = ByteBuffer.wrap(bufRaw)
-  buf.order(ByteOrder.BIG_ENDIAN)
-
+class BinaryStreamReader(val stream: InputStream) extends AnyVal with StreamReader {
   def readInt8(): Byte = {
-    readFromStream(stream, bufRaw, 0, 1)
+    val bufRaw = new Array[Byte](1)
+    val buf = ByteBuffer.wrap(bufRaw)
+    buf.order(ByteOrder.BIG_ENDIAN)
+
+    StreamUtils.readBytes(stream, bufRaw, 0, 1)
     return buf.get(0)
   }
 
   def readInt16(): Short = {
-    readFromStream(stream, bufRaw, 0, 2)
+    val bufRaw = new Array[Byte](2)
+    val buf = ByteBuffer.wrap(bufRaw)
+    buf.order(ByteOrder.BIG_ENDIAN)
+
+    StreamUtils.readBytes(stream, bufRaw, 0, 2)
     return buf.getShort(0)
   }
 
   def readInt32(): Int = {
-    readFromStream(stream, bufRaw, 0, 4)
+    val bufRaw = new Array[Byte](4)
+    val buf = ByteBuffer.wrap(bufRaw)
+    buf.order(ByteOrder.BIG_ENDIAN)
+
+    StreamUtils.readBytes(stream, bufRaw, 0, 4)
     return buf.getInt(0)
   }
 
   def readInt64(): Long = {
-    readFromStream(stream, bufRaw, 0, 8)
+    val bufRaw = new Array[Byte](8)
+    val buf = ByteBuffer.wrap(bufRaw)
+    buf.order(ByteOrder.BIG_ENDIAN)
+
+    StreamUtils.readBytes(stream, bufRaw, 0, 8)
     return buf.getLong(0)
   }
 
@@ -152,14 +174,14 @@ class BinaryStreamReader(val stream: InputStream) extends StreamReader {
   def readString(): String = {
     val length = readInt7().toInt
     val stringBuf = new Array[Byte](length)
-    readFromStream(stream, stringBuf, 0, length)
+    StreamUtils.readBytes(stream, stringBuf, 0, length)
     return new String(stringBuf, "UTF-8")
   }
 
   def readBinary(): Array[Byte] = {
     val length = readInt7().toInt
     val buf = new Array[Byte](length)
-    readFromStream(stream, buf, 0, length)
+    StreamUtils.readBytes(stream, buf, 0, length)
     return buf
   }
 
@@ -183,13 +205,4 @@ class BinaryStreamReader(val stream: InputStream) extends StreamReader {
   }
 
   def close(): Unit = stream.close()
-
-  @tailrec
-  private def readFromStream(stream: InputStream, buffer: Array[Byte], offset: Int, length: Int) {
-    if (length > 0) {
-      val read = stream.read(buffer, offset, length)
-      if (read <= 0) throw new EOFException()
-      readFromStream(stream, buffer, offset + read, length - read)
-    }
-  }
 }

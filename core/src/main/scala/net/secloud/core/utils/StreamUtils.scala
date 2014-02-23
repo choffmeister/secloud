@@ -49,6 +49,19 @@ object StreamUtils {
     bs.toByteArray
   }
 
+  def writeBytes(stream: OutputStream, buffer: Array[Byte], offset: Int, length: Int) {
+    stream.write(buffer, offset, length)
+  }
+
+  @scala.annotation.tailrec
+  def readBytes(stream: InputStream, buffer: Array[Byte], offset: Int, length: Int) {
+    if (length > 0) {
+      val read = stream.read(buffer, offset, length)
+      if (read <= 0) throw new EOFException()
+      readBytes(stream, buffer, offset + read, length - read)
+    }
+  }
+
   def writeString(output: OutputStream, str: String): Unit = {
     writeBytes(output, str.getBytes("UTF-8"))
   }
