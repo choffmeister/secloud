@@ -101,7 +101,7 @@ private[objects] object ObjectSerializerCommons {
     val totalHash = hash(output) { ths =>
       val signatureHash = hash(ths)(inner)
 
-      writeSignatureBlock(ths, privateKey.algorithm.fingerprint(privateKey), signatureHash, privateKey.signHash(signatureHash))
+      writeSignatureBlock(ths, privateKey.fingerprint, signatureHash, privateKey.signHash(signatureHash))
     }
 
     output.writeBinary(totalHash)

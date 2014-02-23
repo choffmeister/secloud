@@ -52,7 +52,7 @@ class ObjectSerializerSpec extends Specification {
       val key = AES.generate(32)
       val parents = List(ObjectId("00aaff"))
       val issuers = List(RSA.generate(512, 25))
-        .map(rsa => (RSA.fingerprint(rsa).toSeq, Issuer("Issuer", rsa))).toMap
+        .map(rsa => (rsa.fingerprint.toSeq, Issuer("Issuer", rsa))).toMap
       val tree = TreeEntry(ObjectId("ffee0011"), DirectoryTreeEntryMode, "", AES.generate(24))
 
       val commit1 = Commit(ObjectId.empty, parents, issuers, Map.empty, tree)
@@ -78,7 +78,7 @@ class ObjectSerializerSpec extends Specification {
       }
 
       val bs2 = new ByteArrayInputStream(bs1.toByteArray)
-      ObjectSerializerCommons.validateObject(bs2, Map(RSA.fingerprint(rsa).toSeq -> rsa)) { is =>
+      ObjectSerializerCommons.validateObject(bs2, Map(rsa.fingerprint.toSeq -> rsa)) { is =>
         is.readString() === "Hello World"
       }
 

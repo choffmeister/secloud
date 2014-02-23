@@ -94,8 +94,8 @@ class RSASpec extends Specification {
       val rsa1b = RSA.load(bs2)
       val rsa2 = RSA.generate(512)
 
-      RSA.fingerprint(rsa1a) === RSA.fingerprint(rsa1b)
-      RSA.fingerprint(rsa1a) !== RSA.fingerprint(rsa2)
+      rsa1a.fingerprint === rsa1b.fingerprint
+      rsa1a.fingerprint !== rsa2.fingerprint
     }
 
     "sign and validate with 512, 1024 and 2048 bit RSA key size" in {

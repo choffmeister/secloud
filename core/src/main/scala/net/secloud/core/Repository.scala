@@ -22,7 +22,7 @@ class Repository(val workingDir: VirtualFileSystem, val database: RepositoryData
     val keyEncoded = streamAsBytes(s => key.algorithm.save(s, key))
 
     val parents = List.empty[ObjectId]
-    val issuers = List(config.asymmetricKey).map(rsa => (RSA.fingerprint(rsa).toSeq, Issuer("Issuer", rsa))).toMap
+    val issuers = List(config.asymmetricKey).map(apk => (apk.fingerprint.toSeq, Issuer("Issuer", apk))).toMap
     val tree = snapshot()
 
     val commitRaw = Commit(ObjectId.empty, parents, issuers, Map.empty, tree)

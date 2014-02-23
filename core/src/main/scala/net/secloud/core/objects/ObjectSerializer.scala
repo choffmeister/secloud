@@ -147,7 +147,7 @@ private[objects] object CommitSerializer {
     val commitKey = key match {
       case Left(sk) => sk
       case Right(apk) =>
-        val encapsulatedCommitKey = encapsulatedCommitKeys(apk.algorithm.fingerprint(apk).toSeq).toArray
+        val encapsulatedCommitKey = encapsulatedCommitKeys(apk.fingerprint.toSeq).toArray
         bytesAsStream(apk.unwrapKey(encapsulatedCommitKey))(s => readSymmetricAlgorithm(s))
     }
     val treeKey = readPrivateBlock(input, commitKey) { bs =>
