@@ -30,14 +30,15 @@ object Application {
       case Some(cli.init) =>
         val repo = openRepository(env)
         println("initializing...")
-        println(repo.init())
+        val commitId = repo.init()
       case Some(cli.keygen) =>
         println("generating RSA 2048-bit key...")
         KeyGenerator.generate(env, 2048, 128)
       case Some(cli.commit) =>
         val repo = openRepository(env)
         println("commiting...")
-        println(repo.commit())
+        val treeEntry = repo.snapshot()
+        val commitId = repo.commit(treeEntry.id, treeEntry.key)
       case Some(cli.ls) =>
         val file = VirtualFile(cli.ls.path())
         val repo = openRepository(env)

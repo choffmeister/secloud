@@ -25,7 +25,8 @@ class RepositorySpec extends Specification {
       val config = RepositoryConfig(asymmetricKey, symmetricAlgorithm, symmetricAlgorithmKeySize)
       val repo = Repository(base, config)
       repo.init()
-      repo.commit()
+      val treeEntry = repo.snapshot()
+      repo.commit(treeEntry.id, treeEntry.key)
 
       ok
     }
@@ -40,7 +41,8 @@ class RepositorySpec extends Specification {
       val config = RepositoryConfig(asymmetricKey, symmetricAlgorithm, symmetricAlgorithmKeySize)
       val repo = Repository(base, config)
       repo.init()
-      repo.commit()
+      val treeEntry = repo.snapshot()
+      repo.commit(treeEntry.id, treeEntry.key)
 
       repo.traverse(VirtualFile("/")) must beAnInstanceOf[Tree]
       repo.traverse(VirtualFile("/first")) must beAnInstanceOf[Tree]
@@ -66,7 +68,8 @@ class RepositorySpec extends Specification {
       val config = RepositoryConfig(asymmetricKey, symmetricAlgorithm, symmetricAlgorithmKeySize)
       val repo = Repository(base, config)
       repo.init()
-      repo.commit()
+      val treeEntry = repo.snapshot()
+      repo.commit(treeEntry.id, treeEntry.key)
 
       repo.read(VirtualFile("/a.txt"))(readString) === "Hello World a"
       repo.read(VirtualFile("/first/b.txt"))(readString) === "Hello World b"
