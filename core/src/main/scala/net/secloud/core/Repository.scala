@@ -13,8 +13,31 @@ case class RepositoryConfig(
 )
 
 class Repository(val workingDir: VirtualFileSystem, val database: RepositoryDatabase, val config: RepositoryConfig) {
-  def init() {
+  def init(): ObjectId = {
     database.init()
+
+    val key = generateKey()
+    val keyEncoded = streamAsBytes(s => key.algorithm.save(s, key))
+
+    val parents = List.empty[ObjectId]
+    val issuers = List(config.asymmetricKey).map(apk => (apk.fingerprint.toSeq, Issuer("Issuer", apk))).toMap
+    val tree = Tree(ObjectId(), Nil)
+    val treeId = database.write { dbs =>
+      signObject(dbs, config.asymmetricKey) { ss =>
+        writeTree(ss, tree, key)
+      }
+    }
+    val treeEntry = TreeEntry(treeId, DirectoryTreeEntryMode, "", key)
+
+    val commitRaw = Commit(ObjectId.empty, parents, issuers, Map.empty, treeEntry)
+    val commitId = database.write { dbs =>
+      signObject(dbs, config.asymmetricKey) { ss =>
+        writeCommit(ss, commitRaw, key)
+      }
+    }
+
+    database.head = commitId
+    commitId
   }
 
   def commit(): ObjectId = {
@@ -23,9 +46,9 @@ class Repository(val workingDir: VirtualFileSystem, val database: RepositoryData
 
     val parents = List.empty[ObjectId]
     val issuers = List(config.asymmetricKey).map(apk => (apk.fingerprint.toSeq, Issuer("Issuer", apk))).toMap
-    val tree = snapshot()
+    val treeEntry = snapshot()
 
-    val commitRaw = Commit(ObjectId.empty, parents, issuers, Map.empty, tree)
+    val commitRaw = Commit(ObjectId.empty, parents, issuers, Map.empty, treeEntry)
     val commitId = database.write { dbs =>
       signObject(dbs, config.asymmetricKey) { ss =>
         writeCommit(ss, commitRaw, key)

@@ -29,12 +29,11 @@ object Application {
     cli.subcommand match {
       case Some(cli.init) =>
         val repo = openRepository(env)
-        repo.init()
-        println("init")
+        println("initializing...")
+        println(repo.init())
       case Some(cli.keygen) =>
         println("generating RSA 2048-bit key...")
         KeyGenerator.generate(env, 2048, 128)
-        println("done")
       case Some(cli.commit) =>
         val repo = openRepository(env)
         println("commiting...")
