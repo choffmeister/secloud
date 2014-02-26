@@ -51,8 +51,10 @@ class Repository(val workingDir: VirtualFileSystem, val database: RepositoryData
       case first :: tail =>
         t.entries.find(_.name == first) match {
           case Some(e) => e.mode match {
-            case DirectoryTreeEntryMode => database.read(e.id)(dbs => traverse(f.tail, Some(readTree(dbs, e.key))))
-            case FileTreeEntryMode => database.read(e.id)(dbs => traverse(f.tail, Some(readBlob(dbs))))
+            case DirectoryTreeEntryMode =>
+              database.read(e.id)(dbs => traverse(f.tail, Some(readTree(dbs, e.key))))
+            case NonExecutableFileTreeEntryMode | ExecutableFileTreeEntryMode =>
+              database.read(e.id)(dbs => traverse(f.tail, Some(readBlob(dbs))))
           }
           case None => throw new Exception("Invalid path")
         }
@@ -98,7 +100,7 @@ class Repository(val workingDir: VirtualFileSystem, val database: RepositoryData
           }
           TreeEntry(id, DirectoryTreeEntryMode, f.name, key)
 
-        case NonExecutableFile =>
+        case mode@(NonExecutableFile | ExecutableFile) =>
           val key = generateKey()
           val blob = Blob(ObjectId())
           val id = database.write { dbs =>
@@ -111,7 +113,12 @@ class Repository(val workingDir: VirtualFileSystem, val database: RepositoryData
               }
             }
           }
-          TreeEntry(id, FileTreeEntryMode, f.name, key)
+          val treeEntryMode = mode match {
+            case NonExecutableFile => NonExecutableFileTreeEntryMode
+            case ExecutableFile => ExecutableFileTreeEntryMode
+            case _ => throw new Exception()
+          }
+          TreeEntry(id, treeEntryMode, f.name, key)
 
         case _ => throw new Exception()
       }

@@ -32,8 +32,8 @@ class ObjectSerializerSpec extends Specification {
       val key = AES.generate(32)
 
       val tree1 = Tree(ObjectId.empty, List(
-        TreeEntry(ObjectId("000102"), FileTreeEntryMode, "test1", AES.generate(16)),
-        TreeEntry(ObjectId("1231231212"), FileTreeEntryMode, "test2", AES.generate(24)),
+        TreeEntry(ObjectId("000102"), ExecutableFileTreeEntryMode, "test1", AES.generate(16)),
+        TreeEntry(ObjectId("1231231212"), NonExecutableFileTreeEntryMode, "test2", AES.generate(24)),
         TreeEntry(ObjectId("00"), DirectoryTreeEntryMode, "test3", NullEncryption.generate(0))
       ))
       val intermediate1 = new ByteArrayOutputStream()

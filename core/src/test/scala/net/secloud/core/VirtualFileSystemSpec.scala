@@ -28,5 +28,20 @@ class VirtualFileSystemSpec extends Specification {
       vfs.exists(f2) must beTrue
       vfs.read(f2)(s => readString(s)) === "NEW.TXT"
     }
+
+    "return proper mode" in {
+      val base = getTempDir
+      TestWorkingDirectory.create(base)
+
+      val vfs = new NativeFileSystem(base)
+
+      vfs.mode(VirtualFile("/")) === Directory
+      vfs.mode(VirtualFile("/first")) === Directory
+      vfs.mode(VirtualFile("/first/first-1")) === Directory
+      vfs.mode(VirtualFile("/a.txt")) === NonExecutableFile
+      vfs.mode(VirtualFile("/first/b.txt")) === NonExecutableFile
+      vfs.mode(VirtualFile("/first/first-1/c.txt")) === NonExecutableFile
+      vfs.mode(VirtualFile("/bin/script.py")) === ExecutableFile
+    }
   }
 }

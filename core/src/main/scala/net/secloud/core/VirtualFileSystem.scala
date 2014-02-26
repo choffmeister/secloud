@@ -49,7 +49,11 @@ trait VirtualFileSystem {
 
 class NativeFileSystem(base: File) extends VirtualFileSystem {
   def exists(f: VirtualFile) = <<(f).exists()
-  def mode(f: VirtualFile) = if (<<(f).isDirectory) Directory else NonExecutableFile // TODO: handle ExecutableFile
+  def mode(f: VirtualFile) = (<<(f).isDirectory, <<(f).canExecute) match {
+    case (true, _) => Directory
+    case (false, true) => ExecutableFile
+    case (false, false) => NonExecutableFile
+  }
   def children(f: VirtualFile) = <<(f).listFiles.map(c => f.child(c.getName)).toList
   def read[T](f: VirtualFile)(inner: InputStream => T): T = using(new FileInputStream(<<(f)))(s => inner(s))
   def write(f: VirtualFile)(inner: OutputStream => Any): Unit = using(new FileOutputStream(<<(f)))(s => inner(s))

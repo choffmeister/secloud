@@ -12,7 +12,9 @@ class RepositoryFileSystem(db: RepositoryDatabase, commitId: ObjectId, key: Eith
   def mode(f: VirtualFile): VirtualFileMode = walkTree(f) match {
     case Some(TreeEntry(_, DirectoryTreeEntryMode, _, _)) =>
       Directory
-    case Some(TreeEntry(_, FileTreeEntryMode, _, _)) =>
+    case Some(TreeEntry(_, ExecutableFileTreeEntryMode, _, _)) =>
+      ExecutableFile
+    case Some(TreeEntry(_, NonExecutableFileTreeEntryMode, _, _)) =>
       NonExecutableFile
     case _ =>
       throw new Exception(s"Unknown path $f")
@@ -22,7 +24,7 @@ class RepositoryFileSystem(db: RepositoryDatabase, commitId: ObjectId, key: Eith
     case Some(TreeEntry(id, DirectoryTreeEntryMode, _, key)) =>
       val tree = db.read(id)(dbs => readTree(dbs, key))
       tree.entries.map(te => f.child(te.name))
-    case Some(TreeEntry(_, FileTreeEntryMode, _, _)) =>
+    case Some(TreeEntry(_, ExecutableFileTreeEntryMode | NonExecutableFileTreeEntryMode, _, _)) =>
       throw new Exception(s"$f is a file and hence cannot have children")
     case _ =>
       throw new Exception(s"Unknown path $f")
@@ -31,7 +33,7 @@ class RepositoryFileSystem(db: RepositoryDatabase, commitId: ObjectId, key: Eith
   def read[T](f: VirtualFile)(inner: InputStream => T): T = walkTree(f) match {
     case Some(TreeEntry(_, DirectoryTreeEntryMode, _, _)) =>
       throw new Exception(s"$f is a directory and hence cannot be read")
-    case Some(TreeEntry(id, FileTreeEntryMode, _, key)) =>
+    case Some(TreeEntry(id, ExecutableFileTreeEntryMode | NonExecutableFileTreeEntryMode, _, key)) =>
       db.read(id) { dbs =>
         readBlob(dbs)
         readBlobContent(dbs, key) { cs =>

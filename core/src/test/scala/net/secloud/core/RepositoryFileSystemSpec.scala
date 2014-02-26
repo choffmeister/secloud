@@ -93,6 +93,7 @@ class RepositoryFileSystemSpec extends Specification {
       rfs2.mode(VirtualFile("/a.txt")) === NonExecutableFile
       rfs2.mode(VirtualFile("/first/b.txt")) === NonExecutableFile
       rfs2.mode(VirtualFile("/first/first-1/c.txt")) === NonExecutableFile
+      rfs2.mode(VirtualFile("/bin/script.py")) === ExecutableFile
     }
   }
 }
