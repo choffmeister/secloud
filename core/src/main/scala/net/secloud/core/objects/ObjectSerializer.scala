@@ -7,7 +7,6 @@ import net.secloud.core.objects.ObjectSerializerCommons._
 import net.secloud.core.crypto._
 import net.secloud.core.utils._
 import net.secloud.core.utils.StreamUtils._
-import com.jcraft.jzlib.GZIPOutputStream
 
 private[objects] object BlobSerializer {
   def write(output: OutputStream, blob: Blob): Unit = {
