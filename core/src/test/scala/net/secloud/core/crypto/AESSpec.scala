@@ -1,11 +1,8 @@
 package net.secloud.core.crypto
 
 import net.secloud.core.utils._
-import org.junit.runner.RunWith
 import org.specs2.mutable._
-import org.specs2.runner.JUnitRunner
 
-@RunWith(classOf[JUnitRunner])
 class AESSpec extends Specification {
   val plains = List(
     "", "a", "abc", "123456789012345", "1234567890123456",

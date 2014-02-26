@@ -1,15 +1,12 @@
 package net.secloud.core
 
 import org.specs2.mutable._
-import org.junit.runner.RunWith
-import org.specs2.runner.JUnitRunner
 import java.util.UUID
 import java.io.InputStream
 import java.io.{File, FileInputStream}
 import net.secloud.core.crypto._
 import net.secloud.core.utils.StreamUtils._
 
-@RunWith(classOf[JUnitRunner])
 class RepositoryFileSystemSpec extends Specification {
   def getTempDir = new File(new File(System.getProperty("java.io.tmpdir")), UUID.randomUUID().toString())
 

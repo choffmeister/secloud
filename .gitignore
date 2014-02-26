@@ -4,11 +4,6 @@ target/
 # secloud
 .secloud/
 
-# Eclipse
-.classpath
-.project
-.settings/
-
 # IDEA
 .idea/
 

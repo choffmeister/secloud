@@ -3,7 +3,6 @@ import Keys._
 import xerial.sbt.Pack._
 import sbtunidoc.Plugin._
 import DocPublishPlugin._
-import com.typesafe.sbteclipse.plugin.EclipsePlugin._
 
 object Build extends sbt.Build {
   val commonSettings = Defaults.defaultSettings ++ Seq(
@@ -12,8 +11,7 @@ object Build extends sbt.Build {
     scalaVersion := "2.10.3",
     scalacOptions ++= Seq("-unchecked", "-feature", "-deprecation", "-language:postfixOps", "-encoding", "utf8"),
     scalacOptions <<= baseDirectory.map(bd => Seq("-sourcepath", bd.getAbsolutePath)),
-    testOptions in Test += Tests.Argument("junitxml", "console"),
-    EclipseKeys.withSource := true
+    testOptions in Test += Tests.Argument("junitxml", "console")
   )
 
   val scctSettings = ScctPlugin.instrumentSettings ++ Seq(
@@ -23,24 +21,12 @@ object Build extends sbt.Build {
 
   val commonProjectSettings = commonSettings ++ scctSettings ++ CoveragePlugin.coverageSettings
 
-  val commonDependencies = Seq(
-    "junit" % "junit" % "4.11" % "test",
-    "org.specs2" %% "specs2" % "2.2.3" % "test"
-  )
-
   lazy val core = (project in file("core"))
     .settings(commonProjectSettings: _*)
-    .settings(
-      name := "secloud-core",
-      libraryDependencies ++= commonDependencies
-    )
 
   lazy val commandline = (project in file("commandline"))
     .settings(commonProjectSettings: _*)
-    .settings(
-      name := "secloud-commandline",
-      libraryDependencies ++= commonDependencies
-    ).dependsOn(core)
+    .dependsOn(core)
 
   lazy val root = (project in file("."))
     .settings(commonSettings: _*)
@@ -52,8 +38,7 @@ object Build extends sbt.Build {
       packMain := Map("secloud" -> "net.secloud.commandline.Application"),
       //docPublishHost := "",
       //docPublishUserName := "",
-      //docPublishRemoteDir := "",
-      EclipseKeys.skipParents in ThisBuild := false
+      //docPublishRemoteDir := ""
     )
     .aggregate(core, commandline)
 }

@@ -4,11 +4,8 @@ import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import net.secloud.core.crypto._
 import net.secloud.core.utils._
-import org.junit.runner.RunWith
 import org.specs2.mutable._
-import org.specs2.runner.JUnitRunner
 
-@RunWith(classOf[JUnitRunner])
 class ObjectSerializerSpec extends Specification {
   "ObjectSerializer" should {
     "serialize blobs" in {

@@ -2,11 +2,8 @@ package net.secloud.core.utils
 
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
-import org.junit.runner.RunWith
 import org.specs2.mutable._
-import org.specs2.runner.JUnitRunner
 
-@RunWith(classOf[JUnitRunner])
 class BlockStreamSpec extends Specification {
   "BlockInputStream" should {
     "read properly" in {

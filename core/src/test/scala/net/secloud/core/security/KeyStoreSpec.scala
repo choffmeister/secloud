@@ -1,10 +1,7 @@
 package net.secloud.core.security
 
-import org.junit.runner.RunWith
 import org.specs2.mutable._
-import org.specs2.runner.JUnitRunner
 
-@RunWith(classOf[JUnitRunner])
 class KeyStoreSpec extends Specification {
   "KeyStrore" should {
     "save and load private keys" in {

@@ -3,11 +3,8 @@ package net.secloud.core.crypto
 import java.io._
 import net.secloud.core.utils.StreamUtils._
 import org.apache.commons.codec.binary.Hex
-import org.junit.runner.RunWith
 import org.specs2.mutable._
-import org.specs2.runner.JUnitRunner
 
-@RunWith(classOf[JUnitRunner])
 class SHASpec extends Specification {
   val testsSHA1 = Map(
     "" -> "da39a3ee5e6b4b0d3255bfef95601890afd80709",
