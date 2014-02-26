@@ -4,8 +4,8 @@ import java.io._
 import net.secloud.core.objects._
 import net.secloud.core.crypto._
 
-class RepositoryFileSystem(db: RepositoryDatabase, commitId: ObjectId, commitKey: SymmetricAlgorithmInstance) extends VirtualFileSystem {
-  private val commit = db.read(commitId)(dbs => readCommit(dbs, Left(commitKey)))
+class RepositoryFileSystem(db: RepositoryDatabase, commitId: ObjectId, key: Either[SymmetricAlgorithmInstance, AsymmetricAlgorithmInstance]) extends VirtualFileSystem {
+  private val commit = db.read(commitId)(dbs => readCommit(dbs, key))
   private val tree = db.read(commit.tree.id)(dbs => readTree(dbs, commit.tree.key))
 
   def exists(f: VirtualFile) = throw new Exception("Not implemented yet")
