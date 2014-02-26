@@ -1,10 +1,9 @@
 package net.secloud.core
 
 import java.io._
-import net.secloud.core.utils._
-import net.secloud.core.utils.StreamUtils._
-import net.secloud.core.objects._
 import net.secloud.core.crypto._
+import net.secloud.core.objects._
+import net.secloud.core.utils.StreamUtils._
 
 case class RepositoryConfig(
   val asymmetricKey: AsymmetricAlgorithmInstance,

@@ -1,12 +1,10 @@
 package net.secloud.core.utils
 
-import java.io.OutputStream
 import java.io.InputStream
+import java.io.OutputStream
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import net.secloud.core.objects.ObjectId
-import scala.annotation.tailrec
-import java.io.EOFException
 
 class BinaryStreamWriter(val stream: OutputStream) extends AnyVal with StreamWriter {
   def writeInt8(value: Byte): Unit = {

@@ -1,7 +1,6 @@
 package net.secloud.core.utils
 
 import java.io.{InputStream, OutputStream}
-import net.secloud.core.utils._
 import scala.language.implicitConversions
 
 private[utils] class BlockInputStream(val inner: InputStream, val ownsInner: Boolean = true) extends InputStream {

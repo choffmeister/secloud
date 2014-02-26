@@ -1,15 +1,15 @@
 package net.secloud.core
 
-import java.io.File
-import scala.annotation.tailrec
-import java.io.InputStream
-import java.io.OutputStream
-import java.io.FileInputStream
-import java.io.FileOutputStream
 import java.io.BufferedInputStream
 import java.io.BufferedOutputStream
+import java.io.File
+import java.io.FileInputStream
+import java.io.FileOutputStream
+import java.io.InputStream
+import java.io.OutputStream
 import net.secloud.core.objects._
 import net.secloud.core.utils.StreamUtils._
+import scala.annotation.tailrec
 
 trait RepositoryDatabase {
   def init(): Unit

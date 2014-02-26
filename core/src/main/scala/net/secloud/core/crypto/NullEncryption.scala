@@ -1,9 +1,9 @@
 package net.secloud.core.crypto
 
 import java.io.{InputStream, OutputStream}
+import net.secloud.core.utils._
 import org.bouncycastle.crypto.BufferedBlockCipher
 import org.bouncycastle.crypto.engines.NullEngine
-import net.secloud.core.utils._
 
 class NullEncryption extends BouncyCastleSymmetricAlgorithmInstance(null) {
   val algorithm = NullEncryption

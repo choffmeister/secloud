@@ -1,10 +1,9 @@
 package net.secloud.core.crypto
 
+import net.secloud.core.utils._
 import org.junit.runner.RunWith
 import org.specs2.mutable._
 import org.specs2.runner.JUnitRunner
-import net.secloud.core.utils._
-import java.io._
 
 @RunWith(classOf[JUnitRunner])
 class NullEncryptionSpec extends Specification {

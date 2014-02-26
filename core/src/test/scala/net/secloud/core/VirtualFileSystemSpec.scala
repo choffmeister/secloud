@@ -4,8 +4,8 @@ import org.specs2.mutable._
 import org.junit.runner.RunWith
 import org.specs2.runner.JUnitRunner
 import java.util.UUID
-import java.io.{InputStream, OutputStream}
-import java.io.{File, FileInputStream, FileOutputStream}
+import java.io.InputStream
+import java.io.{File, FileOutputStream}
 import net.secloud.core.utils.StreamUtils._
 
 @RunWith(classOf[JUnitRunner])

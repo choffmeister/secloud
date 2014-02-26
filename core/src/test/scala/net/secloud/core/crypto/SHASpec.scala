@@ -1,12 +1,11 @@
 package net.secloud.core.crypto
 
+import java.io._
+import net.secloud.core.utils.StreamUtils._
+import org.apache.commons.codec.binary.Hex
 import org.junit.runner.RunWith
 import org.specs2.mutable._
 import org.specs2.runner.JUnitRunner
-import net.secloud.core.utils._
-import net.secloud.core.utils.StreamUtils._
-import java.io._
-import org.apache.commons.codec.binary.Hex
 
 @RunWith(classOf[JUnitRunner])
 class SHASpec extends Specification {

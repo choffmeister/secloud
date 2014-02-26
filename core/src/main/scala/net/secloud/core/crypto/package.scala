@@ -2,7 +2,6 @@ package net.secloud.core
 
 import java.io._
 import net.secloud.core.utils._
-import net.secloud.core.crypto.SymmetricAlgorithmInstance
 
 package object crypto {
   val symmetricAlgorithmMap = Map[SymmetricAlgorithm, Byte](

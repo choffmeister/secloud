@@ -1,11 +1,11 @@
 package net.secloud.core.utils
 
-import org.specs2.mutable._
-import org.junit.runner.RunWith
-import org.specs2.runner.JUnitRunner
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import net.secloud.core.objects.ObjectId
+import org.junit.runner.RunWith
+import org.specs2.mutable._
+import org.specs2.runner.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
 class BinaryStreamReaderWriterSpec extends Specification {

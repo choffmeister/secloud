@@ -4,9 +4,8 @@ import org.specs2.mutable._
 import org.junit.runner.RunWith
 import org.specs2.runner.JUnitRunner
 import java.util.UUID
-import java.io.{InputStream, OutputStream}
-import java.io.{File, FileInputStream, FileOutputStream}
-import net.secloud.core.objects._
+import java.io.InputStream
+import java.io.{File, FileInputStream}
 import net.secloud.core.crypto._
 import net.secloud.core.utils.StreamUtils._
 

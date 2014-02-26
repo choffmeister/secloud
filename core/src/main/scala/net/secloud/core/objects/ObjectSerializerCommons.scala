@@ -1,16 +1,15 @@
 package net.secloud.core.objects
 
-import java.io.OutputStream
-import java.io.InputStream
-import java.io.ByteArrayOutputStream
-import java.io.ByteArrayInputStream
-import net.secloud.core.utils._
-import net.secloud.core.crypto._
 import com.jcraft.jzlib.{GZIPInputStream, GZIPOutputStream}
+import java.io.InputStream
+import java.io.OutputStream
+import net.secloud.core.crypto._
+import net.secloud.core.utils._
 
 class ObjectSerializationException(msg: String) extends Exception(msg)
 
 private[objects] object ObjectSerializerCommons {
+
   import ObjectSerializerConstants._
 
   def readHeader(stream: InputStream): ObjectType = {

@@ -1,8 +1,8 @@
 package net.secloud.core
 
 import java.io._
-import net.secloud.core.objects._
 import net.secloud.core.crypto._
+import net.secloud.core.objects._
 
 class RepositoryFileSystem(db: RepositoryDatabase, commitId: ObjectId, key: Either[SymmetricAlgorithmInstance, AsymmetricAlgorithmInstance]) extends VirtualFileSystem {
   private val commit = db.read(commitId)(dbs => readCommit(dbs, key))

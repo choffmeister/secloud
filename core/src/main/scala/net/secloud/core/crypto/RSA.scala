@@ -2,12 +2,10 @@ package net.secloud.core.crypto
 
 import java.io._
 import java.math.BigInteger
-import java.security._
-import net.secloud.core.utils._
 import net.secloud.core.utils.StreamUtils._
+import net.secloud.core.utils._
 import org.bouncycastle.asn1.x509._
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair
-import org.bouncycastle.crypto.CipherParameters
 import org.bouncycastle.crypto.digests.SHA512Digest
 import org.bouncycastle.crypto.encodings.PKCS1Encoding
 import org.bouncycastle.crypto.engines.{RSAEngine, RSABlindedEngine}
@@ -18,7 +16,6 @@ import org.bouncycastle.crypto.params._
 import org.bouncycastle.crypto.util._
 import org.bouncycastle.openssl._
 import org.bouncycastle.util.Arrays
-import org.bouncycastle.asn1.pkcs._
 
 class RSA(keyPair: AsymmetricCipherKeyPair) extends AsymmetricAlgorithmInstance {
   private val pub: RSAKeyParameters = keyPair.getPublic.asInstanceOf[RSAKeyParameters]

@@ -1,6 +1,5 @@
 package net.secloud.core.crypto
 
-import java.util.Random
 import java.security.SecureRandom
 
 object RandomGenerator {

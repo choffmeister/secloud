@@ -1,9 +1,9 @@
 package net.secloud.core
 
-import java.io.{InputStream, OutputStream}
 import java.io.{File, FileInputStream, FileOutputStream}
-import scala.language.reflectiveCalls
+import java.io.{InputStream, OutputStream}
 import scala.language.implicitConversions
+import scala.language.reflectiveCalls
 
 sealed abstract class VirtualFileMode
 case object NonExecutableFile extends VirtualFileMode
