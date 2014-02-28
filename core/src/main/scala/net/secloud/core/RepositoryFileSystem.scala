@@ -46,18 +46,39 @@ class RepositoryFileSystem(db: RepositoryDatabase, commitId: ObjectId, key: Eith
 
   def write(f: VirtualFile)(inner: OutputStream => Any): Unit = throw new Exception("Not supported")
 
-  def obj(f: VirtualFile): BaseObject = walkTree(f) match {
+  def objOption(f: VirtualFile): Option[BaseObject] = walkTree(f) match {
     case Some(TreeEntry(id, DirectoryTreeEntryMode, _, key)) =>
-      db.read(id)(dbs => readTree(dbs, key))
+      db.read(id)(dbs => Some(readTree(dbs, key).copy(id = id)))
     case Some(TreeEntry(id, ExecutableFileTreeEntryMode | NonExecutableFileTreeEntryMode, _, _)) =>
-      db.read(id)(dbs => readBlob(dbs))
+      db.read(id)(dbs => Some(readBlob(dbs).copy(id = id)))
     case _ =>
-      throw new Exception(s"Unknown path $f")
+      None
   }
 
-  def tree(f: VirtualFile): Tree = obj(f).asInstanceOf[Tree]
+  def treeOption(f: VirtualFile): Option[Tree] = objOption(f) match {
+    case Some(t: Tree) => Some(t)
+    case _ => None
+  }
 
-  def blob(f: VirtualFile): Blob = obj(f).asInstanceOf[Blob]
+  def blobOption(f: VirtualFile): Option[Blob] = objOption(f) match {
+    case Some(b: Blob) => Some(b)
+    case _ => None
+  }
+
+  def obj(f: VirtualFile): BaseObject = objOption(f) match {
+    case Some(obj) => obj
+    case _ => throw new Exception(s"Unknown path $f")
+  }
+
+  def tree(f: VirtualFile): Tree = obj(f) match {
+    case t: Tree => t
+    case _ => throw new Exception(s"$f does not point to a tree")
+  }
+
+  def blob(f: VirtualFile): Blob = obj(f) match {
+    case b: Blob => b
+    case _ => throw new Exception(s"$f does not point to a blob")
+  }
 
   private def walkTree(f: VirtualFile): Option[TreeEntry] = {
     @scala.annotation.tailrec
