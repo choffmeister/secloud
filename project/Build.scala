@@ -35,7 +35,7 @@ object Build extends sbt.Build {
     .settings(docPublishSettings: _*)
     .settings(
       name := "secloud",
-      packMain := Map("secloud" -> "net.secloud.commandline.Application"),
+      packMain := Map("secloud" -> "net.secloud.commandline.Application")
       //docPublishHost := "",
       //docPublishUserName := "",
       //docPublishRemoteDir := ""
