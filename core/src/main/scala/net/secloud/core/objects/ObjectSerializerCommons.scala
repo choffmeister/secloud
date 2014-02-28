@@ -130,10 +130,8 @@ private[objects] object ObjectSerializerCommons {
     return result
   }
 
-  def assert(errorMessage: String, cond: Boolean): Unit = assert(errorMessage)(cond == true)
-
-  def assert(errorMessage: String)(cond: => Boolean): Unit = {
-    if (cond == false) {
+  def assert(errorMessage: String, cond: => Boolean): Unit = {
+    if (!cond) {
       throw new ObjectSerializationException(errorMessage)
     }
   }
