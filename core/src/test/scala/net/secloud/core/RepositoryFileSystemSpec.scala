@@ -4,6 +4,7 @@ import org.specs2.mutable._
 import java.util.UUID
 import java.io.File
 import net.secloud.core.crypto._
+import net.secloud.core.objects._
 import net.secloud.core.utils.StreamUtils._
 
 class RepositoryFileSystemSpec extends Specification {
@@ -90,6 +91,42 @@ class RepositoryFileSystemSpec extends Specification {
       rfs2.mode(VirtualFile("/first/b.txt")) === NonExecutableFile
       rfs2.mode(VirtualFile("/first/first-1/c.txt")) === NonExecutableFile
       rfs2.mode(VirtualFile("/bin/script.py")) === ExecutableFile
+    }
+
+    "yield database objects" in {
+      val base = getTempDir
+      TestWorkingDirectory.create(base)
+
+      val vfs = new NativeFileSystem(base)
+      val db = new DirectoryRepositoryDatabase(new File(base, ".secloud"))
+      val asymmetricKey = RSA.generate(512, 25)
+      val symmetricAlgorithm = AES
+      val symmetricAlgorithmKeySize = 16
+      val config = RepositoryConfig(asymmetricKey, symmetricAlgorithm, symmetricAlgorithmKeySize)
+      val repo = new Repository(vfs, db, config)
+
+      val commitId1 = repo.init()
+      val rfs1 = new RepositoryFileSystem(db, commitId1, Right(asymmetricKey))
+      rfs1.mode(VirtualFile("/")) === Directory
+
+      val treeEntry = repo.snapshot()
+      val commitId2 = repo.commit(treeEntry.id, treeEntry.key)
+      val rfs2 = new RepositoryFileSystem(db, commitId2, Right(asymmetricKey))
+
+      rfs2.obj(VirtualFile("/")) must beAnInstanceOf[Tree]
+      rfs2.obj(VirtualFile("/first")) must beAnInstanceOf[Tree]
+      rfs2.obj(VirtualFile("/first/first-1")) must beAnInstanceOf[Tree]
+
+      rfs2.obj(VirtualFile("/a.txt")) must beAnInstanceOf[Blob]
+      rfs2.obj(VirtualFile("/first/b.txt")) must beAnInstanceOf[Blob]
+      rfs2.obj(VirtualFile("/first/first-1/c.txt")) must beAnInstanceOf[Blob]
+
+      rfs2.obj(VirtualFile("/firs")) must throwAn[Exception]
+      rfs2.obj(VirtualFile("/firsT")) must throwAn[Exception]
+      rfs2.obj(VirtualFile("/a.txta")) must throwAn[Exception]
+      rfs2.obj(VirtualFile("/first/first-1/c.txt/foo")) must throwAn[Exception]
+
+      ok
     }
   }
 }

@@ -42,12 +42,14 @@ object Application {
       case Some(cli.ls) =>
         val file = VirtualFile(cli.ls.path())
         val repo = openRepository(env)
-        val tree = repo.traverse(file).asInstanceOf[Tree]
+        val rfs = repo.fileSystem(repo.head)
+        val tree = rfs.tree(file)
         tree.entries.foreach(e => println(e.name))
       case Some(cli.cat) =>
         val file = VirtualFile(cli.ls.path())
         val repo = openRepository(env)
-        repo.read(file) { cs =>
+        val rfs = repo.fileSystem(repo.head)
+        rfs.read(file) { cs =>
           val reader = new BufferedReader(new InputStreamReader(cs))
           var done = false
           while (!done) {

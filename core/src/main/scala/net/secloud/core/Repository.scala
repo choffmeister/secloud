@@ -45,44 +45,6 @@ class Repository(val workingDir: VirtualFileSystem, val database: RepositoryData
     commitId
   }
 
-  def traverse(f: VirtualFile, current: Option[BaseObject] = None): BaseObject = current match {
-    case Some(c: Commit) => database.read(c.tree.id)(dbs => traverse(f, Some(readTree(dbs, c.tree.key))))
-    case Some(t: Tree) => f.segments match {
-      case first :: tail =>
-        t.entries.find(_.name == first) match {
-          case Some(e) => e.mode match {
-            case DirectoryTreeEntryMode =>
-              database.read(e.id)(dbs => traverse(f.tail, Some(readTree(dbs, e.key))))
-            case NonExecutableFileTreeEntryMode | ExecutableFileTreeEntryMode =>
-              database.read(e.id)(dbs => traverse(f.tail, Some(readBlob(dbs))))
-          }
-          case None => throw new Exception("Invalid path")
-        }
-
-      case Nil => t
-    }
-    case Some(b: Blob) => f.segments match {
-      case first :: tail => throw new Exception("Invalid path")
-      case Nil => b
-    }
-    case None =>
-      val head = database.head
-      val commit = database.read(head)(dbs => readCommit(dbs, Right(config.asymmetricKey))).copy(id = head)
-      traverse(f, Some(commit))
-    case _ => throw new Exception("Unsupported object")
-  }
-
-  def read[T](f: VirtualFile, commit: Option[Commit] = None)(inner: InputStream => T): T = {
-    val parentTree = traverse(f.parent, commit).asInstanceOf[Tree]
-    val blob = traverse(VirtualFile.fromSegments(List(f.name)), Some(parentTree)).asInstanceOf[Blob]
-    val blobEntry = parentTree.entries.find(_.name == f.name).get
-
-    database.read(blobEntry.id) { dbs =>
-      readBlob(dbs)
-      readBlobContent(dbs, blobEntry.key)(inner)
-    }
-  }
-
   def snapshot(): TreeEntry = {
     def recursion(f: VirtualFile, head: VirtualFileSystem, wd: VirtualFileSystem): TreeEntry = {
       wd.mode(f) match {
@@ -126,6 +88,9 @@ class Repository(val workingDir: VirtualFileSystem, val database: RepositoryData
 
     recursion(VirtualFile("/"), NullFileSystem, workingDir)
   }
+
+  def head: ObjectId = database.head
+  def fileSystem(commitId: ObjectId): RepositoryFileSystem = new RepositoryFileSystem(database, commitId, Right(config.asymmetricKey))
 
   private def generateKey() = config.symmetricAlgorithm.generate(config.symmetricAlgorithmKeySize)
 }
