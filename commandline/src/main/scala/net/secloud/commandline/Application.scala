@@ -59,6 +59,24 @@ object Application {
             } else done = true
           }
         }
+      case Some(cli.tree) =>
+        val repo = openRepository(env)
+        val rfs = repo.fileSystem(repo.head)
+        def asciiTreeLayer(layers: List[(Int, Int)]): String = {
+          val pre = layers.take(layers.length - 1).map(l => if (l._1 < l._2 - 1) "|  " else "   ").mkString
+          val last = if (layers.last._1 < layers.last._2 - 1) "├─ " else "└─ "
+          pre + last
+        }
+        def traverse(file: VirtualFile, layers: List[(Int, Int)]): Unit = rfs.obj(file) match {
+          case t: Tree =>
+            println(s"${t.id.toString.substring(0, 7)} ${asciiTreeLayer(layers)}${file.name}")
+            val children = rfs.children(file).toList.zipWithIndex
+            children.foreach(c => traverse(c._1, layers ++ List((c._2, children.length))))
+          case b: Blob =>
+            println(s"${b.id.toString.substring(0, 7)} ${asciiTreeLayer(layers)}${file.name}")
+          case _ => throw new Exception()
+        }
+        traverse(VirtualFile("/"), List((0, 1)))
       case Some(cli.environment) =>
         println(s"Current directory: ${env.currentDirectory}")
         println(s"Home directory ${env.userDirectory}")
@@ -111,6 +129,7 @@ object Application {
     val cat = new Subcommand("cat") {
       val path = trailArg[String]("the path")
     }
+    val tree = new Subcommand("tree")
 
     val environment = new Subcommand("environment")
     val benchmark = new Subcommand("benchmark")
