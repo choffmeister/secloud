@@ -19,6 +19,21 @@ private[utils] class BlockInputStream(val inner: InputStream, val ownsInner: Boo
     } else -1
   }
 
+  override def read(b: Array[Byte], off: Int, len: Int): Int = {
+    if (blockSize > 0) {
+      var totalReadCount = 0
+      while (len - totalReadCount > 0) {
+        val readCount = Math.min(blockSize - blockPosition, len - totalReadCount)
+        if (readCount == 0) return totalReadCount;
+        System.arraycopy(block, blockPosition, b, off + totalReadCount, readCount)
+        blockPosition += readCount
+        totalReadCount += readCount
+        if (blockPosition == blockSize) readBlock()
+      }
+      totalReadCount
+    } else -1
+  }
+
   override def close(): Unit = {
     if (!closed) {
       if (ownsInner) inner.close()
@@ -50,6 +65,18 @@ private[utils] class BlockOutputStream(val inner: OutputStream, val bufferSize: 
 
     block(blockPosition) = b.toByte
     blockPosition += 1
+  }
+
+  override def write(b: Array[Byte], off: Int, len: Int) = {
+    var totalWriteCount = 0
+
+    while (len - totalWriteCount > 0) {
+      if (blockPosition == bufferSize) flushBlock()
+      val writeCount = Math.min(bufferSize - blockPosition, len - totalWriteCount)
+      System.arraycopy(b, off + totalWriteCount, block, blockPosition, writeCount)
+      blockPosition += writeCount
+      totalWriteCount += writeCount
+    }
   }
 
   override def close(): Unit = {
