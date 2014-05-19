@@ -1,15 +1,14 @@
+import sbt.Keys._
 import sbt._
-import Keys._
-import xerial.sbt.Pack._
 import sbtunidoc.Plugin._
-import DocPublishPlugin._
+import xerial.sbt.Pack._
 
 object Build extends sbt.Build {
-  val commonSettings = Defaults.defaultSettings ++ Seq(
+  lazy val commonSettings = Defaults.defaultSettings ++ Seq(
     organization := "net.secloud",
     version := "0.0.1",
-    scalaVersion := "2.10.3",
-    scalacOptions ++= Seq("-unchecked", "-feature", "-deprecation", "-language:postfixOps", "-encoding", "utf8"),
+    scalaVersion := "2.10.4",
+    scalacOptions ++= Seq("-encoding", "utf8"),
     scalacOptions <<= baseDirectory.map(bd => Seq("-sourcepath", bd.getAbsolutePath)),
     testOptions in Test += Tests.Argument("junitxml", "console")
   )
@@ -19,7 +18,7 @@ object Build extends sbt.Build {
     unmanagedResources in ScctPlugin.ScctTest <<= (unmanagedResources in Test)
   )
 
-  val commonProjectSettings = commonSettings ++ scctSettings ++ CoveragePlugin.coverageSettings
+  val commonProjectSettings = commonSettings ++ scctSettings
 
   lazy val core = (project in file("core"))
     .settings(commonProjectSettings: _*)
@@ -32,13 +31,9 @@ object Build extends sbt.Build {
     .settings(commonSettings: _*)
     .settings(packSettings: _*)
     .settings(unidocSettings: _*)
-    .settings(docPublishSettings: _*)
     .settings(
       name := "secloud",
       packMain := Map("secloud" -> "net.secloud.commandline.Application")
-      //docPublishHost := "",
-      //docPublishUserName := "",
-      //docPublishRemoteDir := ""
     )
     .aggregate(core, commandline)
 }
