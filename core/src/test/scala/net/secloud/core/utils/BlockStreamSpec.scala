@@ -8,20 +8,20 @@ class BlockStreamSpec extends Specification {
   "BlockInputStream" should {
     "read properly" in {
       testRead(List[Byte](0)) === List[Byte]()
-      testRead(List[Byte](1,0,1,1,1,2,1,3,0)) === List[Byte](0,1,2,3)
-      testRead(List[Byte](2,0,1,2,2,3,0)) === List[Byte](0,1,2,3)
-      testRead(List[Byte](3,0,1,2,1,3,0)) === List[Byte](0,1,2,3)
-      testRead(List[Byte](4,0,1,2,3,0)) === List[Byte](0,1,2,3)
+      testRead(List[Byte](1, 0, 1, 1, 1, 2, 1, 3, 0)) === List[Byte](0, 1, 2, 3)
+      testRead(List[Byte](2, 0, 1, 2, 2, 3, 0)) === List[Byte](0, 1, 2, 3)
+      testRead(List[Byte](3, 0, 1, 2, 1, 3, 0)) === List[Byte](0, 1, 2, 3)
+      testRead(List[Byte](4, 0, 1, 2, 3, 0)) === List[Byte](0, 1, 2, 3)
 
-      testRead(List[Byte](1,0,1,1,1,-2,1,-1,0)) === List[Byte](0,1,-2,-1)
-      testRead(List[Byte](2,0,1,2,-2,-1,0)) === List[Byte](0,1,-2,-1)
-      testRead(List[Byte](3,0,1,-2,1,-1,0)) === List[Byte](0,1,-2,-1)
-      testRead(List[Byte](4,0,1,-2,-1,0)) === List[Byte](0,1,-2,-1)
+      testRead(List[Byte](1, 0, 1, 1, 1, -2, 1, -1, 0)) === List[Byte](0, 1, -2, -1)
+      testRead(List[Byte](2, 0, 1, 2, -2, -1, 0)) === List[Byte](0, 1, -2, -1)
+      testRead(List[Byte](3, 0, 1, -2, 1, -1, 0)) === List[Byte](0, 1, -2, -1)
+      testRead(List[Byte](4, 0, 1, -2, -1, 0)) === List[Byte](0, 1, -2, -1)
     }
 
     "jump to end of block even if content is unread" in {
-      val b1 = List[Byte](1,0,1,1,1,2,1,3,0)
-      val b2 = List[Byte](2,4,5,2,6,7,0)
+      val b1 = List[Byte](1, 0, 1, 1, 1, 2, 1, 3, 0)
+      val b2 = List[Byte](2, 4, 5, 2, 6, 7, 0)
       val readRaw = new ByteArrayInputStream((b1 ++ b2).toArray)
 
       val readBlock1 = new BlockInputStream(readRaw)
@@ -46,17 +46,17 @@ class BlockStreamSpec extends Specification {
       testWrite(List[Byte](), 1) === List[Byte](0)
       testWrite(List[Byte](), 2) === List[Byte](0)
       testWrite(List[Byte](), 3) === List[Byte](0)
-      testWrite(List[Byte](0,1,2,3), 1) === List[Byte](1,0,1,1,1,2,1,3,0)
-      testWrite(List[Byte](0,1,2,3), 2) === List[Byte](2,0,1,2,2,3,0)
-      testWrite(List[Byte](0,1,2,3), 3) === List[Byte](3,0,1,2,1,3,0)
-      testWrite(List[Byte](0,1,2,3), 4) === List[Byte](4,0,1,2,3,0)
-      testWrite(List[Byte](0,1,2,3), 5) === List[Byte](4,0,1,2,3,0)
+      testWrite(List[Byte](0, 1, 2, 3), 1) === List[Byte](1, 0, 1, 1, 1, 2, 1, 3, 0)
+      testWrite(List[Byte](0, 1, 2, 3), 2) === List[Byte](2, 0, 1, 2, 2, 3, 0)
+      testWrite(List[Byte](0, 1, 2, 3), 3) === List[Byte](3, 0, 1, 2, 1, 3, 0)
+      testWrite(List[Byte](0, 1, 2, 3), 4) === List[Byte](4, 0, 1, 2, 3, 0)
+      testWrite(List[Byte](0, 1, 2, 3), 5) === List[Byte](4, 0, 1, 2, 3, 0)
 
-      testWrite(List[Byte](0,1,-2,-1), 1) === List[Byte](1,0,1,1,1,-2,1,-1,0)
-      testWrite(List[Byte](0,1,-2,-1), 2) === List[Byte](2,0,1,2,-2,-1,0)
-      testWrite(List[Byte](0,1,-2,-1), 3) === List[Byte](3,0,1,-2,1,-1,0)
-      testWrite(List[Byte](0,1,-2,-1), 4) === List[Byte](4,0,1,-2,-1,0)
-      testWrite(List[Byte](0,1,-2,-1), 5) === List[Byte](4,0,1,-2,-1,0)
+      testWrite(List[Byte](0, 1, -2, -1), 1) === List[Byte](1, 0, 1, 1, 1, -2, 1, -1, 0)
+      testWrite(List[Byte](0, 1, -2, -1), 2) === List[Byte](2, 0, 1, 2, -2, -1, 0)
+      testWrite(List[Byte](0, 1, -2, -1), 3) === List[Byte](3, 0, 1, -2, 1, -1, 0)
+      testWrite(List[Byte](0, 1, -2, -1), 4) === List[Byte](4, 0, 1, -2, -1, 0)
+      testWrite(List[Byte](0, 1, -2, -1), 5) === List[Byte](4, 0, 1, -2, -1, 0)
     }
   }
 

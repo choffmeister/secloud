@@ -6,21 +6,18 @@ import net.secloud.core.utils._
 package object crypto {
   val symmetricAlgorithmMap = Map[SymmetricAlgorithm, Byte](
     NullEncryption -> 0x00,
-    AES -> 0x01
-  )
+    AES -> 0x01)
   val symmetricAlgorithmMapInverse = inverseMap(symmetricAlgorithmMap)
 
   val asymmetricAlgorithmMap = Map[AsymmetricAlgorithm, Byte](
-    RSA -> 0x00
-  )
+    RSA -> 0x00)
   val asymmetricAlgorithmMapInverse = inverseMap(asymmetricAlgorithmMap)
 
   val hashAlgorithmMap = Map[HashAlgorithm, Byte](
     SHA1 -> 0x00,
     SHA256 -> 0x01,
     SHA384 -> 0x02,
-    SHA512 -> 0x03
-  )
+    SHA512 -> 0x03)
   val hashAlgorithmMapInverse = inverseMap(hashAlgorithmMap)
 
   def writeSymmetricAlgorithm(output: OutputStream, key: SymmetricAlgorithmInstance): Unit = {
@@ -55,5 +52,5 @@ package object crypto {
     algorithm.create()
   }
 
-  private def inverseMap[A, B](map: Map[A, B]): Map[B, A] =  map.map(entry => (entry._2, entry._1))
+  private def inverseMap[A, B](map: Map[A, B]): Map[B, A] = map.map(entry ⇒ (entry._2, entry._1))
 }

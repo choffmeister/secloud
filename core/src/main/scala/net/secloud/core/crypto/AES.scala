@@ -4,8 +4,8 @@ import java.io._
 import net.secloud.core.utils._
 import org.bouncycastle.crypto.engines.AESEngine
 import org.bouncycastle.crypto.modes.CBCBlockCipher
-import org.bouncycastle.crypto.paddings.{PaddedBufferedBlockCipher, PKCS7Padding}
-import org.bouncycastle.crypto.params.{KeyParameter, ParametersWithIV}
+import org.bouncycastle.crypto.paddings.{ PaddedBufferedBlockCipher, PKCS7Padding }
+import org.bouncycastle.crypto.params.{ KeyParameter, ParametersWithIV }
 
 class AES(protected override val params: ParametersWithIV) extends BouncyCastleSymmetricAlgorithmInstance(params) {
   val algorithm = AES

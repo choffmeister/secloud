@@ -277,9 +277,9 @@ class BinaryStreamReaderWriterSpec extends Specification {
       val streamWrite = new ByteArrayOutputStream()
       val writer = new BinaryStreamWriter(streamWrite)
 
-      writer.writeList(List[Int](1,2,3))(item => writer.writeInt32(item))
-      writer.writeList(List[Int]())(item => writer.writeInt32(item))
-      writer.writeList(List[Int](1234,5678,9012345,67890123))(item => writer.writeInt32(item))
+      writer.writeList(List[Int](1, 2, 3))(item ⇒ writer.writeInt32(item))
+      writer.writeList(List[Int]())(item ⇒ writer.writeInt32(item))
+      writer.writeList(List[Int](1234, 5678, 9012345, 67890123))(item ⇒ writer.writeInt32(item))
       writer.close()
 
       val buf = streamWrite.toByteArray()
@@ -288,20 +288,20 @@ class BinaryStreamReaderWriterSpec extends Specification {
       val streamRead = new ByteArrayInputStream(buf)
       val reader = new BinaryStreamReader(streamRead)
 
-      reader.readList()(reader.readInt32()) === List[Int](1,2,3)
+      reader.readList()(reader.readInt32()) === List[Int](1, 2, 3)
       reader.readList()(reader.readInt32()) === List[Int]()
-      reader.readList()(reader.readInt32()) === List[Int](1234,5678,9012345,67890123)
+      reader.readList()(reader.readInt32()) === List[Int](1234, 5678, 9012345, 67890123)
     }
 
     "read and write Map" in {
       val streamWrite = new ByteArrayOutputStream()
       val writer = new BinaryStreamWriter(streamWrite)
 
-      writer.writeMap(Map[String, Int]("First" -> 1,"Second" -> 2,"Third" -> 3)) { (k, v) =>
+      writer.writeMap(Map[String, Int]("First" -> 1, "Second" -> 2, "Third" -> 3)) { (k, v) ⇒
         writer.writeString(k)
         writer.writeInt32(v)
       }
-      writer.writeMap(Map[String, Int]()) { (k, v) =>
+      writer.writeMap(Map[String, Int]()) { (k, v) ⇒
         writer.writeString(k)
         writer.writeInt32(v)
       }
@@ -313,7 +313,7 @@ class BinaryStreamReaderWriterSpec extends Specification {
       val streamRead = new ByteArrayInputStream(buf)
       val reader = new BinaryStreamReader(streamRead)
 
-      reader.readMap()((reader.readString(), reader.readInt32())) === Map[String, Int]("First" -> 1,"Second" -> 2,"Third" -> 3)
+      reader.readMap()((reader.readString(), reader.readInt32())) === Map[String, Int]("First" -> 1, "Second" -> 2, "Third" -> 3)
       reader.readMap()((reader.readString(), reader.readInt32())) === Map[String, Int]()
     }
 
@@ -321,11 +321,11 @@ class BinaryStreamReaderWriterSpec extends Specification {
       val streamWrite = new ByteArrayOutputStream()
       val writer = new BinaryStreamWriter(streamWrite)
 
-      writer.writeStream { bs =>
+      writer.writeStream { bs ⇒
         bs.writeString("Hello")
         bs.writeInt32(1)
       }
-      writer.writeStream { bs =>
+      writer.writeStream { bs ⇒
         bs.writeInt32(2)
         bs.writeString("World")
       }
@@ -337,8 +337,8 @@ class BinaryStreamReaderWriterSpec extends Specification {
       val streamRead = new ByteArrayInputStream(buf)
       val reader = new BinaryStreamReader(streamRead)
 
-      reader.readStream(bs => (bs.readString(), bs.readInt32())) === ("Hello", 1)
-      reader.readStream(bs => (bs.readInt32(), bs.readString())) === (2, "World")
+      reader.readStream(bs ⇒ (bs.readString(), bs.readInt32())) === ("Hello", 1)
+      reader.readStream(bs ⇒ (bs.readInt32(), bs.readString())) === (2, "World")
     }
   }
 }

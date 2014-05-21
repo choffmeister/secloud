@@ -1,6 +1,6 @@
 package net.secloud.core.crypto
 
-import java.io.{InputStream, OutputStream}
+import java.io.{ InputStream, OutputStream }
 import net.secloud.core.utils._
 import org.bouncycastle.crypto.BufferedBlockCipher
 import org.bouncycastle.crypto.engines.NullEngine

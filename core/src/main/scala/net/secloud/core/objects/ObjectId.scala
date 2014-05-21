@@ -5,19 +5,19 @@ import org.apache.commons.codec.binary.Hex
 
 case class ObjectId(bytes: Seq[Byte]) {
   override def equals(other: Any): Boolean = other match {
-    case ObjectId(otherBytes) => bytes == otherBytes
-    case _ => false
+    case ObjectId(otherBytes) ⇒ bytes == otherBytes
+    case _ ⇒ false
   }
 
   /**
    * Simple hash value taking the at most the first 4 bytes into account.
    */
   override def hashCode(): Int = bytes.take(4).toList match {
-    case Nil => 0
-    case List(a) => a
-    case List(a, b) => a | b << 8
-    case List(a, b, c) => a | b << 8 | c << 16
-    case List(a, b, c, d) => a | b << 8 | c << 16 | d << 24
+    case Nil ⇒ 0
+    case List(a) ⇒ a
+    case List(a, b) ⇒ a | b << 8
+    case List(a, b, c) ⇒ a | b << 8 | c << 16
+    case List(a, b, c, d) ⇒ a | b << 8 | c << 16 | d << 24
   }
 
   def hex = Hex.encodeHexString(bytes.toArray)

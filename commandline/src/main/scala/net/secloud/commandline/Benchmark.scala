@@ -4,12 +4,12 @@ import java.io._
 import java.util.Random
 import net.secloud.core.crypto._
 import net.secloud.core.objects._
-import com.jcraft.jzlib.{GZIPInputStream, GZIPOutputStream}
+import com.jcraft.jzlib.{ GZIPInputStream, GZIPOutputStream }
 
 object Benchmark {
   val random = new Random()
-  val megaByteDataNonRnd = (1 to 1024 * 1024).map(i => 0).map(_.toByte).toArray[Byte]
-  val megaByteDataRnd = (1 to 1024 * 1024).map(i => random.nextInt()).map(_.toByte).toArray[Byte]
+  val megaByteDataNonRnd = (1 to 1024 * 1024).map(i ⇒ 0).map(_.toByte).toArray[Byte]
+  val megaByteDataRnd = (1 to 1024 * 1024).map(i ⇒ random.nextInt()).map(_.toByte).toArray[Byte]
   val iterations = 64
   val byteCount = iterations * 1024 * 1024
 
@@ -23,42 +23,41 @@ object Benchmark {
     SHA384,
     SHA512,
     "GZip",
-    "Blob"
-  )
+    "Blob")
 
   def fullBenchmark() {
     val format = "%-15s %7.1f MB/s (%s)"
 
-    for (test <- tests) {
+    for (test ← tests) {
       try {
         test match {
-          case (algo: SymmetricAlgorithm, ks: Int) =>
+          case (algo: SymmetricAlgorithm, ks: Int) ⇒
             val inst = algo.generate(ks)
             val res = benchmarkSymmetricAlgorithm(megaByteDataRnd, inst)
             println(format.format(inst.name, res._1, "encrypt"))
             println(format.format(inst.name, res._2, "decrypt"))
-          case algo: HashAlgorithm =>
+          case algo: HashAlgorithm ⇒
             val inst = algo.create()
             val res = benchmarkHashAlgorithm(megaByteDataRnd, inst)
             println(format.format(inst.name, res, "hash"))
-          case "GZip" =>
+          case "GZip" ⇒
             val res1 = benchmarkGZip(megaByteDataNonRnd)
             println(format.format("GZip", res1._1, "compress, non random data"))
             println(format.format("GZip", res1._2, "decompress, non random data"))
             val res2 = benchmarkGZip(megaByteDataRnd)
             println(format.format("GZip", res2._1, "compress, random data"))
             println(format.format("GZip", res2._2, "decompress, random data"))
-          case "Blob" =>
+          case "Blob" ⇒
             val res1 = benchmarkBlob(megaByteDataNonRnd)
             println(format.format("Blob", res1._1, "write, non random data"))
             println(format.format("Blob", res1._2, "read, non random data"))
             val res2 = benchmarkBlob(megaByteDataRnd)
             println(format.format("Blob", res2._1, "write, random data"))
             println(format.format("Blob", res2._2, "read, random data"))
-          case _ => println("Unknown test ${test}")
+          case _ ⇒ println("Unknown test ${test}")
         }
       } catch {
-        case e: Throwable =>
+        case e: Throwable ⇒
           System.err.println(s"Benchmarking ${test} caused an error")
           System.err.println("Error: " + e.getMessage)
           System.err.println("Type: " + e.getClass.getName)
@@ -79,10 +78,10 @@ object Benchmark {
 
     val ba1 = new ByteArrayOutputStream(byteCount + 100)
     val runtime1 = benchmark {
-      signObject(ba1, rsa) { ss =>
+      signObject(ba1, rsa) { ss ⇒
         writeBlob(ss, blob)
-        writeBlobContent(ss, aes) { bs =>
-          for (i <- 1 to iterations) {
+        writeBlobContent(ss, aes) { bs ⇒
+          for (i ← 1 to iterations) {
             bs.write(megaByteData)
           }
         }
@@ -91,9 +90,9 @@ object Benchmark {
 
     val ba2 = new ByteArrayInputStream(ba1.toByteArray)
     val runtime2 = benchmark {
-      validateObject(ba2, rsaMap) { ss =>
+      validateObject(ba2, rsaMap) { ss ⇒
         readBlob(ss)
-        readBlobContent(ss, aes) { bs =>
+        readBlobContent(ss, aes) { bs ⇒
           while (bs.read(buf, 0, 8192) >= 0) {}
         }
       }
@@ -108,7 +107,7 @@ object Benchmark {
     val ba1 = new ByteArrayOutputStream(byteCount + 100)
     val gzip1 = new GZIPOutputStream(ba1)
     val runtime1 = benchmark {
-      for (i <- 1 to iterations) {
+      for (i ← 1 to iterations) {
         gzip1.write(megaByteData)
       }
       gzip1.flush()
@@ -130,14 +129,14 @@ object Benchmark {
 
     val ba1 = new ByteArrayOutputStream(byteCount + 100)
     var runtime1 = benchmark {
-      key.encrypt(ba1) { cs =>
-        for (i <- 1 to iterations) cs.write(megaByteData)
+      key.encrypt(ba1) { cs ⇒
+        for (i ← 1 to iterations) cs.write(megaByteData)
       }
     }
 
     val ba2 = new ByteArrayInputStream(ba1.toByteArray)
     var runtime2 = benchmark {
-      key.decrypt(ba2) { cs =>
+      key.decrypt(ba2) { cs ⇒
         while (cs.read(buf, 0, 8192) >= 0) {}
       }
     }
@@ -149,8 +148,8 @@ object Benchmark {
     val ba = new ByteArrayOutputStream(byteCount + 100)
 
     val runtime = benchmark {
-      hash.hash(ba) { hs =>
-        for (i <- 1 to iterations) {
+      hash.hash(ba) { hs ⇒
+        for (i ← 1 to iterations) {
           hs.write(megaByteData)
         }
       }
@@ -159,7 +158,7 @@ object Benchmark {
     return toMegaBytesPerSecond(byteCount, runtime)
   }
 
-  def benchmark(inner: => Any): Double = {
+  def benchmark(inner: ⇒ Any): Double = {
     val startTime = System.currentTimeMillis
     inner
     val endTime = System.currentTimeMillis
