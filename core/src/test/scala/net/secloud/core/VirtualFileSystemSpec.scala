@@ -1,64 +1,43 @@
 package net.secloud.core
 
 import org.specs2.mutable._
-import org.junit.runner.RunWith
-import org.specs2.runner.JUnitRunner
 import java.util.UUID
-import java.io.{InputStream, OutputStream}
-import java.io.{File, FileInputStream, FileOutputStream}
+import java.io.File
+import net.secloud.core.utils.StreamUtils._
 
-@RunWith(classOf[JUnitRunner])
 class VirtualFileSystemSpec extends Specification {
   def getTempDir = new File(new File(System.getProperty("java.io.tmpdir")), UUID.randomUUID().toString())
 
   "NativeFileSystem" should {
     "read and write files" in {
       val base = getTempDir
-      build(base)
+      TestWorkingDirectory.create(base)
+
       val vfs = new NativeFileSystem(base)
 
       val f1 = VirtualFile("/a.txt")
-      vfs.read(f1)(s => read(s)) === "Hello World a"
+      vfs.read(f1)(s ⇒ readString(s)) === "Hello World a"
 
       val f2 = VirtualFile("/new.txt")
       vfs.exists(f2) must beFalse
-      vfs.write(f2)(s => write(s, "NEW.TXT"))
+      vfs.write(f2)(s ⇒ writeString(s, "NEW.TXT"))
       vfs.exists(f2) must beTrue
-      vfs.read(f2)(s => read(s)) === "NEW.TXT"
+      vfs.read(f2)(s ⇒ readString(s)) === "NEW.TXT"
     }
-  }
 
-  def build(base: File) {
-    mkdirs(base, Nil)
-    mkdirs(base, List("first", "first-1"))
-    mkdirs(base, List("first", "first-2"))
-    mkdirs(base, List("second", "second-1"))
-    mkdirs(base, List("second", "second-2"))
-    put(base, List("a.txt"), "Hello World a")
-    put(base, List("first", "b.txt"), "Hello World b")
-    put(base, List("first", "first-1", "c.txt"), "Hello World c")
-    put(base, List("first", "first-2", "d.txt"), "Hello World d")
-    put(base, List("second", "second-1", "e.txt"), "Hello World e")
-  }
+    "return proper mode" in {
+      val base = getTempDir
+      TestWorkingDirectory.create(base)
 
-  def mkdirs(base: File, path: List[String]) {
-    val file = new File(base, path.mkString(File.separator))
-    file.mkdirs()
-  }
+      val vfs = new NativeFileSystem(base)
 
-  def put(base: File, path: List[String], content: String) {
-    val file = new File(base, path.mkString(File.separator))
-    val stream = new FileOutputStream(file)
-    write(stream, content)
-    stream.close()
-  }
-
-  def write(s: OutputStream, content: String): Unit = {
-    val buffer = content.getBytes("ASCII")
-    s.write(buffer, 0, buffer.length)
-  }
-
-  def read(s: InputStream): String = {
-    scala.io.Source.fromInputStream(s).mkString("")
+      vfs.mode(VirtualFile("/")) === Directory
+      vfs.mode(VirtualFile("/first")) === Directory
+      vfs.mode(VirtualFile("/first/first-1")) === Directory
+      vfs.mode(VirtualFile("/a.txt")) === NonExecutableFile
+      vfs.mode(VirtualFile("/first/b.txt")) === NonExecutableFile
+      vfs.mode(VirtualFile("/first/first-1/c.txt")) === NonExecutableFile
+      vfs.mode(VirtualFile("/bin/script.py")) === ExecutableFile
+    }
   }
 }

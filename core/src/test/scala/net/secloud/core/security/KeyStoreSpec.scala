@@ -1,11 +1,7 @@
 package net.secloud.core.security
 
 import org.specs2.mutable._
-import org.junit.runner.RunWith
-import org.specs2.runner.JUnitRunner
-import org.netbeans.api.keyring.Keyring
 
-@RunWith(classOf[JUnitRunner])
 class KeyStoreSpec extends Specification {
   "KeyStrore" should {
     "save and load private keys" in {

@@ -1,10 +1,7 @@
 package net.secloud.core.objects
 
-import org.junit.runner.RunWith
 import org.specs2.mutable._
-import org.specs2.runner.JUnitRunner
 
-@RunWith(classOf[JUnitRunner])
 class ObjectIdSpec extends Specification {
   val oh1 = ObjectId("00112233feff")
   val oh2 = ObjectId("00112233feff")

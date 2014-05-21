@@ -1,10 +1,9 @@
 package net.secloud.core.utils
 
-import java.io.{InputStream, OutputStream}
-import net.secloud.core.utils.BinaryReaderWriter._
+import java.io.{ InputStream, OutputStream }
 import scala.language.implicitConversions
 
-class BlockInputStream(val inner: InputStream, val ownsInner: Boolean = true) extends InputStream {
+private[utils] class BlockInputStream(val inner: InputStream, val ownsInner: Boolean = true) extends InputStream {
   private var block = Array.empty[Byte]
   private var blockSize = 0
   private var blockPosition = 0
@@ -17,6 +16,21 @@ class BlockInputStream(val inner: InputStream, val ownsInner: Boolean = true) ex
       blockPosition += 1
       if (blockSize > 0 && blockPosition == blockSize) readBlock()
       b
+    } else -1
+  }
+
+  override def read(b: Array[Byte], off: Int, len: Int): Int = {
+    if (blockSize > 0) {
+      var totalReadCount = 0
+      while (len - totalReadCount > 0) {
+        val readCount = Math.min(blockSize - blockPosition, len - totalReadCount)
+        if (readCount == 0) return totalReadCount;
+        System.arraycopy(block, blockPosition, b, off + totalReadCount, readCount)
+        blockPosition += readCount
+        totalReadCount += readCount
+        if (blockPosition == blockSize) readBlock()
+      }
+      totalReadCount
     } else -1
   }
 
@@ -41,7 +55,7 @@ class BlockInputStream(val inner: InputStream, val ownsInner: Boolean = true) ex
   }
 }
 
-class BlockOutputStream(val inner: OutputStream, val bufferSize: Int = 8192, val ownsInner: Boolean = true) extends OutputStream {
+private[utils] class BlockOutputStream(val inner: OutputStream, val bufferSize: Int = 8192, val ownsInner: Boolean = true) extends OutputStream {
   private val block = new Array[Byte](bufferSize)
   private var blockPosition = 0
   private var closed = false
@@ -51,6 +65,18 @@ class BlockOutputStream(val inner: OutputStream, val bufferSize: Int = 8192, val
 
     block(blockPosition) = b.toByte
     blockPosition += 1
+  }
+
+  override def write(b: Array[Byte], off: Int, len: Int) = {
+    var totalWriteCount = 0
+
+    while (len - totalWriteCount > 0) {
+      if (blockPosition == bufferSize) flushBlock()
+      val writeCount = Math.min(bufferSize - blockPosition, len - totalWriteCount)
+      System.arraycopy(b, off + totalWriteCount, block, blockPosition, writeCount)
+      blockPosition += writeCount
+      totalWriteCount += writeCount
+    }
   }
 
   override def close(): Unit = {

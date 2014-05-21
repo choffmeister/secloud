@@ -22,4 +22,6 @@ trait AsymmetricAlgorithmInstance {
   def validateHash(hash: Array[Byte], signature: Array[Byte]): Boolean
   def wrapKey(plainKey: Array[Byte]): Array[Byte]
   def unwrapKey(wrappedKey: Array[Byte]): Array[Byte]
+
+  def fingerprint: Array[Byte] = algorithm.fingerprint(this)
 }

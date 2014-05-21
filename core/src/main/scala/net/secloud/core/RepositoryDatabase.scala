@@ -1,15 +1,15 @@
 package net.secloud.core
 
-import java.io.File
-import scala.annotation.tailrec
-import java.io.InputStream
-import java.io.OutputStream
-import java.io.FileInputStream
-import java.io.FileOutputStream
 import java.io.BufferedInputStream
 import java.io.BufferedOutputStream
+import java.io.File
+import java.io.FileInputStream
+import java.io.FileOutputStream
+import java.io.InputStream
+import java.io.OutputStream
 import net.secloud.core.objects._
 import net.secloud.core.utils.StreamUtils._
+import scala.annotation.tailrec
 
 trait RepositoryDatabase {
   def init(): Unit
@@ -21,7 +21,7 @@ trait RepositoryDatabase {
   def createWriter(): ObjectWriter
   def find(idPrefix: String): Option[ObjectId]
 
-  def read[T](id: ObjectId)(inner: InputStream => T): T = {
+  def read[T](id: ObjectId)(inner: InputStream ⇒ T): T = {
     val reader = createReader()
     try {
       reader.open(id)
@@ -31,7 +31,7 @@ trait RepositoryDatabase {
     }
   }
 
-  def write(inner: OutputStream => ObjectId): ObjectId = {
+  def write(inner: OutputStream ⇒ ObjectId): ObjectId = {
     val writer = createWriter()
     try {
       writer.open()
@@ -75,9 +75,9 @@ class DirectoryRepositoryDatabase(val base: File) extends RepositoryDatabase {
     if (idPrefix.length >= 4) {
       val dir = pathJoin(base, List("objects", idPrefix.substring(0, 2)))
       if (dir.exists && dir.isDirectory) {
-        val files = dir.listFiles().filter(f => f.getName.startsWith(idPrefix.substring(2))).toList
+        val files = dir.listFiles().filter(f ⇒ f.getName.startsWith(idPrefix.substring(2))).toList
         if (files.length == 1) {
-          Some(ObjectId(idPrefix.substring(0,2) + files(0).getName))
+          Some(ObjectId(idPrefix.substring(0, 2) + files(0).getName))
         } else None
       } else None
     } else None
@@ -104,16 +104,16 @@ class DirectoryRepositoryDatabase(val base: File) extends RepositoryDatabase {
 
   @tailrec
   private def pathJoin(base: File, segments: List[String]): File = segments match {
-    case first :: rest => pathJoin(new File(base, first), rest)
-    case Nil => base
+    case first :: rest ⇒ pathJoin(new File(base, first), rest)
+    case Nil ⇒ base
   }
 
   class DirectoryObjectReader(val rdb: DirectoryRepositoryDatabase) extends ObjectReader {
     private var innerStream: Option[InputStream] = None
 
     def open(id: ObjectId) = innerStream match {
-      case Some(s) => throw new Exception("Cannot open read stream twice")
-      case _ => innerStream = Some(new BufferedInputStream(new FileInputStream(rdb.pathFromId(id)), 8192))
+      case Some(s) ⇒ throw new Exception("Cannot open read stream twice")
+      case _ ⇒ innerStream = Some(new BufferedInputStream(new FileInputStream(rdb.pathFromId(id)), 8192))
     }
 
     def close() = {
@@ -124,8 +124,8 @@ class DirectoryRepositoryDatabase(val base: File) extends RepositoryDatabase {
     }
 
     def stream = innerStream match {
-      case Some(s) => s
-      case _ => throw new Exception("Read stream must be opened first")
+      case Some(s) ⇒ s
+      case _ ⇒ throw new Exception("Read stream must be opened first")
     }
   }
 
@@ -134,8 +134,8 @@ class DirectoryRepositoryDatabase(val base: File) extends RepositoryDatabase {
     private var tempPath: Option[File] = None
 
     def open() = innerStream match {
-      case Some(s) => throw new Exception("Cannot open write stream twice")
-      case _ =>
+      case Some(s) ⇒ throw new Exception("Cannot open write stream twice")
+      case _ ⇒
         tempPath = Some(rdb.createTempFile())
         innerStream = Some(new BufferedOutputStream(new FileOutputStream(tempPath.get), 8192))
     }
@@ -160,8 +160,8 @@ class DirectoryRepositoryDatabase(val base: File) extends RepositoryDatabase {
     }
 
     def stream = innerStream match {
-      case Some(s) => s
-      case _ => throw new Exception("Write stream must be opened first")
+      case Some(s) ⇒ s
+      case _ ⇒ throw new Exception("Write stream must be opened first")
     }
   }
 }

@@ -1,11 +1,11 @@
 package net.secloud.core.crypto
 
-import java.io.{InputStream, OutputStream}
-import org.bouncycastle.crypto.io.{CipherInputStream, CipherOutputStream}
-import org.bouncycastle.crypto.{BufferedBlockCipher, CipherParameters}
+import java.io.{ InputStream, OutputStream }
+import org.bouncycastle.crypto.io.{ CipherInputStream, CipherOutputStream }
+import org.bouncycastle.crypto.{ BufferedBlockCipher, CipherParameters }
 
 abstract class BouncyCastleSymmetricAlgorithmInstance(protected val params: CipherParameters) extends SymmetricAlgorithmInstance {
-  def encrypt(output: OutputStream)(inner: OutputStream => Any): Unit = {
+  def encrypt(output: OutputStream)(inner: OutputStream ⇒ Any): Unit = {
     val cipher = createCipher()
     cipher.reset()
     cipher.init(true, params)
@@ -15,7 +15,7 @@ abstract class BouncyCastleSymmetricAlgorithmInstance(protected val params: Ciph
     stream.close()
   }
 
-  def decrypt[T](input: InputStream)(inner: InputStream => T): T = {
+  def decrypt[T](input: InputStream)(inner: InputStream ⇒ T): T = {
     val cipher = createCipher()
     cipher.reset()
     cipher.init(false, params)

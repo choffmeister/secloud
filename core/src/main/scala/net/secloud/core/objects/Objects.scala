@@ -9,8 +9,7 @@ case object CommitObjectType extends ObjectType
 
 case class Issuer(
   name: String,
-  publicKey: AsymmetricAlgorithmInstance
-)
+  publicKey: AsymmetricAlgorithmInstance)
 
 sealed abstract class BaseObject {
   val id: ObjectId
@@ -18,26 +17,24 @@ sealed abstract class BaseObject {
 }
 
 case class Blob(
-  id: ObjectId
-) extends BaseObject {
+  id: ObjectId) extends BaseObject {
   val objectType = BlobObjectType
 }
 
 sealed abstract class TreeEntryMode
-case object FileTreeEntryMode extends TreeEntryMode
+case object NonExecutableFileTreeEntryMode extends TreeEntryMode
+case object ExecutableFileTreeEntryMode extends TreeEntryMode
 case object DirectoryTreeEntryMode extends TreeEntryMode
 
 case class TreeEntry(
   id: ObjectId,
   mode: TreeEntryMode,
   name: String,
-  key: SymmetricAlgorithmInstance
-)
+  key: SymmetricAlgorithmInstance)
 
 case class Tree(
   id: ObjectId,
-  entries: List[TreeEntry]
-) extends BaseObject {
+  entries: List[TreeEntry]) extends BaseObject {
   val objectType = TreeObjectType
 }
 
@@ -46,7 +43,6 @@ case class Commit(
   parentIds: List[ObjectId],
   issuers: Map[Seq[Byte], Issuer],
   encapsulatedCommitKeys: Map[Seq[Byte], Seq[Byte]],
-  tree: TreeEntry
-) extends BaseObject {
+  tree: TreeEntry) extends BaseObject {
   val objectType = CommitObjectType
 }

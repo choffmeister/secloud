@@ -1,13 +1,10 @@
 package net.secloud.core
 
-import org.specs2.mutable._
-import org.junit.runner.RunWith
-import org.specs2.runner.JUnitRunner
-import java.util.UUID
 import java.io.File
+import java.util.UUID
 import net.secloud.core.objects._
+import org.specs2.mutable._
 
-@RunWith(classOf[JUnitRunner])
 class RepositoryDatabaseSpec extends Specification {
   def getTempDir = new File(new File(System.getProperty("java.io.tmpdir")), UUID.randomUUID().toString())
 

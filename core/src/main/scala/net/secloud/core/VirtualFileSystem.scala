@@ -1,9 +1,9 @@
 package net.secloud.core
 
-import java.io.{InputStream, OutputStream}
-import java.io.{File, FileInputStream, FileOutputStream}
-import scala.language.reflectiveCalls
+import java.io.{ File, FileInputStream, FileOutputStream }
+import java.io.{ InputStream, OutputStream }
 import scala.language.implicitConversions
+import scala.language.reflectiveCalls
 
 sealed abstract class VirtualFileMode
 case object NonExecutableFile extends VirtualFileMode
@@ -43,21 +43,25 @@ trait VirtualFileSystem {
   def exists(f: VirtualFile): Boolean
   def mode(f: VirtualFile): VirtualFileMode
   def children(f: VirtualFile): List[VirtualFile]
-  def read[T](f: VirtualFile)(inner: InputStream => T): T
-  def write(f: VirtualFile)(inner: OutputStream => Any): Unit
+  def read[T](f: VirtualFile)(inner: InputStream ⇒ T): T
+  def write(f: VirtualFile)(inner: OutputStream ⇒ Any): Unit
 }
 
 class NativeFileSystem(base: File) extends VirtualFileSystem {
   def exists(f: VirtualFile) = <<(f).exists()
-  def mode(f: VirtualFile) = if (<<(f).isDirectory) Directory else NonExecutableFile // TODO: handle ExecutableFile
-  def children(f: VirtualFile) = <<(f).listFiles.map(c => f.child(c.getName)).toList
-  def read[T](f: VirtualFile)(inner: InputStream => T): T = using(new FileInputStream(<<(f)))(s => inner(s))
-  def write(f: VirtualFile)(inner: OutputStream => Any): Unit = using(new FileOutputStream(<<(f)))(s => inner(s))
+  def mode(f: VirtualFile) = (<<(f).isDirectory, <<(f).canExecute) match {
+    case (true, _) ⇒ Directory
+    case (false, true) ⇒ ExecutableFile
+    case (false, false) ⇒ NonExecutableFile
+  }
+  def children(f: VirtualFile) = <<(f).listFiles.map(c ⇒ f.child(c.getName)).toList
+  def read[T](f: VirtualFile)(inner: InputStream ⇒ T): T = using(new FileInputStream(<<(f)))(s ⇒ inner(s))
+  def write(f: VirtualFile)(inner: OutputStream ⇒ Any): Unit = using(new FileOutputStream(<<(f)))(s ⇒ inner(s))
 
   private def /(): String = File.separator
   private def <<(f: VirtualFile): File = new File(base.getAbsolutePath + / + f.segments.mkString(/))
 
-  private def using[A <: { def close(): Unit }, B](closable: A)(inner: A => B): B = {
+  private def using[A <: { def close(): Unit }, B](closable: A)(inner: A ⇒ B): B = {
     try {
       inner(closable)
     } finally {
@@ -70,6 +74,6 @@ object NullFileSystem extends VirtualFileSystem {
   def exists(f: VirtualFile) = f.path == "/"
   def mode(f: VirtualFile) = Directory
   def children(f: VirtualFile) = List.empty[VirtualFile]
-  def read[T](f: VirtualFile)(inner: InputStream => T) = throw new Exception("Not supported")
-  def write(f: VirtualFile)(inner: OutputStream => Any) = throw new Exception("Not supported")
+  def read[T](f: VirtualFile)(inner: InputStream ⇒ T) = throw new Exception("Not supported")
+  def write(f: VirtualFile)(inner: OutputStream ⇒ Any) = throw new Exception("Not supported")
 }

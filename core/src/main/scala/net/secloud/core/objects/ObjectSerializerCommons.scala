@@ -1,17 +1,15 @@
 package net.secloud.core.objects
 
-import java.io.OutputStream
+import com.jcraft.jzlib.{ GZIPInputStream, GZIPOutputStream }
 import java.io.InputStream
-import java.io.ByteArrayOutputStream
-import java.io.ByteArrayInputStream
-import net.secloud.core.utils._
-import net.secloud.core.utils.BinaryReaderWriter._
+import java.io.OutputStream
 import net.secloud.core.crypto._
-import com.jcraft.jzlib.{GZIPInputStream, GZIPOutputStream}
+import net.secloud.core.utils._
 
 class ObjectSerializationException(msg: String) extends Exception(msg)
 
 private[objects] object ObjectSerializerCommons {
+
   import ObjectSerializerConstants._
 
   def readHeader(stream: InputStream): ObjectType = {
@@ -26,7 +24,7 @@ private[objects] object ObjectSerializerCommons {
   }
 
   def readSignatureBlock(stream: InputStream): (Seq[Byte], Seq[Byte], Seq[Byte]) = {
-    readBlock(stream, SignatureBlockType) { bs =>
+    readBlock(stream, SignatureBlockType) { bs ⇒
       val issuerFingerprint = bs.readBinary().toSeq
       val hash = bs.readBinary().toSeq
       val signature = bs.readBinary().toSeq
@@ -35,56 +33,49 @@ private[objects] object ObjectSerializerCommons {
   }
 
   def writeSignatureBlock(stream: OutputStream, issuerFingerprint: Seq[Byte], hash: Seq[Byte], signature: Seq[Byte]) {
-    writeBlock(stream, SignatureBlockType) { bs =>
+    writeBlock(stream, SignatureBlockType) { bs ⇒
       bs.writeBinary(issuerFingerprint)
       bs.writeBinary(hash)
       bs.writeBinary(signature)
     }
   }
 
-  def readPublicBlock[T](stream: InputStream)(inner: InputStream => T): T = {
-    readBlock(stream, PublicBlockType) { bs =>
+  def readPublicBlock[T](stream: InputStream)(inner: InputStream ⇒ T): T = {
+    readBlock(stream, PublicBlockType) { bs ⇒
       inner(bs)
     }
   }
 
-  def writePublicBlock(stream: OutputStream)(inner: OutputStream => Any): Unit = {
-    writeBlock(stream, PublicBlockType) { bs =>
+  def writePublicBlock(stream: OutputStream)(inner: OutputStream ⇒ Any): Unit = {
+    writeBlock(stream, PublicBlockType) { bs ⇒
       inner(bs)
     }
   }
 
-  def readPrivateBlock[T](stream: InputStream, key: SymmetricAlgorithmInstance)(inner: InputStream => T): T = {
-    readBlock(stream, PrivateBlockType) { bs =>
+  def readPrivateBlock[T](stream: InputStream, key: SymmetricAlgorithmInstance)(inner: InputStream ⇒ T): T = {
+    readBlock(stream, PrivateBlockType) { bs ⇒
       key.decrypt(bs)(inner(_))
     }
   }
 
-  def writePrivateBlock(stream: OutputStream, key: SymmetricAlgorithmInstance)(inner: OutputStream => Any): Unit = {
-    writeBlock(stream, PrivateBlockType) { bs =>
+  def writePrivateBlock(stream: OutputStream, key: SymmetricAlgorithmInstance)(inner: OutputStream ⇒ Any): Unit = {
+    writeBlock(stream, PrivateBlockType) { bs ⇒
       key.encrypt(bs)(inner(_))
     }
   }
 
-  def readBlock[T](stream: InputStream, expectedBlockType: BlockType)(inner: InputStream => T): T = {
+  def readBlock[T](stream: InputStream, expectedBlockType: BlockType)(inner: InputStream ⇒ T): T = {
     val actualBlockType = blockTypeMapInverse(stream.readInt8())
     assert(s"Expected block of type '${expectedBlockType.getClass.getSimpleName}'", expectedBlockType == actualBlockType)
-
-    val blockStream = new BlockInputStream(stream, ownsInner = false)
-    val result = inner(blockStream)
-    blockStream.close()
-    result
+    stream.readStream(inner)
   }
 
-  def writeBlock(stream: OutputStream, blockType: BlockType)(inner: OutputStream => Any) {
+  def writeBlock(stream: OutputStream, blockType: BlockType)(inner: OutputStream ⇒ Any) {
     stream.writeInt8(blockTypeMap(blockType))
-
-    val blockStream = new BlockOutputStream(stream, ownsInner = false)
-    inner(blockStream)
-    blockStream.close()
+    stream.writeStream(inner)
   }
 
-  def readCompressed[T](stream: InputStream)(inner: InputStream => T): T = {
+  def readCompressed[T](stream: InputStream)(inner: InputStream ⇒ T): T = {
     val gzip = new GZIPInputStream(stream)
     try {
       inner(gzip)
@@ -93,7 +84,7 @@ private[objects] object ObjectSerializerCommons {
     }
   }
 
-  def writeCompressed(stream: OutputStream)(inner: OutputStream => Any) {
+  def writeCompressed(stream: OutputStream)(inner: OutputStream ⇒ Any) {
     val gzip = new GZIPOutputStream(stream)
     try {
       inner(gzip)
@@ -103,13 +94,13 @@ private[objects] object ObjectSerializerCommons {
     }
   }
 
-  def signObject(output: OutputStream, privateKey: AsymmetricAlgorithmInstance)(inner: OutputStream => Any): ObjectId = {
-    def hash(os: OutputStream)(inner: OutputStream => Any): Array[Byte] = SHA1.create().hash(os)(hs => inner(hs))
+  def signObject(output: OutputStream, privateKey: AsymmetricAlgorithmInstance)(inner: OutputStream ⇒ Any): ObjectId = {
+    def hash(os: OutputStream)(inner: OutputStream ⇒ Any): Array[Byte] = SHA1.create().hash(os)(hs ⇒ inner(hs))
 
-    val totalHash = hash(output) { ths =>
+    val totalHash = hash(output) { ths ⇒
       val signatureHash = hash(ths)(inner)
 
-      writeSignatureBlock(ths, privateKey.algorithm.fingerprint(privateKey), signatureHash, privateKey.signHash(signatureHash))
+      writeSignatureBlock(ths, privateKey.fingerprint, signatureHash, privateKey.signHash(signatureHash))
     }
 
     output.writeBinary(totalHash)
@@ -118,10 +109,10 @@ private[objects] object ObjectSerializerCommons {
     return ObjectId(totalHash)
   }
 
-  def validateObject[T](input: InputStream, publicKeys: Map[Seq[Byte], AsymmetricAlgorithmInstance])(inner: InputStream => T): T = {
-    def hash(is: InputStream)(inner: InputStream => T): (Array[Byte], T) = SHA1.create().hash(is)(hs => inner(hs))
+  def validateObject[T](input: InputStream, publicKeys: Map[Seq[Byte], AsymmetricAlgorithmInstance])(inner: InputStream ⇒ T): T = {
+    def hash(is: InputStream)(inner: InputStream ⇒ T): (Array[Byte], T) = SHA1.create().hash(is)(hs ⇒ inner(hs))
 
-    val (totalHash, result) = hash(input) { ths =>
+    val (totalHash, result) = hash(input) { ths ⇒
       val (signatureHash, result) = hash(ths)(inner)
 
       val (readIssuerFingerprint, readSignatureHash, readSignature) = readSignatureBlock(ths)
@@ -139,10 +130,8 @@ private[objects] object ObjectSerializerCommons {
     return result
   }
 
-  def assert(errorMessage: String, cond: Boolean): Unit = assert(errorMessage)(cond == true)
-
-  def assert(errorMessage: String)(cond: => Boolean): Unit = {
-    if (cond == false) {
+  def assert(errorMessage: String, cond: ⇒ Boolean): Unit = {
+    if (!cond) {
       throw new ObjectSerializationException(errorMessage)
     }
   }

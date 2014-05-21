@@ -16,15 +16,15 @@ object KeyGenerator {
     val rsa = RSA.generate(strength, certaincy).asInstanceOf[RSA]
 
     ensureDirectory(secloudDir)
-    writeFile(filePriv)(s => RSA.saveToPEM(s, rsa, true))
-    writeFile(filePub)(s => RSA.saveToPEM(s, rsa, false))
+    writeFile(filePriv)(s ⇒ RSA.saveToPEM(s, rsa, true))
+    writeFile(filePub)(s ⇒ RSA.saveToPEM(s, rsa, false))
   }
 
   private def ensureDirectory(file: File) {
     if (!file.exists()) file.mkdirs()
   }
 
-  private def writeFile(file: File)(inner: OutputStream => Any) {
+  private def writeFile(file: File)(inner: OutputStream ⇒ Any) {
     val s = new FileOutputStream(file)
     try {
       inner(s)

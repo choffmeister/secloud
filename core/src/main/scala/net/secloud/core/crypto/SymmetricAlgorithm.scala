@@ -1,6 +1,6 @@
 package net.secloud.core.crypto
 
-import java.io.{InputStream, OutputStream}
+import java.io.{ InputStream, OutputStream }
 
 trait SymmetricAlgorithm {
   def generate(keySize: Int): SymmetricAlgorithmInstance
@@ -14,6 +14,6 @@ trait SymmetricAlgorithmInstance {
   val keySize: Int
   val blockSize: Int
 
-  def encrypt(output: OutputStream)(inner: OutputStream => Any): Unit
-  def decrypt[T](input: InputStream)(inner: InputStream => T): T
+  def encrypt(output: OutputStream)(inner: OutputStream ⇒ Any): Unit
+  def decrypt[T](input: InputStream)(inner: InputStream ⇒ T): T
 }
