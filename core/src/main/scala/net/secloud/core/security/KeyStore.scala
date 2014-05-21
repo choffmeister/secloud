@@ -10,8 +10,8 @@ object KeyStore {
   }
 
   def loadPrivateKey(name: String): Option[String] = Option(Keyring.read(keyStoreEntryName(name))) match {
-    case Some(charArray) => Some(charArray.mkString)
-    case _ => None
+    case Some(charArray) ⇒ Some(charArray.mkString)
+    case _ ⇒ None
   }
 
   def removePrivateKey(name: String) = Keyring.delete(keyStoreEntryName(name))

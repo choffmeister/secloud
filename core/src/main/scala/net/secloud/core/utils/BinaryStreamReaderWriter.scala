@@ -68,8 +68,8 @@ class BinaryStreamWriter(val stream: OutputStream) extends AnyVal with StreamWri
   }
 
   def writeBoolean(value: Boolean): Unit = value match {
-    case true => stream.write(Array(1.toByte))
-    case false => stream.write(Array(0.toByte))
+    case true ⇒ stream.write(Array(1.toByte))
+    case false ⇒ stream.write(Array(0.toByte))
   }
 
   def writeString(value: String): Unit = {
@@ -92,17 +92,17 @@ class BinaryStreamWriter(val stream: OutputStream) extends AnyVal with StreamWri
     writeBinary(value.bytes.toArray)
   }
 
-  def writeList[T](value: List[T])(inner: T => Any): Unit = {
+  def writeList[T](value: List[T])(inner: T ⇒ Any): Unit = {
     writeInt7(value.length)
-    value.foreach(item => inner(item))
+    value.foreach(item ⇒ inner(item))
   }
 
-  def writeMap[A, B](value: Map[A, B])(inner: (A, B) => Any): Unit = {
+  def writeMap[A, B](value: Map[A, B])(inner: (A, B) ⇒ Any): Unit = {
     writeInt7(value.size)
-    value.foreach(item => inner(item._1, item._2))
+    value.foreach(item ⇒ inner(item._1, item._2))
   }
 
-  def writeStream(inner: OutputStream => Any): Unit = {
+  def writeStream(inner: OutputStream ⇒ Any): Unit = {
     val bs = new BlockOutputStream(stream, ownsInner = false)
     inner(bs)
     bs.close()
@@ -187,15 +187,15 @@ class BinaryStreamReader(val stream: InputStream) extends AnyVal with StreamRead
     return ObjectId(readBinary)
   }
 
-  def readList[T]()(inner: => T): List[T] = {
-    (1 to readInt7().toInt).map(i => inner).toList
+  def readList[T]()(inner: ⇒ T): List[T] = {
+    (1 to readInt7().toInt).map(i ⇒ inner).toList
   }
 
-  def readMap[A, B]()(inner: => (A, B)): Map[A, B] = {
-    (1 to readInt7().toInt).map(i => inner).toMap
+  def readMap[A, B]()(inner: ⇒ (A, B)): Map[A, B] = {
+    (1 to readInt7().toInt).map(i ⇒ inner).toMap
   }
 
-  def readStream[T](inner: InputStream => T): T = {
+  def readStream[T](inner: InputStream ⇒ T): T = {
     val bs = new BlockInputStream(stream, ownsInner = false)
     val result = inner(bs)
     bs.close()

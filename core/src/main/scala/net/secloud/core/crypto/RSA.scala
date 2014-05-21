@@ -8,7 +8,7 @@ import org.bouncycastle.asn1.x509._
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair
 import org.bouncycastle.crypto.digests.SHA512Digest
 import org.bouncycastle.crypto.encodings.PKCS1Encoding
-import org.bouncycastle.crypto.engines.{RSAEngine, RSABlindedEngine}
+import org.bouncycastle.crypto.engines.{ RSAEngine, RSABlindedEngine }
 import org.bouncycastle.crypto.generators.KDF2BytesGenerator
 import org.bouncycastle.crypto.generators.RSAKeyPairGenerator
 import org.bouncycastle.crypto.kems.RSAKeyEncapsulation
@@ -53,7 +53,7 @@ class RSA(keyPair: AsymmetricCipherKeyPair) extends AsymmetricAlgorithmInstance 
 
       Arrays.constantTimeAreEqual(hash, signature2)
     } catch {
-      case e: Throwable => false
+      case e: Throwable ⇒ false
     }
   }
 
@@ -71,10 +71,10 @@ class RSA(keyPair: AsymmetricCipherKeyPair) extends AsymmetricAlgorithmInstance 
     val randomKey = enc.encrypt(wrappedRandomKey, 0, plainKey.length).asInstanceOf[KeyParameter].getKey
 
     // calculate bitmask to get key from random key
-    val bitmask = randomKey.zip(plainKey).map(b => b._1 ^ b._2).map(_.toByte).toArray
+    val bitmask = randomKey.zip(plainKey).map(b ⇒ b._1 ^ b._2).map(_.toByte).toArray
 
     // write as byte stream
-    streamAsBytes { s =>
+    streamAsBytes { s ⇒
       s.writeBinary(wrappedRandomKey)
       s.writeBinary(bitmask)
     }
@@ -90,7 +90,7 @@ class RSA(keyPair: AsymmetricCipherKeyPair) extends AsymmetricAlgorithmInstance 
     enc.init(priv.get)
 
     // read from byte stream
-    val (wrappedRandomKey, bitmask) = bytesAsStream(wrappedKey) { s =>
+    val (wrappedRandomKey, bitmask) = bytesAsStream(wrappedKey) { s ⇒
       val k1 = s.readBinary()
       val k2 = s.readBinary()
       (k1, k2)
@@ -100,7 +100,7 @@ class RSA(keyPair: AsymmetricCipherKeyPair) extends AsymmetricAlgorithmInstance 
     val randomKey = enc.decrypt(wrappedRandomKey, bitmask.length).asInstanceOf[KeyParameter].getKey
 
     // calculate key from random key and bitmask
-    val key = randomKey.zip(bitmask).map(b => b._1 ^ b._2).map(_.toByte).toArray
+    val key = randomKey.zip(bitmask).map(b ⇒ b._1 ^ b._2).map(_.toByte).toArray
 
     key
   }
@@ -142,7 +142,7 @@ object RSA extends AsymmetricAlgorithm {
   }
 
   def fingerprint(key: AsymmetricAlgorithmInstance): Array[Byte] = {
-    val publicKeyEncoded = streamAsBytes(bs => save(bs, key, false))
+    val publicKeyEncoded = streamAsBytes(bs ⇒ save(bs, key, false))
     SHA1.create().hash(publicKeyEncoded)
   }
 
@@ -150,23 +150,23 @@ object RSA extends AsymmetricAlgorithm {
     val streamReader = new InputStreamReader(input)
     val pemReader = new PEMParser(streamReader)
     val pem = pemReader.readObject() match {
-      case pem: PEMEncryptedKeyPair =>
+      case pem: PEMEncryptedKeyPair ⇒
         // TODO: decrypt without using the JCE
         val decryptor = new org.bouncycastle.openssl.jcajce.JcePEMDecryptorProviderBuilder().build(password.get)
         pem.decryptKeyPair(decryptor)
-      case o => o
+      case o ⇒ o
     }
     pemReader.close()
 
     val (pub, priv) = pem match {
-      case pem: PEMKeyPair =>
+      case pem: PEMKeyPair ⇒
         val pub = PublicKeyFactory.createKey(pem.getPublicKeyInfo)
         val priv = Some(PrivateKeyFactory.createKey(pem.getPrivateKeyInfo))
         (pub, priv)
-      case pem: SubjectPublicKeyInfo =>
+      case pem: SubjectPublicKeyInfo ⇒
         val pub = PublicKeyFactory.createKey(pem)
         (pub, None)
-      case o => throw new Exception(s"Unsupported object ${o.getClass} in PEM file")
+      case o ⇒ throw new Exception(s"Unsupported object ${o.getClass} in PEM file")
     }
 
     new RSA(new AsymmetricCipherKeyPair(pub, priv.orNull))
