@@ -10,8 +10,9 @@ object Build extends sbt.Build {
     organization := "net.secloud",
     version := "0.0.2",
     scalaVersion := "2.10.4",
-    scalacOptions ++= Seq("-encoding", "utf8"),
-    scalacOptions <<= baseDirectory.map(bd => Seq("-sourcepath", bd.getAbsolutePath)),
+    scalacOptions <<= baseDirectory.map(bd =>
+      Seq("-encoding", "utf8") ++
+      Seq("-sourcepath", bd.getAbsolutePath)),
     testOptions in Test += Tests.Argument("junitxml", "console")
   )
 
