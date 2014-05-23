@@ -45,34 +45,52 @@ class Repository(val workingDir: VirtualFileSystem, val database: RepositoryData
   }
 
   def snapshot(): TreeEntry = {
-    def recursion(f: VirtualFile, head: VirtualFileSystem, wd: VirtualFileSystem): TreeEntry = {
+    def recursion(f: VirtualFile, head: RepositoryFileSystem, wd: VirtualFileSystem): TreeEntry = {
       wd.mode(f) match {
         case Directory ⇒
-          val key = generateKey()
           val entries = wd.children(f)
             .filter(e ⇒ !e.name.startsWith(".") && e.name != "target")
             .map(e ⇒ recursion(f.child(e.name), head, wd))
+            .sortBy(e ⇒ e.name)
             .toList
-          val tree = Tree(ObjectId(), entries)
-          val id = database.write { dbs ⇒
-            signObject(dbs, config.asymmetricKey) { ss ⇒
-              writeTree(ss, tree, key)
-            }
+          val (key, id) = head.treeOption(f) match {
+            case Some(t: Tree) if t.entries.map(e ⇒ (e.id, e.name, e.mode)) == entries.map(e ⇒ (e.id, e.name, e.mode)) ⇒
+              val key = head.key(f).get
+              val id = t.id
+              (key, id)
+            case _ ⇒
+              val tree = Tree(ObjectId(), entries)
+              val key = generateKey()
+              val id = database.write { dbs ⇒
+                signObject(dbs, config.asymmetricKey) { ss ⇒
+                  writeTree(ss, tree, key)
+                }
+              }
+              (key, id)
           }
           TreeEntry(id, DirectoryTreeEntryMode, f.name, key)
 
         case mode @ (NonExecutableFile | ExecutableFile) ⇒
-          val key = generateKey()
-          val blob = Blob(ObjectId())
-          val id = database.write { dbs ⇒
-            signObject(dbs, config.asymmetricKey) { ss ⇒
-              writeBlob(ss, blob)
-              writeBlobContent(ss, key) { bs ⇒
-                wd.read(f) { fs ⇒
-                  pipeStream(fs, bs)
+          val (key, id) = head.blobOption(f) match {
+            // TODO: properly detect if found blob can be reused
+            case Some(b: Blob) if true ⇒
+              val key = head.key(f).get
+              val id = b.id
+              (key, id)
+            case _ ⇒
+              val blob = Blob(ObjectId())
+              val key = generateKey()
+              val id = database.write { dbs ⇒
+                signObject(dbs, config.asymmetricKey) { ss ⇒
+                  writeBlob(ss, blob)
+                  writeBlobContent(ss, key) { bs ⇒
+                    wd.read(f) { fs ⇒
+                      pipeStream(fs, bs)
+                    }
+                  }
                 }
               }
-            }
+              (key, id)
           }
           val treeEntryMode = mode match {
             case NonExecutableFile ⇒ NonExecutableFileTreeEntryMode
@@ -85,7 +103,7 @@ class Repository(val workingDir: VirtualFileSystem, val database: RepositoryData
       }
     }
 
-    recursion(VirtualFile("/"), NullFileSystem, workingDir)
+    recursion(VirtualFile("/"), fileSystem(head), workingDir)
   }
 
   def head: ObjectId = database.head

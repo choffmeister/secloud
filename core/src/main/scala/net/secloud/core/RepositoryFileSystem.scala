@@ -80,6 +80,11 @@ class RepositoryFileSystem(db: RepositoryDatabase, commitId: ObjectId, key: Eith
     case _ ⇒ throw new Exception(s"$f does not point to a blob")
   }
 
+  def key(f: VirtualFile): Option[SymmetricAlgorithmInstance] = walkTree(f) match {
+    case Some(TreeEntry(_, _, _, key)) ⇒ Some(key)
+    case _ ⇒ None
+  }
+
   private def walkTree(f: VirtualFile): Option[TreeEntry] = {
     @scala.annotation.tailrec
     def recursion(entry: TreeEntry, f: VirtualFile): Option[TreeEntry] = f.segments match {
