@@ -5,10 +5,14 @@ import net.secloud.core._
 import net.secloud.core.crypto._
 
 object KeyGenerator {
+  private lazy val log = org.slf4j.LoggerFactory.getLogger(getClass)
+
   def generate(env: Environment, strength: Int, certaincy: Int) {
     val secloudDir = new File(env.userDirectory, ".secloud")
     val filePub = new File(secloudDir, "rsa.pub")
     val filePriv = new File(secloudDir, "rsa.key")
+
+    log.info(s"Generating a new RSA key pair at ${filePriv}")
 
     if (filePub.exists) throw new Exception(s"File ${filePub} already exists")
     if (filePriv.exists) throw new Exception(s"File ${filePriv} already exists")

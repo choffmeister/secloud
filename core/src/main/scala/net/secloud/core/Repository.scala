@@ -11,7 +11,10 @@ case class RepositoryConfig(
   val symmetricAlgorithmKeySize: Int)
 
 class Repository(val workingDir: VirtualFileSystem, val database: RepositoryDatabase, val config: RepositoryConfig) {
+  private lazy val log = org.slf4j.LoggerFactory.getLogger(getClass)
+
   def init(): ObjectId = {
+    log.info("Initializing a new repository")
     database.init()
 
     val key = generateKey()
@@ -28,6 +31,7 @@ class Repository(val workingDir: VirtualFileSystem, val database: RepositoryData
   }
 
   def commit(treeId: ObjectId, treeKey: SymmetricAlgorithmInstance): ObjectId = {
+    log.info("Committing")
     val key = generateKey()
     val parents = List.empty[ObjectId]
     val issuers = List(config.asymmetricKey).map(apk ⇒ (apk.fingerprint.toSeq, Issuer("Issuer", apk))).toMap

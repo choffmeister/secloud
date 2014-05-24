@@ -1,7 +1,6 @@
-import sbt.Keys._
 import sbt._
+import sbt.Keys._
 import sbtunidoc.Plugin._
-import xerial.sbt.Pack._
 import com.typesafe.sbt.SbtScalariform
 import com.typesafe.sbt.SbtScalariform._
 
@@ -46,11 +45,12 @@ object Build extends sbt.Build {
 
   lazy val root = (project in file("."))
     .settings(commonSettings: _*)
-    .settings(packSettings: _*)
     .settings(unidocSettings: _*)
+    .settings(name := "secloud")
     .settings(
       name := "secloud",
-      packMain := Map("secloud" -> "net.secloud.commandline.Application")
-    )
+      scalacOptions in (ScalaUnidoc, sbtunidoc.Plugin.UnidocKeys.unidoc) ++=
+        Opts.doc.sourceUrl("https://github.com/choffmeister/secloud/blob/master€{FILE_PATH}.scala")
+      )
     .aggregate(core, commandline)
 }
