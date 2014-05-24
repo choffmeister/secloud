@@ -33,6 +33,11 @@ class Repository(val workingDir: VirtualFileSystem, val database: RepositoryData
   }
 
   def commit(parentIds: List[ObjectId], treeId: ObjectId, treeKey: SymmetricAlgorithmInstance): ObjectId = {
+    if (parentIds.length == 1) {
+      val parent = database.read(parentIds(0))(s ⇒ readCommit(s, Right(config.asymmetricKey))).copy(id = parentIds(0))
+      if (parent.tree.id == treeId) return parent.id
+    }
+
     val key = generateKey()
     val issuers = List(config.asymmetricKey).map(apk ⇒ (apk.fingerprint.toSeq, Issuer("Issuer", apk))).toMap
     val treeEntry = TreeEntry(treeId, DirectoryTreeEntryMode, "", treeKey)
@@ -111,7 +116,7 @@ class Repository(val workingDir: VirtualFileSystem, val database: RepositoryData
   }
 
   def headId: ObjectId = database.headId
-  def headCommit: Commit = database.read(headId)(s ⇒ readCommit(s, Right(config.asymmetricKey)))
+  def headCommit: Commit = database.read(headId)(s ⇒ readCommit(s, Right(config.asymmetricKey))).copy(id = headId)
   def fileSystem(commit: Commit): RepositoryFileSystem = new RepositoryFileSystem(database, commit)
 
   private def generateKey() = config.symmetricAlgorithm.generate(config.symmetricAlgorithmKeySize)

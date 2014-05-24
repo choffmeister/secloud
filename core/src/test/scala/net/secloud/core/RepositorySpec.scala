@@ -40,6 +40,26 @@ class RepositorySpec extends Specification {
       ok
     }
 
+    "commit does not commit two identical snapshots in a row" in {
+      val base = getTempDir
+      TestWorkingDirectory.create(base)
+
+      val asymmetricKey = RSA.generate(512, 25)
+      val symmetricAlgorithm = AES
+      val symmetricAlgorithmKeySize = 16
+      val config = RepositoryConfig(asymmetricKey, symmetricAlgorithm, symmetricAlgorithmKeySize)
+      val repo = Repository(base, config)
+      repo.init()
+
+      val commitId1 = repo.commit()
+      val commitId2 = repo.commit()
+      TestWorkingDirectory.put(base, List("first", "new.txt"), "This file is new")
+      val commitId3 = repo.commit()
+
+      commitId1 === commitId2
+      commitId1 !== commitId3
+    }
+
     "snapshot recognizes whether something has changed or not" in {
       val base = getTempDir
       TestWorkingDirectory.create(base)

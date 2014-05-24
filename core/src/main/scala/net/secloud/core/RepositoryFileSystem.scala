@@ -89,7 +89,7 @@ class RepositoryFileSystem(db: RepositoryDatabase, commit: Commit) extends Virtu
       case Nil ⇒ Some(entry)
       case next :: rest ⇒ entry.mode match {
         case DirectoryTreeEntryMode ⇒
-          val tree = db.read(entry.id)(dbs ⇒ readTree(dbs, entry.key))
+          val tree = db.read(entry.id)(dbs ⇒ readTree(dbs, entry.key)).copy(id = entry.id)
           tree.entries.find(_.name == next) match {
             case Some(entry) ⇒ recursion(entry, VirtualFile.fromSegments(f.segments.tail))
             case _ ⇒ None
