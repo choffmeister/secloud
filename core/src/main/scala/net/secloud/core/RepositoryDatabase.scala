@@ -58,9 +58,12 @@ trait ObjectWriter {
 }
 
 class DirectoryRepositoryDatabase(val base: File) extends RepositoryDatabase {
+  private val log = org.slf4j.LoggerFactory.getLogger(getClass)
+
   def this(base: String) = this(new File(base))
 
   def init() {
+    log.info(s"Initializing a new repository at $base")
     if (base.exists()) throw new Exception(s"Cannot initialize database: Directory '$base' already exists")
     base.mkdirs()
   }
@@ -97,7 +100,9 @@ class DirectoryRepositoryDatabase(val base: File) extends RepositoryDatabase {
     val tempDirectory = pathJoin(base, "temp")
     ensureDirectory(tempDirectory)
 
-    File.createTempFile("writer-", "", tempDirectory)
+    val file = File.createTempFile("writer-", "", tempDirectory)
+    log.trace(s"Creating temporary file $file")
+    file
   }
 
   private def pathJoin(base: File, segment: String): File = pathJoin(base, List(segment))
@@ -145,8 +150,9 @@ class DirectoryRepositoryDatabase(val base: File) extends RepositoryDatabase {
 
       ensureDirectory(rdb.directoryFromId(id))
 
-      if (!tempPath.get.renameTo(rdb.pathFromId(id))) {
-        throw new Exception("Moving file to final position failed")
+      val finalPath = rdb.pathFromId(id)
+      if (!tempPath.get.renameTo(finalPath)) {
+        throw new Exception(s"Moving temporary file $tempPath to final position $finalPath failed")
       }
 
       tempPath = None
