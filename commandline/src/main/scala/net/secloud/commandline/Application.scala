@@ -2,7 +2,6 @@ package net.secloud.commandline
 
 import java.io._
 import java.util.Date
-import org.rogach.scallop._
 import net.secloud.core._
 import net.secloud.core.objects._
 import net.secloud.core.crypto._
@@ -114,23 +113,4 @@ object Application {
     new File(System.getProperty("user.dir")),
     new File(System.getProperty("user.home")),
     new Date(System.currentTimeMillis))
-
-  class CommandLineInterface(val arguments: Seq[String]) extends ScallopConf(arguments) {
-    version(s"${Secloud.name} v${Secloud.version} (c) ${Secloud.year} ${Secloud.copyright}")
-
-    val init = new Subcommand("init")
-    val keygen = new Subcommand("keygen")
-    val commit = new Subcommand("commit")
-
-    val ls = new Subcommand("ls") {
-      val path = trailArg[String]("the path")
-    }
-    val cat = new Subcommand("cat") {
-      val path = trailArg[String]("the path")
-    }
-    val tree = new Subcommand("tree")
-
-    val environment = new Subcommand("environment")
-    val benchmark = new Subcommand("benchmark")
-  }
 }
