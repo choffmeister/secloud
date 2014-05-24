@@ -7,6 +7,8 @@ import net.secloud.core.objects._
 import com.jcraft.jzlib.{ GZIPInputStream, GZIPOutputStream }
 
 object Benchmark {
+  import ObjectSerializer._
+
   val random = new Random()
   val megaByteDataNonRnd = (1 to 1024 * 1024).map(i ⇒ 0).map(_.toByte).toArray[Byte]
   val megaByteDataRnd = (1 to 1024 * 1024).map(i ⇒ random.nextInt()).map(_.toByte).toArray[Byte]

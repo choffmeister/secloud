@@ -72,12 +72,12 @@ class RepositorySpec extends Specification {
       repo.init()
 
       val commitId1 = repo.commit()
-      val commit1 = repo.database.read(commitId1)(dbs ⇒ readCommit(dbs, Right(asymmetricKey)))
+      val commit1 = repo.database.readCommit(commitId1, Right(asymmetricKey))
       val commitId2 = repo.commit()
-      val commit2 = repo.database.read(commitId2)(dbs ⇒ readCommit(dbs, Right(asymmetricKey)))
+      val commit2 = repo.database.readCommit(commitId2, Right(asymmetricKey))
       TestWorkingDirectory.put(base, List("first", "new.txt"), "This file is new")
       val commitId3 = repo.commit()
-      val commit3 = repo.database.read(commitId3)(dbs ⇒ readCommit(dbs, Right(asymmetricKey)))
+      val commit3 = repo.database.readCommit(commitId3, Right(asymmetricKey))
 
       commit1.tree.id === commit2.tree.id
       repo.fileSystem(commit1).tree(VirtualFile("/")).id === repo.fileSystem(commit2).tree(VirtualFile("/")).id

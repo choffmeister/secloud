@@ -20,7 +20,7 @@ class RepositoryFileSystem(db: RepositoryDatabase, commit: Commit) extends Virtu
 
   def children(f: VirtualFile) = walkTree(f) match {
     case Some(TreeEntry(id, DirectoryTreeEntryMode, _, key)) ⇒
-      val tree = db.read(id)(dbs ⇒ readTree(dbs, key))
+      val tree = db.readTree(id, key)
       tree.entries.map(te ⇒ f.child(te.name))
     case Some(TreeEntry(_, ExecutableFileTreeEntryMode | NonExecutableFileTreeEntryMode, _, _)) ⇒
       throw new Exception(s"$f is a file and hence cannot have children")
@@ -32,12 +32,7 @@ class RepositoryFileSystem(db: RepositoryDatabase, commit: Commit) extends Virtu
     case Some(TreeEntry(_, DirectoryTreeEntryMode, _, _)) ⇒
       throw new Exception(s"$f is a directory and hence cannot be read")
     case Some(TreeEntry(id, ExecutableFileTreeEntryMode | NonExecutableFileTreeEntryMode, _, key)) ⇒
-      db.read(id) { dbs ⇒
-        readBlob(dbs)
-        readBlobContent(dbs, key) { cs ⇒
-          inner(cs)
-        }
-      }
+      db.readBlobContent(id, key)(inner)
     case _ ⇒
       throw new Exception(s"Unknown path $f")
   }
@@ -46,9 +41,9 @@ class RepositoryFileSystem(db: RepositoryDatabase, commit: Commit) extends Virtu
 
   def objOption(f: VirtualFile): Option[BaseObject] = walkTree(f) match {
     case Some(TreeEntry(id, DirectoryTreeEntryMode, _, key)) ⇒
-      db.read(id)(dbs ⇒ Some(readTree(dbs, key).copy(id = id)))
+      Some(db.readTree(id, key))
     case Some(TreeEntry(id, ExecutableFileTreeEntryMode | NonExecutableFileTreeEntryMode, _, _)) ⇒
-      db.read(id)(dbs ⇒ Some(readBlob(dbs).copy(id = id)))
+      Some(db.readBlob(id))
     case _ ⇒
       None
   }
@@ -89,9 +84,9 @@ class RepositoryFileSystem(db: RepositoryDatabase, commit: Commit) extends Virtu
       case Nil ⇒ Some(entry)
       case next :: rest ⇒ entry.mode match {
         case DirectoryTreeEntryMode ⇒
-          val tree = db.read(entry.id)(dbs ⇒ readTree(dbs, entry.key)).copy(id = entry.id)
+          val tree = db.readTree(entry.id, entry.key)
           tree.entries.find(_.name == next) match {
-            case Some(entry) ⇒ recursion(entry, VirtualFile.fromSegments(f.segments.tail))
+            case Some(childEntry) ⇒ recursion(childEntry, VirtualFile.fromSegments(f.segments.tail))
             case _ ⇒ None
           }
         case _ ⇒ None

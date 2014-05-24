@@ -7,6 +7,7 @@ import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.InputStream
 import java.io.OutputStream
+import net.secloud.core.crypto.{ AsymmetricAlgorithmInstance, SymmetricAlgorithmInstance }
 import net.secloud.core.objects._
 import net.secloud.core.utils.StreamUtils._
 import scala.annotation.tailrec
@@ -42,6 +43,18 @@ trait RepositoryDatabase {
       writer.close()
     }
   }
+
+  def readCommit(commitId: ObjectId, key: Either[SymmetricAlgorithmInstance, AsymmetricAlgorithmInstance]): Commit =
+    read(commitId)(s ⇒ ObjectSerializer.readCommit(s, key)).copy(id = commitId)
+  def readTree(treeId: ObjectId, key: SymmetricAlgorithmInstance): Tree =
+    read(treeId)(s ⇒ ObjectSerializer.readTree(s, key)).copy(id = treeId)
+  def readBlob(blobId: ObjectId): Blob =
+    read(blobId)(s ⇒ ObjectSerializer.readBlob(s)).copy(id = blobId)
+  def readBlobContent[T](blobId: ObjectId, key: SymmetricAlgorithmInstance)(inner: InputStream ⇒ T): T =
+    read(blobId) { s ⇒
+      ObjectSerializer.readBlob(s)
+      ObjectSerializer.readBlobContent(s, key)(inner)
+    }
 }
 
 trait ObjectReader {
