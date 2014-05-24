@@ -3,6 +3,7 @@ package net.secloud.core
 import java.io._
 import net.secloud.core.crypto._
 import net.secloud.core.objects._
+import net.secloud.core.objects.ObjectSerializer._
 import net.secloud.core.utils.StreamUtils._
 
 case class RepositoryConfig(
@@ -11,9 +12,10 @@ case class RepositoryConfig(
   val symmetricAlgorithmKeySize: Int)
 
 class Repository(val workingDir: VirtualFileSystem, val database: RepositoryDatabase, val config: RepositoryConfig) {
-  import ObjectSerializer._
+  private lazy val log = org.slf4j.LoggerFactory.getLogger(getClass)
 
   def init(): ObjectId = {
+    log.info("Initializing a new repository")
     database.init()
 
     val key = generateKey()
@@ -40,6 +42,7 @@ class Repository(val workingDir: VirtualFileSystem, val database: RepositoryData
       if (parent.tree.id == treeEntry.id) return parent.id
     }
 
+    log.info("Committing")
     val key = generateKey()
     val issuers = List(config.asymmetricKey).map(apk ⇒ (apk.fingerprint.toSeq, Issuer("Issuer", apk))).toMap
 
