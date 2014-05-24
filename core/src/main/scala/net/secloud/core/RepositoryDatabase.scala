@@ -112,10 +112,7 @@ class DirectoryRepositoryDatabase(val base: File) extends RepositoryDatabase {
   private def createTempFile(): File = {
     val tempDirectory = pathJoin(base, "temp")
     ensureDirectory(tempDirectory)
-
-    val file = File.createTempFile("writer-", "", tempDirectory)
-    log.trace(s"Creating temporary file $file")
-    file
+    File.createTempFile("writer-", "", tempDirectory)
   }
 
   private def pathJoin(base: File, segment: String): File = pathJoin(base, List(segment))
