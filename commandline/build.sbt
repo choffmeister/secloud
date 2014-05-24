@@ -9,3 +9,14 @@ libraryDependencies ++= Seq(
 packSettings
 
 packMain := Map("secloud" -> "net.secloud.commandline.Application")
+
+packExtraClasspath := Map("secloud" -> Seq("${PROG_HOME}/conf"))
+
+pack <<= (baseDirectory, pack, streams) map { (baseDirectory: File, value: File, s) =>
+  val confSourceDir = baseDirectory / "src/main/resources"
+  val confTargetDir = baseDirectory / "target/pack/conf"
+  confTargetDir.mkdirs()
+  IO.copyFile(confSourceDir / "logback.xml.dist", confTargetDir / "logback.xml")
+  s.log.info("Done copying config files.")
+  value
+}

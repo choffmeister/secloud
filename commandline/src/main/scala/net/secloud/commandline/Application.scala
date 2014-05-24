@@ -8,6 +8,8 @@ import net.secloud.core.crypto._
 import scala.language.reflectiveCalls
 
 object Application {
+  private lazy val log = org.slf4j.LoggerFactory.getLogger(getClass)
+
   def main(args: Array[String]): Unit = {
     val env = createEnvironment()
 
@@ -16,10 +18,8 @@ object Application {
       System.exit(0)
     } catch {
       case e: Throwable ⇒
+        log.error(e.getMessage, e)
         System.err.println("Error: " + e.getMessage)
-        System.err.println("Type: " + e.getClass.getName)
-        System.err.println("Stack trace:")
-        e.getStackTrace.map("  " + _).foreach(System.err.println)
         System.exit(1)
     }
   }
