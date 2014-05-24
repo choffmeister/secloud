@@ -21,26 +21,30 @@ class Repository(val workingDir: VirtualFileSystem, val database: RepositoryData
         writeTree(ss, tree, key)
       }
     }
-    val commitId = commit(treeId, key)
+    val commitId = commit(Nil, treeId, key)
 
-    database.head = commitId
+    database.headId = commitId
     commitId
   }
 
-  def commit(treeId: ObjectId, treeKey: SymmetricAlgorithmInstance): ObjectId = {
+  def commit(): ObjectId = {
+    val treeEntry = snapshot()
+    commit(List(headId), treeEntry.id, treeEntry.key)
+  }
+
+  def commit(parentIds: List[ObjectId], treeId: ObjectId, treeKey: SymmetricAlgorithmInstance): ObjectId = {
     val key = generateKey()
-    val parents = List.empty[ObjectId]
     val issuers = List(config.asymmetricKey).map(apk ⇒ (apk.fingerprint.toSeq, Issuer("Issuer", apk))).toMap
     val treeEntry = TreeEntry(treeId, DirectoryTreeEntryMode, "", treeKey)
 
-    val commitRaw = Commit(ObjectId.empty, parents, issuers, Map.empty, treeEntry)
+    val commitRaw = Commit(ObjectId.empty, parentIds, issuers, Map.empty, treeEntry)
     val commitId = database.write { dbs ⇒
       signObject(dbs, config.asymmetricKey) { ss ⇒
         writeCommit(ss, commitRaw, key)
       }
     }
 
-    database.head = commitId
+    database.headId = commitId
     commitId
   }
 
@@ -103,11 +107,12 @@ class Repository(val workingDir: VirtualFileSystem, val database: RepositoryData
       }
     }
 
-    recursion(VirtualFile("/"), fileSystem(head), workingDir)
+    recursion(VirtualFile("/"), fileSystem(headCommit), workingDir)
   }
 
-  def head: ObjectId = database.head
-  def fileSystem(commitId: ObjectId): RepositoryFileSystem = new RepositoryFileSystem(database, commitId, Right(config.asymmetricKey))
+  def headId: ObjectId = database.headId
+  def headCommit: Commit = database.read(headId)(s ⇒ readCommit(s, Right(config.asymmetricKey)))
+  def fileSystem(commit: Commit): RepositoryFileSystem = new RepositoryFileSystem(database, commit)
 
   private def generateKey() = config.symmetricAlgorithm.generate(config.symmetricAlgorithmKeySize)
 }

@@ -35,8 +35,7 @@ class RepositorySpec extends Specification {
       val config = RepositoryConfig(asymmetricKey, symmetricAlgorithm, symmetricAlgorithmKeySize)
       val repo = Repository(base, config)
       repo.init()
-      val treeEntry = repo.snapshot()
-      repo.commit(treeEntry.id, treeEntry.key)
+      repo.commit()
 
       ok
     }
@@ -52,17 +51,17 @@ class RepositorySpec extends Specification {
       val repo = Repository(base, config)
       repo.init()
 
-      val treeEntry1 = repo.snapshot()
-      val commit1 = repo.commit(treeEntry1.id, treeEntry1.key)
-      val treeEntry2 = repo.snapshot()
-      val commit2 = repo.commit(treeEntry2.id, treeEntry2.key)
+      val commitId1 = repo.commit()
+      val commit1 = repo.database.read(commitId1)(dbs ⇒ readCommit(dbs, Right(asymmetricKey)))
+      val commitId2 = repo.commit()
+      val commit2 = repo.database.read(commitId2)(dbs ⇒ readCommit(dbs, Right(asymmetricKey)))
       TestWorkingDirectory.put(base, List("first", "new.txt"), "This file is new")
-      val treeEntry3 = repo.snapshot()
-      val commit3 = repo.commit(treeEntry3.id, treeEntry3.key)
+      val commitId3 = repo.commit()
+      val commit3 = repo.database.read(commitId3)(dbs ⇒ readCommit(dbs, Right(asymmetricKey)))
 
-      treeEntry1.id === treeEntry2.id
+      commit1.tree.id === commit2.tree.id
       repo.fileSystem(commit1).tree(VirtualFile("/")).id === repo.fileSystem(commit2).tree(VirtualFile("/")).id
-      treeEntry1.id !== treeEntry3.id
+      commit2.tree.id !== commit3.tree.id
       repo.fileSystem(commit1).tree(VirtualFile("/")).id !== repo.fileSystem(commit3).tree(VirtualFile("/")).id
       repo.fileSystem(commit1).tree(VirtualFile("/first")).id !== repo.fileSystem(commit3).tree(VirtualFile("/first")).id
       repo.fileSystem(commit1).tree(VirtualFile("/second")).id === repo.fileSystem(commit3).tree(VirtualFile("/second")).id

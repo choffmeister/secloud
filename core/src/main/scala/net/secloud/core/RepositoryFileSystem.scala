@@ -4,9 +4,7 @@ import java.io._
 import net.secloud.core.crypto._
 import net.secloud.core.objects._
 
-class RepositoryFileSystem(db: RepositoryDatabase, commitId: ObjectId, key: Either[SymmetricAlgorithmInstance, AsymmetricAlgorithmInstance]) extends VirtualFileSystem {
-  private val commit = db.read(commitId)(dbs ⇒ readCommit(dbs, key))
-
+class RepositoryFileSystem(db: RepositoryDatabase, commit: Commit) extends VirtualFileSystem {
   def exists(f: VirtualFile): Boolean = walkTree(f).isDefined
 
   def mode(f: VirtualFile): VirtualFileMode = walkTree(f) match {
