@@ -9,6 +9,7 @@ import scala.language.reflectiveCalls
 
 object Application {
   private lazy val log = org.slf4j.LoggerFactory.getLogger(getClass)
+  private lazy val con = new StandardConsole()
 
   def main(args: Array[String]): Unit = {
     val env = createEnvironment()
@@ -19,7 +20,7 @@ object Application {
     } catch {
       case e: Throwable ⇒
         log.error(e.getMessage, e)
-        System.err.println("Error: " + e.getMessage)
+        con.error(e.getMessage)
         System.exit(1)
     }
   }
@@ -28,16 +29,19 @@ object Application {
     cli.subcommand match {
       case Some(cli.init) ⇒
         val repo = openRepository(env)
-        println("initializing...")
+        con.info("Initializing new repository...")
         val commitId = repo.init()
+        con.success("Done")
       case Some(cli.keygen) ⇒
-        println("generating RSA 2048-bit key...")
+        con.info("Generating RSA 2048-bit key...")
         KeyGenerator.generate(env, 2048, 128)
+        con.success("Done")
       case Some(cli.commit) ⇒
         val repo = openRepository(env)
-        println("commiting...")
+        con.info("Committing current snapshot...")
         val treeEntry = repo.snapshot()
         val commitId = repo.commit(treeEntry.id, treeEntry.key)
+        con.success("Done")
       case Some(cli.ls) ⇒
         val file = VirtualFile(cli.ls.path())
         val repo = openRepository(env)
@@ -54,7 +58,7 @@ object Application {
           while (!done) {
             val line = Option(reader.readLine())
             if (line.isDefined) {
-              println(line.get)
+              con.stdout(line.get)
             } else done = true
           }
         }
@@ -68,18 +72,18 @@ object Application {
         }
         def traverse(file: VirtualFile, layers: List[(Int, Int)]): Unit = rfs.obj(file) match {
           case t: Tree ⇒
-            println(s"${t.id.toString.substring(0, 7)} ${asciiTreeLayer(layers)}${file.name}")
+            con.stdout(s"${t.id.toString.substring(0, 7)} ${asciiTreeLayer(layers)}${file.name}")
             val children = rfs.children(file).toList.zipWithIndex
             children.foreach(c ⇒ traverse(c._1, layers ++ List((c._2, children.length))))
           case b: Blob ⇒
-            println(s"${b.id.toString.substring(0, 7)} ${asciiTreeLayer(layers)}${file.name}")
+            con.stdout(s"${b.id.toString.substring(0, 7)} ${asciiTreeLayer(layers)}${file.name}")
           case _ ⇒ throw new Exception()
         }
         traverse(VirtualFile("/"), List((0, 1)))
       case Some(cli.environment) ⇒
-        println(s"Current directory: ${env.currentDirectory}")
-        println(s"Home directory ${env.userDirectory}")
-        println(s"Now: ${env.now}")
+        con.info(s"Current directory ${env.currentDirectory}")
+        con.info(s"Home directory ${env.userDirectory}")
+        con.info(s"Now ${env.now}")
       case Some(cli.benchmark) ⇒
         Benchmark.fullBenchmark()
       case _ ⇒
