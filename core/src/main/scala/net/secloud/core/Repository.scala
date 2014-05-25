@@ -20,11 +20,7 @@ class Repository(val workingDir: VirtualFileSystem, val database: RepositoryData
 
     val key = generateKey()
     val tree = Tree(ObjectId(), Nil)
-    val treeId = database.write { dbs ⇒
-      signObject(dbs, config.asymmetricKey) { ss ⇒
-        writeTree(ss, tree, key)
-      }
-    }
+    val treeId = database.writeTree(tree, config.asymmetricKey, key)
     val commitId = commit(Nil, TreeEntry(treeId, DirectoryTreeEntryMode, "", key))
 
     database.headId = commitId
@@ -45,13 +41,8 @@ class Repository(val workingDir: VirtualFileSystem, val database: RepositoryData
     log.info("Committing")
     val key = generateKey()
     val issuers = List(config.asymmetricKey).map(apk ⇒ (apk.fingerprint.toSeq, Issuer("Issuer", apk))).toMap
-
-    val commitRaw = Commit(ObjectId.empty, parentIds, issuers, Map.empty, treeEntry)
-    val commitId = database.write { dbs ⇒
-      signObject(dbs, config.asymmetricKey) { ss ⇒
-        writeCommit(ss, commitRaw, key)
-      }
-    }
+    val commit = Commit(ObjectId.empty, parentIds, issuers, Map.empty, treeEntry)
+    val commitId = database.writeCommit(commit, config.asymmetricKey, key)
 
     database.headId = commitId
     commitId
@@ -74,11 +65,7 @@ class Repository(val workingDir: VirtualFileSystem, val database: RepositoryData
             case _ ⇒
               val tree = Tree(ObjectId(), entries)
               val key = generateKey()
-              val id = database.write { dbs ⇒
-                signObject(dbs, config.asymmetricKey) { ss ⇒
-                  writeTree(ss, tree, key)
-                }
-              }
+              val id = database.writeTree(tree, config.asymmetricKey, key)
               (key, id)
           }
           TreeEntry(id, DirectoryTreeEntryMode, f.name, key)
@@ -93,16 +80,7 @@ class Repository(val workingDir: VirtualFileSystem, val database: RepositoryData
             case _ ⇒
               val blob = Blob(ObjectId())
               val key = generateKey()
-              val id = database.write { dbs ⇒
-                signObject(dbs, config.asymmetricKey) { ss ⇒
-                  writeBlob(ss, blob)
-                  writeBlobContent(ss, key) { bs ⇒
-                    wd.read(f) { fs ⇒
-                      pipeStream(fs, bs)
-                    }
-                  }
-                }
-              }
+              val id = database.writeBlobWithContent(blob, config.asymmetricKey, key)(cs ⇒ wd.read(f)(fs ⇒ pipeStream(fs, cs)))
               (key, id)
           }
           val treeEntryMode = mode match {

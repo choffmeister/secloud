@@ -1,13 +1,7 @@
 package net.secloud.core
 
-import java.io.BufferedInputStream
-import java.io.BufferedOutputStream
-import java.io.File
-import java.io.FileInputStream
-import java.io.FileOutputStream
-import java.io.InputStream
-import java.io.OutputStream
-import net.secloud.core.crypto.{ AsymmetricAlgorithmInstance, SymmetricAlgorithmInstance }
+import java.io._
+import net.secloud.core.crypto._
 import net.secloud.core.objects._
 import net.secloud.core.utils.StreamUtils._
 import scala.annotation.tailrec
@@ -44,10 +38,32 @@ trait RepositoryDatabase {
     }
   }
 
+  def writeCommit(commit: Commit, asymmetricKey: AsymmetricAlgorithmInstance, key: SymmetricAlgorithmInstance): ObjectId = {
+    write { dbs ⇒
+      ObjectSerializer.signObject(dbs, asymmetricKey) { ss ⇒
+        ObjectSerializer.writeCommit(ss, commit, key)
+      }
+    }
+  }
   def readCommit(commitId: ObjectId, key: Either[SymmetricAlgorithmInstance, AsymmetricAlgorithmInstance]): Commit =
     read(commitId)(s ⇒ ObjectSerializer.readCommit(s, key)).copy(id = commitId)
+
+  def writeTree(tree: Tree, asymmetricKey: AsymmetricAlgorithmInstance, key: SymmetricAlgorithmInstance): ObjectId =
+    write { dbs ⇒
+      ObjectSerializer.signObject(dbs, asymmetricKey) { ss ⇒
+        ObjectSerializer.writeTree(ss, tree, key)
+      }
+    }
   def readTree(treeId: ObjectId, key: SymmetricAlgorithmInstance): Tree =
     read(treeId)(s ⇒ ObjectSerializer.readTree(s, key)).copy(id = treeId)
+
+  def writeBlobWithContent(blob: Blob, asymmetricKey: AsymmetricAlgorithmInstance, key: SymmetricAlgorithmInstance)(inner: OutputStream ⇒ Any): ObjectId =
+    write { dbs ⇒
+      ObjectSerializer.signObject(dbs, asymmetricKey) { ss ⇒
+        ObjectSerializer.writeBlob(ss, blob)
+        ObjectSerializer.writeBlobContent(ss, key)(inner)
+      }
+    }
   def readBlob(blobId: ObjectId): Blob =
     read(blobId)(s ⇒ ObjectSerializer.readBlob(s)).copy(id = blobId)
   def readBlobContent[T](blobId: ObjectId, key: SymmetricAlgorithmInstance)(inner: InputStream ⇒ T): T =
