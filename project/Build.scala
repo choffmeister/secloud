@@ -64,8 +64,6 @@ object Build extends sbt.Build {
     .settings(
       dist <<= (streams, target, packArchive in commandline, appbundle in macosx) map {
         (s, target, commandline, macosx) =>
-          s.log.info(s"Generic Commandline Tool at $commandline")
-          s.log.info(s"Mac OSX application at $macosx")
       }
     )
     .aggregate(core, commandline)
