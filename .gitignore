@@ -3,8 +3,8 @@ target/
 
 # IDEA
 .idea/
-.iml
-.ipr
+*.iml
+*.ipr
 
 # Trash
 .cache
