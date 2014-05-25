@@ -62,10 +62,10 @@ object Build extends sbt.Build {
         Opts.doc.sourceUrl("https://github.com/choffmeister/secloud/blob/master€{FILE_PATH}.scala")
       )
     .settings(
-      dist <<= (target, packArchive in commandline, appbundle in macosx) map {
-        (target, commandline, macosx) =>
-          IO.copyFile(commandline, target / commandline.getName)
-          IO.copyDirectory(macosx, target / macosx.getName)
+      dist <<= (streams, target, packArchive in commandline, appbundle in macosx) map {
+        (s, target, commandline, macosx) =>
+          s.log.info(s"Generic Commandline Tool at $commandline")
+          s.log.info(s"Mac OSX application at $macosx")
       }
     )
     .aggregate(core, commandline)
