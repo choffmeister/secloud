@@ -57,46 +57,45 @@ class Repository(val workingDir: VirtualFileSystem, val database: RepositoryData
             .map(e ⇒ recursion(f.child(e.name), head, wd))
             .sortBy(e ⇒ e.name)
             .toList
-          val (key, id) = head.treeOption(f) match {
+
+          head.treeOption(f) match {
             case Some(t: Tree) if t.entries.map(e ⇒ (e.id, e.name, e.mode)) == entries.map(e ⇒ (e.id, e.name, e.mode)) ⇒
-              val key = head.key(f).get
-              val id = t.id
-              (key, id)
+              TreeEntry(t.id, DirectoryTreeEntryMode, f.name, head.key(f).get)
             case _ ⇒
               val tree = Tree(ObjectId(), entries)
               val key = generateKey()
               val id = database.writeTree(tree, config.asymmetricKey, key)
-              (key, id)
+              TreeEntry(id, DirectoryTreeEntryMode, f.name, key)
           }
-          TreeEntry(id, DirectoryTreeEntryMode, f.name, key)
 
         case mode @ (NonExecutableFile | ExecutableFile) ⇒
-          val (key, id, hash) = head.blobOption(f) match {
-            // TODO: properly detect if found blob can be reused
-            case Some(b: Blob) if true ⇒
-              val key = head.key(f).get
-              val id = b.id
-              (key, id, Nil)
-            case _ ⇒
-              val blob = Blob(ObjectId())
-              val key = generateKey()
-              val hashAlgorithmInstance = SHA1.create()
-              var hash = Array.empty[Byte]
-              val id = database.writeBlobWithContent(blob, config.asymmetricKey, key) { cs ⇒
-                wd.read(f) { fs ⇒
-                  hash = hashAlgorithmInstance.hash(cs) { hs ⇒
-                    pipeStream(fs, hs)
-                  }
-                }
+          val blob = Blob(ObjectId())
+          val key = generateKey()
+
+          database.writeExplicit { (dbs, writer) ⇒
+            var hash = Seq.empty[Byte]
+            val id = signObject(dbs, config.asymmetricKey) { ss ⇒
+              writeBlob(ss, blob)
+              writeBlobContent(ss, key) { cs ⇒
+                hash = wd.read(f)(fs ⇒ SHA1.create().hash(cs)(hs ⇒ pipeStream(fs, hs)).toSeq)
               }
-              (key, id, hash.toSeq)
+            }
+            val treeEntryMode = mode match {
+              case NonExecutableFile ⇒ NonExecutableFileTreeEntryMode
+              case ExecutableFile ⇒ ExecutableFileTreeEntryMode
+              case _ ⇒ throw new Exception()
+            }
+
+            head.hash(f) match {
+              case Some(prevHash) if prevHash == hash ⇒
+                writer.dismiss()
+                val prevBlob = head.blob(f)
+                TreeEntry(prevBlob.id, treeEntryMode, f.name, head.key(f).get, prevHash)
+              case _ ⇒
+                writer.persist(id)
+                TreeEntry(id, treeEntryMode, f.name, key, hash)
+            }
           }
-          val treeEntryMode = mode match {
-            case NonExecutableFile ⇒ NonExecutableFileTreeEntryMode
-            case ExecutableFile ⇒ ExecutableFileTreeEntryMode
-            case _ ⇒ throw new Exception()
-          }
-          TreeEntry(id, treeEntryMode, f.name, key, hash.toSeq)
 
         case _ ⇒ throw new Exception()
       }
