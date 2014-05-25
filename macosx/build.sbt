@@ -7,14 +7,18 @@ libraryDependencies ++= Seq(
 
 seq(appbundle.settings: _*)
 
-appbundle.settings
-
 appbundle.name := "Secloud"
+
+appbundle.mainClass := Some("net.secloud.macosx.Application")
+
+appbundle.icon := Some(file("macosx") / "src" / "main" / "resources" / "images" / "app-icon.icns")
+
+appbundle.workingDirectory := Some(file(appbundle.BundleVar_AppPackage))
 
 appbundle.javaOptions ++= Seq(
   "-Xmx256m"
 )
 
-appbundle.icon := Some(file("macosx") / "src" / "main" / "resources" / "images" / "app-icon.icns")
-
-appbundle.workingDirectory := Some(file(appbundle.BundleVar_AppPackage))
+appbundle.systemProperties ++= Seq(
+  "apple.awt.UIElement" -> "true"
+)
