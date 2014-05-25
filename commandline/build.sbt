@@ -7,7 +7,9 @@ libraryDependencies ++= Seq(
   "org.specs2" %% "specs2" % "2.3.8" % "test"
 )
 
-packSettings
+seq(packSettings: _*)
+
+packArchivePrefix := "Secloud"
 
 packMain := Map("secloud" -> "net.secloud.commandline.Application")
 
