@@ -5,6 +5,8 @@ import com.typesafe.sbt.SbtScalariform
 import com.typesafe.sbt.SbtScalariform._
 
 object Build extends sbt.Build {
+  lazy val dist = TaskKey[Unit]("dist", "Builds the distribution packages")
+
   lazy val commonSettings = Defaults.defaultSettings ++ Seq(
     organization := "net.secloud",
     version := "0.0.2",
@@ -43,6 +45,13 @@ object Build extends sbt.Build {
     .settings(commonProjectSettings: _*)
     .dependsOn(core)
 
+  lazy val macosx = (project in file("macosx"))
+    .settings(commonProjectSettings: _*)
+    .dependsOn(core)
+
+  import xerial.sbt.Pack.packArchive
+  import de.sciss.sbt.appbundle.AppBundlePlugin.appbundle.appbundle
+
   lazy val root = (project in file("."))
     .settings(commonSettings: _*)
     .settings(unidocSettings: _*)
@@ -52,5 +61,12 @@ object Build extends sbt.Build {
       scalacOptions in (ScalaUnidoc, sbtunidoc.Plugin.UnidocKeys.unidoc) ++=
         Opts.doc.sourceUrl("https://github.com/choffmeister/secloud/blob/master€{FILE_PATH}.scala")
       )
+    .settings(
+      dist <<= (streams, target, packArchive in commandline, appbundle in macosx) map {
+        (s, target, commandline, macosx) =>
+          s.log.info(s"Generic Commandline Tool at $commandline")
+          s.log.info(s"Mac OSX application at $macosx")
+      }
+    )
     .aggregate(core, commandline)
 }
