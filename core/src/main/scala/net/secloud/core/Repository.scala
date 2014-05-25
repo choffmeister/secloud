@@ -3,6 +3,7 @@ package net.secloud.core
 import java.io._
 import net.secloud.core.crypto._
 import net.secloud.core.objects._
+import net.secloud.core.objects.ObjectSerializer._
 import net.secloud.core.utils.StreamUtils._
 
 case class RepositoryConfig(
@@ -19,81 +20,93 @@ class Repository(val workingDir: VirtualFileSystem, val database: RepositoryData
 
     val key = generateKey()
     val tree = Tree(ObjectId(), Nil)
-    val treeId = database.write { dbs ⇒
-      signObject(dbs, config.asymmetricKey) { ss ⇒
-        writeTree(ss, tree, key)
-      }
-    }
-    val commitId = commit(treeId, key)
+    val treeId = database.writeTree(tree, config.asymmetricKey, key)
+    val commitId = commit(Nil, TreeEntry(treeId, DirectoryTreeEntryMode, "", key))
 
-    database.head = commitId
+    database.headId = commitId
     commitId
   }
 
-  def commit(treeId: ObjectId, treeKey: SymmetricAlgorithmInstance): ObjectId = {
-    log.info("Committing")
-    val key = generateKey()
-    val parents = List.empty[ObjectId]
-    val issuers = List(config.asymmetricKey).map(apk ⇒ (apk.fingerprint.toSeq, Issuer("Issuer", apk))).toMap
-    val treeEntry = TreeEntry(treeId, DirectoryTreeEntryMode, "", treeKey)
+  def commit(): ObjectId = {
+    val treeEntry = snapshot()
+    commit(List(headId), treeEntry)
+  }
 
-    val commitRaw = Commit(ObjectId.empty, parents, issuers, Map.empty, treeEntry)
-    val commitId = database.write { dbs ⇒
-      signObject(dbs, config.asymmetricKey) { ss ⇒
-        writeCommit(ss, commitRaw, key)
-      }
+  def commit(parentIds: List[ObjectId], treeEntry: TreeEntry): ObjectId = {
+    if (parentIds.length == 1) {
+      val parent = database.readCommit(parentIds(0), Right(config.asymmetricKey))
+      if (parent.tree.id == treeEntry.id) return parent.id
     }
 
-    database.head = commitId
+    log.info("Committing")
+    val key = generateKey()
+    val issuers = List(config.asymmetricKey).map(apk ⇒ (apk.fingerprint.toSeq, Issuer("Issuer", apk))).toMap
+    val commit = Commit(ObjectId.empty, parentIds, issuers, Map.empty, treeEntry)
+    val commitId = database.writeCommit(commit, config.asymmetricKey, key)
+
+    database.headId = commitId
     commitId
   }
 
   def snapshot(): TreeEntry = {
-    def recursion(f: VirtualFile, head: VirtualFileSystem, wd: VirtualFileSystem): TreeEntry = {
+    def recursion(f: VirtualFile, head: RepositoryFileSystem, wd: VirtualFileSystem): TreeEntry = {
       wd.mode(f) match {
         case Directory ⇒
-          val key = generateKey()
           val entries = wd.children(f)
             .filter(e ⇒ !e.name.startsWith(".") && e.name != "target")
             .map(e ⇒ recursion(f.child(e.name), head, wd))
+            .sortBy(e ⇒ e.name)
             .toList
-          val tree = Tree(ObjectId(), entries)
-          val id = database.write { dbs ⇒
-            signObject(dbs, config.asymmetricKey) { ss ⇒
-              writeTree(ss, tree, key)
-            }
+
+          head.treeOption(f) match {
+            case Some(t: Tree) if t.entries.map(e ⇒ (e.id, e.name, e.mode)) == entries.map(e ⇒ (e.id, e.name, e.mode)) ⇒
+              TreeEntry(t.id, DirectoryTreeEntryMode, f.name, head.key(f).get)
+            case _ ⇒
+              val tree = Tree(ObjectId(), entries)
+              val key = generateKey()
+              val id = database.writeTree(tree, config.asymmetricKey, key)
+              TreeEntry(id, DirectoryTreeEntryMode, f.name, key)
           }
-          TreeEntry(id, DirectoryTreeEntryMode, f.name, key)
 
         case mode @ (NonExecutableFile | ExecutableFile) ⇒
-          val key = generateKey()
           val blob = Blob(ObjectId())
-          val id = database.write { dbs ⇒
-            signObject(dbs, config.asymmetricKey) { ss ⇒
+          val key = generateKey()
+
+          database.writeExplicit { (dbs, writer) ⇒
+            var hash = Seq.empty[Byte]
+            val id = signObject(dbs, config.asymmetricKey) { ss ⇒
               writeBlob(ss, blob)
-              writeBlobContent(ss, key) { bs ⇒
-                wd.read(f) { fs ⇒
-                  pipeStream(fs, bs)
-                }
+              writeBlobContent(ss, key) { cs ⇒
+                hash = wd.read(f)(fs ⇒ SHA1.create().hash(cs)(hs ⇒ pipeStream(fs, hs)).toSeq)
               }
             }
+            val treeEntryMode = mode match {
+              case NonExecutableFile ⇒ NonExecutableFileTreeEntryMode
+              case ExecutableFile ⇒ ExecutableFileTreeEntryMode
+              case _ ⇒ throw new Exception()
+            }
+
+            head.hash(f) match {
+              case Some(prevHash) if prevHash == hash ⇒
+                writer.dismiss()
+                val prevBlob = head.blob(f)
+                TreeEntry(prevBlob.id, treeEntryMode, f.name, head.key(f).get, prevHash)
+              case _ ⇒
+                writer.persist(id)
+                TreeEntry(id, treeEntryMode, f.name, key, hash)
+            }
           }
-          val treeEntryMode = mode match {
-            case NonExecutableFile ⇒ NonExecutableFileTreeEntryMode
-            case ExecutableFile ⇒ ExecutableFileTreeEntryMode
-            case _ ⇒ throw new Exception()
-          }
-          TreeEntry(id, treeEntryMode, f.name, key)
 
         case _ ⇒ throw new Exception()
       }
     }
 
-    recursion(VirtualFile("/"), NullFileSystem, workingDir)
+    recursion(VirtualFile("/"), fileSystem(headCommit), workingDir)
   }
 
-  def head: ObjectId = database.head
-  def fileSystem(commitId: ObjectId): RepositoryFileSystem = new RepositoryFileSystem(database, commitId, Right(config.asymmetricKey))
+  def headId: ObjectId = database.headId
+  def headCommit: Commit = database.readCommit(headId, Right(config.asymmetricKey))
+  def fileSystem(commit: Commit): RepositoryFileSystem = new RepositoryFileSystem(database, commit)
 
   private def generateKey() = config.symmetricAlgorithm.generate(config.symmetricAlgorithmKeySize)
 }

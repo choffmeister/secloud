@@ -24,11 +24,12 @@ class RepositoryFileSystemSpec extends Specification {
       val repo = new Repository(vfs, db, config)
 
       val commitId1 = repo.init()
-      val rfs1 = new RepositoryFileSystem(db, commitId1, Right(asymmetricKey))
+      val commit1 = repo.database.readCommit(commitId1, Right(asymmetricKey))
+      val rfs1 = new RepositoryFileSystem(db, commit1)
 
-      val treeEntry = repo.snapshot()
-      val commitId2 = repo.commit(treeEntry.id, treeEntry.key)
-      val rfs2 = new RepositoryFileSystem(db, commitId2, Right(asymmetricKey))
+      val commitId2 = repo.commit()
+      val commit2 = repo.database.readCommit(commitId2, Right(asymmetricKey))
+      val rfs2 = new RepositoryFileSystem(db, commit2)
       rfs2.read(VirtualFile("/a.txt"))(readString) === "Hello World a"
       rfs2.read(VirtualFile("/first/b.txt"))(readString) === "Hello World b"
       rfs2.read(VirtualFile("/first/first-1/c.txt"))(readString) === "Hello World c"
@@ -47,13 +48,14 @@ class RepositoryFileSystemSpec extends Specification {
       val repo = new Repository(vfs, db, config)
 
       val commitId1 = repo.init()
-      val rfs1 = new RepositoryFileSystem(db, commitId1, Right(asymmetricKey))
+      val commit1 = repo.database.readCommit(commitId1, Right(asymmetricKey))
+      val rfs1 = new RepositoryFileSystem(db, commit1)
       rfs1.exists(VirtualFile("/")) === true
       rfs1.exists(VirtualFile("/a.txt")) === false
 
-      val treeEntry = repo.snapshot()
-      val commitId2 = repo.commit(treeEntry.id, treeEntry.key)
-      val rfs2 = new RepositoryFileSystem(db, commitId2, Right(asymmetricKey))
+      val commitId2 = repo.commit()
+      val commit2 = repo.database.readCommit(commitId2, Right(asymmetricKey))
+      val rfs2 = new RepositoryFileSystem(db, commit2)
       rfs1.exists(VirtualFile("/")) === true
       rfs2.exists(VirtualFile("/a.txt")) === true
       rfs2.exists(VirtualFile("/a2.txt")) === false
@@ -78,12 +80,13 @@ class RepositoryFileSystemSpec extends Specification {
       val repo = new Repository(vfs, db, config)
 
       val commitId1 = repo.init()
-      val rfs1 = new RepositoryFileSystem(db, commitId1, Right(asymmetricKey))
+      val commit1 = repo.database.readCommit(commitId1, Right(asymmetricKey))
+      val rfs1 = new RepositoryFileSystem(db, commit1)
       rfs1.mode(VirtualFile("/")) === Directory
 
-      val treeEntry = repo.snapshot()
-      val commitId2 = repo.commit(treeEntry.id, treeEntry.key)
-      val rfs2 = new RepositoryFileSystem(db, commitId2, Right(asymmetricKey))
+      val commitId2 = repo.commit()
+      val commit2 = repo.database.readCommit(commitId2, Right(asymmetricKey))
+      val rfs2 = new RepositoryFileSystem(db, commit2)
       rfs1.mode(VirtualFile("/")) === Directory
       rfs2.mode(VirtualFile("/first")) === Directory
       rfs2.mode(VirtualFile("/first/first-1")) === Directory
@@ -106,12 +109,13 @@ class RepositoryFileSystemSpec extends Specification {
       val repo = new Repository(vfs, db, config)
 
       val commitId1 = repo.init()
-      val rfs1 = new RepositoryFileSystem(db, commitId1, Right(asymmetricKey))
+      val commit1 = repo.database.readCommit(commitId1, Right(asymmetricKey))
+      val rfs1 = new RepositoryFileSystem(db, commit1)
       rfs1.mode(VirtualFile("/")) === Directory
 
-      val treeEntry = repo.snapshot()
-      val commitId2 = repo.commit(treeEntry.id, treeEntry.key)
-      val rfs2 = new RepositoryFileSystem(db, commitId2, Right(asymmetricKey))
+      val commitId2 = repo.commit()
+      val commit2 = repo.database.readCommit(commitId2, Right(asymmetricKey))
+      val rfs2 = new RepositoryFileSystem(db, commit2)
 
       rfs2.obj(VirtualFile("/")) must beAnInstanceOf[Tree]
       rfs2.obj(VirtualFile("/first")) must beAnInstanceOf[Tree]

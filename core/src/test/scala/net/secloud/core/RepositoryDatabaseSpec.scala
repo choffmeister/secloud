@@ -9,17 +9,37 @@ class RepositoryDatabaseSpec extends Specification {
   def getTempDir = new File(new File(System.getProperty("java.io.tmpdir")), UUID.randomUUID().toString())
 
   "DirectoryRepositoryDatabase" should {
-    "place written objects" in {
+    "persist objects" in {
       val rdb = new DirectoryRepositoryDatabase(getTempDir)
       val oid = ObjectId("00ff")
 
       val writer = rdb.createWriter()
       writer.open()
       writer.stream.write("Hello World".getBytes("ASCII"))
-      writer.close(oid)
+      writer.persist(oid)
 
       rdb.pathFromId(oid).getAbsolutePath() must endWith("ff")
       rdb.pathFromId(oid).exists() === true
+    }
+
+    "dismiss objects" in {
+      val tempDir = getTempDir
+      val rdb = new DirectoryRepositoryDatabase(tempDir)
+      val oid = ObjectId("00ff")
+
+      def ensureTempDirSize(n: Int) = {
+        val files = Option(new File(tempDir, "temp").list()).getOrElse(Array.empty[String]).toSeq
+        println(files)
+        files must haveSize(n)
+      }
+
+      val writer = rdb.createWriter()
+      ensureTempDirSize(0)
+      writer.open()
+      ensureTempDirSize(1)
+      writer.stream.write("Hello World".getBytes("ASCII"))
+      writer.dismiss()
+      ensureTempDirSize(0)
     }
 
     "read objects" in {
@@ -29,7 +49,7 @@ class RepositoryDatabaseSpec extends Specification {
       val writer = rdb.createWriter()
       writer.open()
       writer.stream.write("Hello World".getBytes("ASCII"))
-      writer.close(oid)
+      writer.persist(oid)
 
       val buffer = new Array[Byte](11)
       val reader = rdb.createReader()
@@ -48,17 +68,17 @@ class RepositoryDatabaseSpec extends Specification {
       val writer1 = rdb.createWriter()
       writer1.open()
       writer1.stream.write("Hello World".getBytes("ASCII"))
-      writer1.close(id1)
+      writer1.persist(id1)
 
       val writer2 = rdb.createWriter()
       writer2.open()
       writer2.stream.write("Hello World".getBytes("ASCII"))
-      writer2.close(id2)
+      writer2.persist(id2)
 
       val writer3 = rdb.createWriter()
       writer3.open()
       writer3.stream.write("Hello World".getBytes("ASCII"))
-      writer3.close(id3)
+      writer3.persist(id3)
 
       rdb.find("") === None
 

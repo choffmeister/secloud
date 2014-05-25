@@ -1,12 +1,7 @@
 package net.secloud.core
 
-import java.io.BufferedInputStream
-import java.io.BufferedOutputStream
-import java.io.File
-import java.io.FileInputStream
-import java.io.FileOutputStream
-import java.io.InputStream
-import java.io.OutputStream
+import java.io._
+import net.secloud.core.crypto._
 import net.secloud.core.objects._
 import net.secloud.core.utils.StreamUtils._
 import scala.annotation.tailrec
@@ -14,8 +9,8 @@ import scala.annotation.tailrec
 trait RepositoryDatabase {
   def init(): Unit
 
-  def head: ObjectId
-  def head_=(id: ObjectId): Unit
+  def headId: ObjectId
+  def headId_=(id: ObjectId): Unit
 
   def createReader(): ObjectReader
   def createWriter(): ObjectWriter
@@ -32,16 +27,60 @@ trait RepositoryDatabase {
   }
 
   def write(inner: OutputStream ⇒ ObjectId): ObjectId = {
+    writeExplicit { (stream, writer) ⇒
+      val id = inner(stream)
+      writer.persist(id)
+      id
+    }
+  }
+
+  def writeExplicit[T](inner: (OutputStream, ObjectWriter) ⇒ T): T = {
     val writer = createWriter()
     try {
       writer.open()
-      val id = inner(writer.stream)
-      writer.close(id)
-      id
+      inner(writer.stream, writer)
+    } catch {
+      case t: Throwable ⇒
+        writer.dismiss()
+        throw t
     } finally {
       writer.close()
     }
   }
+
+  def writeCommit(commit: Commit, asymmetricKey: AsymmetricAlgorithmInstance, key: SymmetricAlgorithmInstance): ObjectId = {
+    write { dbs ⇒
+      ObjectSerializer.signObject(dbs, asymmetricKey) { ss ⇒
+        ObjectSerializer.writeCommit(ss, commit, key)
+      }
+    }
+  }
+  def readCommit(commitId: ObjectId, key: Either[SymmetricAlgorithmInstance, AsymmetricAlgorithmInstance]): Commit =
+    read(commitId)(s ⇒ ObjectSerializer.readCommit(s, key)).copy(id = commitId)
+
+  def writeTree(tree: Tree, asymmetricKey: AsymmetricAlgorithmInstance, key: SymmetricAlgorithmInstance): ObjectId =
+    write { dbs ⇒
+      ObjectSerializer.signObject(dbs, asymmetricKey) { ss ⇒
+        ObjectSerializer.writeTree(ss, tree, key)
+      }
+    }
+  def readTree(treeId: ObjectId, key: SymmetricAlgorithmInstance): Tree =
+    read(treeId)(s ⇒ ObjectSerializer.readTree(s, key)).copy(id = treeId)
+
+  def writeBlobWithContent(blob: Blob, asymmetricKey: AsymmetricAlgorithmInstance, key: SymmetricAlgorithmInstance)(inner: OutputStream ⇒ Any): ObjectId =
+    write { dbs ⇒
+      ObjectSerializer.signObject(dbs, asymmetricKey) { ss ⇒
+        ObjectSerializer.writeBlob(ss, blob)
+        ObjectSerializer.writeBlobContent(ss, key)(inner)
+      }
+    }
+  def readBlob(blobId: ObjectId): Blob =
+    read(blobId)(s ⇒ ObjectSerializer.readBlob(s)).copy(id = blobId)
+  def readBlobContent[T](blobId: ObjectId, key: SymmetricAlgorithmInstance)(inner: InputStream ⇒ T): T =
+    read(blobId) { s ⇒
+      ObjectSerializer.readBlob(s)
+      ObjectSerializer.readBlobContent(s, key)(inner)
+    }
 }
 
 trait ObjectReader {
@@ -52,7 +91,8 @@ trait ObjectReader {
 
 trait ObjectWriter {
   def open(): Unit
-  def close(id: ObjectId): Unit
+  def persist(id: ObjectId): Unit
+  def dismiss(): Unit
   def close(): Unit
   def stream: OutputStream
 }
@@ -68,8 +108,8 @@ class DirectoryRepositoryDatabase(val base: File) extends RepositoryDatabase {
     base.mkdirs()
   }
 
-  def head: ObjectId = ObjectId(new String(readBytesFromFile(pathJoin(base, "HEAD")), "ASCII"))
-  def head_=(id: ObjectId): Unit = writeBytesToFile(pathJoin(base, "HEAD"), id.hex.getBytes("ASCII"))
+  def headId: ObjectId = ObjectId(new String(readBytesFromFile(pathJoin(base, "HEAD")), "ASCII"))
+  def headId_=(id: ObjectId): Unit = writeBytesToFile(pathJoin(base, "HEAD"), id.hex.getBytes("ASCII"))
 
   def createReader(): ObjectReader = new DirectoryObjectReader(this)
   def createWriter(): ObjectWriter = new DirectoryObjectWriter(this)
@@ -142,7 +182,7 @@ class DirectoryRepositoryDatabase(val base: File) extends RepositoryDatabase {
         innerStream = Some(new BufferedOutputStream(new FileOutputStream(tempPath.get), 8192))
     }
 
-    def close(id: ObjectId) = {
+    def persist(id: ObjectId) = {
       close()
 
       ensureDirectory(rdb.directoryFromId(id))
@@ -153,6 +193,12 @@ class DirectoryRepositoryDatabase(val base: File) extends RepositoryDatabase {
       }
 
       tempPath = None
+    }
+
+    def dismiss() = {
+      close()
+
+      tempPath.get.delete()
     }
 
     def close() = {

@@ -4,42 +4,35 @@ import java.io._
 import net.secloud.core.crypto._
 import net.secloud.core.objects._
 
-class RepositoryFileSystem(db: RepositoryDatabase, commitId: ObjectId, key: Either[SymmetricAlgorithmInstance, AsymmetricAlgorithmInstance]) extends VirtualFileSystem {
-  private val commit = db.read(commitId)(dbs ⇒ readCommit(dbs, key))
-
+class RepositoryFileSystem(db: RepositoryDatabase, commit: Commit) extends VirtualFileSystem {
   def exists(f: VirtualFile): Boolean = walkTree(f).isDefined
 
   def mode(f: VirtualFile): VirtualFileMode = walkTree(f) match {
-    case Some(TreeEntry(_, DirectoryTreeEntryMode, _, _)) ⇒
+    case Some(TreeEntry(_, DirectoryTreeEntryMode, _, _, _)) ⇒
       Directory
-    case Some(TreeEntry(_, ExecutableFileTreeEntryMode, _, _)) ⇒
+    case Some(TreeEntry(_, ExecutableFileTreeEntryMode, _, _, _)) ⇒
       ExecutableFile
-    case Some(TreeEntry(_, NonExecutableFileTreeEntryMode, _, _)) ⇒
+    case Some(TreeEntry(_, NonExecutableFileTreeEntryMode, _, _, _)) ⇒
       NonExecutableFile
     case _ ⇒
       throw new Exception(s"Unknown path $f")
   }
 
   def children(f: VirtualFile) = walkTree(f) match {
-    case Some(TreeEntry(id, DirectoryTreeEntryMode, _, key)) ⇒
-      val tree = db.read(id)(dbs ⇒ readTree(dbs, key))
+    case Some(TreeEntry(id, DirectoryTreeEntryMode, _, key, _)) ⇒
+      val tree = db.readTree(id, key)
       tree.entries.map(te ⇒ f.child(te.name))
-    case Some(TreeEntry(_, ExecutableFileTreeEntryMode | NonExecutableFileTreeEntryMode, _, _)) ⇒
+    case Some(TreeEntry(_, ExecutableFileTreeEntryMode | NonExecutableFileTreeEntryMode, _, _, _)) ⇒
       throw new Exception(s"$f is a file and hence cannot have children")
     case _ ⇒
       throw new Exception(s"Unknown path $f")
   }
 
   def read[T](f: VirtualFile)(inner: InputStream ⇒ T): T = walkTree(f) match {
-    case Some(TreeEntry(_, DirectoryTreeEntryMode, _, _)) ⇒
+    case Some(TreeEntry(_, DirectoryTreeEntryMode, _, _, _)) ⇒
       throw new Exception(s"$f is a directory and hence cannot be read")
-    case Some(TreeEntry(id, ExecutableFileTreeEntryMode | NonExecutableFileTreeEntryMode, _, key)) ⇒
-      db.read(id) { dbs ⇒
-        readBlob(dbs)
-        readBlobContent(dbs, key) { cs ⇒
-          inner(cs)
-        }
-      }
+    case Some(TreeEntry(id, ExecutableFileTreeEntryMode | NonExecutableFileTreeEntryMode, _, key, _)) ⇒
+      db.readBlobContent(id, key)(inner)
     case _ ⇒
       throw new Exception(s"Unknown path $f")
   }
@@ -47,10 +40,10 @@ class RepositoryFileSystem(db: RepositoryDatabase, commitId: ObjectId, key: Eith
   def write(f: VirtualFile)(inner: OutputStream ⇒ Any): Unit = throw new Exception("Not supported")
 
   def objOption(f: VirtualFile): Option[BaseObject] = walkTree(f) match {
-    case Some(TreeEntry(id, DirectoryTreeEntryMode, _, key)) ⇒
-      db.read(id)(dbs ⇒ Some(readTree(dbs, key).copy(id = id)))
-    case Some(TreeEntry(id, ExecutableFileTreeEntryMode | NonExecutableFileTreeEntryMode, _, _)) ⇒
-      db.read(id)(dbs ⇒ Some(readBlob(dbs).copy(id = id)))
+    case Some(TreeEntry(id, DirectoryTreeEntryMode, _, key, _)) ⇒
+      Some(db.readTree(id, key))
+    case Some(TreeEntry(id, ExecutableFileTreeEntryMode | NonExecutableFileTreeEntryMode, _, _, _)) ⇒
+      Some(db.readBlob(id))
     case _ ⇒
       None
   }
@@ -80,15 +73,25 @@ class RepositoryFileSystem(db: RepositoryDatabase, commitId: ObjectId, key: Eith
     case _ ⇒ throw new Exception(s"$f does not point to a blob")
   }
 
+  def key(f: VirtualFile): Option[SymmetricAlgorithmInstance] = walkTree(f) match {
+    case Some(TreeEntry(_, _, _, key, _)) ⇒ Some(key)
+    case _ ⇒ None
+  }
+
+  def hash(f: VirtualFile): Option[Seq[Byte]] = walkTree(f) match {
+    case Some(TreeEntry(_, _, _, _, hash)) ⇒ Some(hash)
+    case _ ⇒ None
+  }
+
   private def walkTree(f: VirtualFile): Option[TreeEntry] = {
     @scala.annotation.tailrec
     def recursion(entry: TreeEntry, f: VirtualFile): Option[TreeEntry] = f.segments match {
       case Nil ⇒ Some(entry)
       case next :: rest ⇒ entry.mode match {
         case DirectoryTreeEntryMode ⇒
-          val tree = db.read(entry.id)(dbs ⇒ readTree(dbs, entry.key))
+          val tree = db.readTree(entry.id, entry.key)
           tree.entries.find(_.name == next) match {
-            case Some(entry) ⇒ recursion(entry, VirtualFile.fromSegments(f.segments.tail))
+            case Some(childEntry) ⇒ recursion(childEntry, VirtualFile.fromSegments(f.segments.tail))
             case _ ⇒ None
           }
         case _ ⇒ None

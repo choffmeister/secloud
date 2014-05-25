@@ -8,6 +8,32 @@ import net.secloud.core.crypto._
 import net.secloud.core.utils._
 import net.secloud.core.utils.StreamUtils._
 
+object ObjectSerializer {
+  def writeBlob(output: OutputStream, blob: Blob): Unit =
+    BlobSerializer.write(output, blob)
+  def readBlob(input: InputStream): Blob =
+    BlobSerializer.read(input)
+  def writeBlobContent(output: OutputStream, key: SymmetricAlgorithmInstance)(inner: OutputStream ⇒ Any): Unit =
+    BlobSerializer.writeContent(output, key)(inner)
+  def readBlobContent[T](input: InputStream, key: SymmetricAlgorithmInstance)(inner: InputStream ⇒ T): T =
+    BlobSerializer.readContent(input, key)(inner)
+
+  def writeTree(output: OutputStream, tree: Tree, key: SymmetricAlgorithmInstance): Unit =
+    TreeSerializer.write(output, tree, key)
+  def readTree(input: InputStream, key: SymmetricAlgorithmInstance): Tree =
+    TreeSerializer.read(input, key)
+
+  def writeCommit(output: OutputStream, commit: Commit, key: SymmetricAlgorithmInstance): Unit =
+    CommitSerializer.write(output, commit, key)
+  def readCommit(input: InputStream, key: Either[SymmetricAlgorithmInstance, AsymmetricAlgorithmInstance]): Commit =
+    CommitSerializer.read(input, key)
+
+  def signObject(output: OutputStream, privateKey: AsymmetricAlgorithmInstance)(inner: OutputStream ⇒ Any): ObjectId =
+    ObjectSerializerCommons.signObject(output, privateKey)(inner)
+  def validateObject[T](input: InputStream, publicKeys: Map[Seq[Byte], AsymmetricAlgorithmInstance])(inner: InputStream ⇒ T): T =
+    ObjectSerializerCommons.validateObject(input, publicKeys)(inner)
+}
+
 private[objects] object BlobSerializer {
   def write(output: OutputStream, blob: Blob): Unit = {
     writeHeader(output, blob.objectType)
@@ -62,6 +88,7 @@ private[objects] object TreeSerializer {
       bs.writeList(tree.entries) { e ⇒
         bs.writeString(e.name)
         writeSymmetricAlgorithm(bs, e.key)
+        bs.writeBinary(e.hash)
       }
     }
 
@@ -73,23 +100,24 @@ private[objects] object TreeSerializer {
     assert("Expected tree", objectType == TreeObjectType)
 
     val entryIdsAndModes = readPublicBlock(input) { bs ⇒
-      val entryIdsAndModes = bs.readList() {
+      bs.readList() {
         val id = bs.readObjectId()
         val mode = treeEntryModeMapInverse(bs.readInt8())
         (id, mode)
       }
-      entryIdsAndModes
     }
 
-    val entryNamesAndKey = readPrivateBlock(input, key) { bs ⇒
-      val entryNamesAndKey = bs.readList() {
-        (bs.readString(), readSymmetricAlgorithm(bs))
+    val entryNamesKeyAndHash = readPrivateBlock(input, key) { bs ⇒
+      bs.readList() {
+        val name = bs.readString()
+        val key = readSymmetricAlgorithm(bs)
+        val hash = bs.readBinary().toSeq
+        (name, key, hash)
       }
-      entryNamesAndKey
     }
 
-    val entries = entryIdsAndModes.zip(entryNamesAndKey)
-      .map(e ⇒ TreeEntry(e._1._1, e._1._2, e._2._1, e._2._2))
+    val entries = entryIdsAndModes.zip(entryNamesKeyAndHash)
+      .map(e ⇒ TreeEntry(e._1._1, e._1._2, e._2._1, e._2._2, e._2._3))
 
     return Tree(ObjectId(), entries)
   }

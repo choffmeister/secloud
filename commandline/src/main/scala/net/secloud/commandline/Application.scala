@@ -39,19 +39,18 @@ object Application {
       case Some(cli.commit) ⇒
         val repo = openRepository(env)
         con.info("Committing current snapshot...")
-        val treeEntry = repo.snapshot()
-        val commitId = repo.commit(treeEntry.id, treeEntry.key)
+        val commitId = repo.commit()
         con.success("Done")
       case Some(cli.ls) ⇒
         val file = VirtualFile(cli.ls.path())
         val repo = openRepository(env)
-        val rfs = repo.fileSystem(repo.head)
+        val rfs = repo.fileSystem(repo.headCommit)
         val tree = rfs.tree(file)
         tree.entries.foreach(e ⇒ println(e.name))
       case Some(cli.cat) ⇒
         val file = VirtualFile(cli.ls.path())
         val repo = openRepository(env)
-        val rfs = repo.fileSystem(repo.head)
+        val rfs = repo.fileSystem(repo.headCommit)
         rfs.read(file) { cs ⇒
           val reader = new BufferedReader(new InputStreamReader(cs))
           var done = false
@@ -64,7 +63,7 @@ object Application {
         }
       case Some(cli.tree) ⇒
         val repo = openRepository(env)
-        val rfs = repo.fileSystem(repo.head)
+        val rfs = repo.fileSystem(repo.headCommit)
         def asciiTreeLayer(layers: List[(Int, Int)]): String = {
           val pre = layers.take(layers.length - 1).map(l ⇒ if (l._1 < l._2 - 1) "|  " else "   ").mkString
           val last = if (layers.last._1 < layers.last._2 - 1) "├─ " else "└─ "
