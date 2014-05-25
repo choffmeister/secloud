@@ -1,6 +1,7 @@
 package net.secloud.core
 
 import org.specs2.mutable._
+import org.apache.commons.codec.binary.Hex
 import java.util.UUID
 import java.io.File
 import net.secloud.core.objects._
@@ -37,7 +38,8 @@ class RepositorySpec extends Specification {
       repo.init()
       repo.commit()
 
-      ok
+      val fileContentHash = repo.fileSystem(repo.headCommit).hash(VirtualFile("/first/b.txt"))
+      Hex.encodeHexString(fileContentHash.get.toArray) === "7670b2ccc9740c2741f029f9212c14da0a855157"
     }
 
     "commit does not commit two identical snapshots in a row" in {

@@ -88,6 +88,7 @@ private[objects] object TreeSerializer {
       bs.writeList(tree.entries) { e ⇒
         bs.writeString(e.name)
         writeSymmetricAlgorithm(bs, e.key)
+        bs.writeBinary(e.hash)
       }
     }
 
@@ -99,23 +100,24 @@ private[objects] object TreeSerializer {
     assert("Expected tree", objectType == TreeObjectType)
 
     val entryIdsAndModes = readPublicBlock(input) { bs ⇒
-      val entryIdsAndModes = bs.readList() {
+      bs.readList() {
         val id = bs.readObjectId()
         val mode = treeEntryModeMapInverse(bs.readInt8())
         (id, mode)
       }
-      entryIdsAndModes
     }
 
-    val entryNamesAndKey = readPrivateBlock(input, key) { bs ⇒
-      val entryNamesAndKey = bs.readList() {
-        (bs.readString(), readSymmetricAlgorithm(bs))
+    val entryNamesKeyAndHash = readPrivateBlock(input, key) { bs ⇒
+      bs.readList() {
+        val name = bs.readString()
+        val key = readSymmetricAlgorithm(bs)
+        val hash = bs.readBinary().toSeq
+        (name, key, hash)
       }
-      entryNamesAndKey
     }
 
-    val entries = entryIdsAndModes.zip(entryNamesAndKey)
-      .map(e ⇒ TreeEntry(e._1._1, e._1._2, e._2._1, e._2._2))
+    val entries = entryIdsAndModes.zip(entryNamesKeyAndHash)
+      .map(e ⇒ TreeEntry(e._1._1, e._1._2, e._2._1, e._2._2, e._2._3))
 
     return Tree(ObjectId(), entries)
   }

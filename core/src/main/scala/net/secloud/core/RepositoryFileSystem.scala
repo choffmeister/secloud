@@ -8,30 +8,30 @@ class RepositoryFileSystem(db: RepositoryDatabase, commit: Commit) extends Virtu
   def exists(f: VirtualFile): Boolean = walkTree(f).isDefined
 
   def mode(f: VirtualFile): VirtualFileMode = walkTree(f) match {
-    case Some(TreeEntry(_, DirectoryTreeEntryMode, _, _)) ⇒
+    case Some(TreeEntry(_, DirectoryTreeEntryMode, _, _, _)) ⇒
       Directory
-    case Some(TreeEntry(_, ExecutableFileTreeEntryMode, _, _)) ⇒
+    case Some(TreeEntry(_, ExecutableFileTreeEntryMode, _, _, _)) ⇒
       ExecutableFile
-    case Some(TreeEntry(_, NonExecutableFileTreeEntryMode, _, _)) ⇒
+    case Some(TreeEntry(_, NonExecutableFileTreeEntryMode, _, _, _)) ⇒
       NonExecutableFile
     case _ ⇒
       throw new Exception(s"Unknown path $f")
   }
 
   def children(f: VirtualFile) = walkTree(f) match {
-    case Some(TreeEntry(id, DirectoryTreeEntryMode, _, key)) ⇒
+    case Some(TreeEntry(id, DirectoryTreeEntryMode, _, key, _)) ⇒
       val tree = db.readTree(id, key)
       tree.entries.map(te ⇒ f.child(te.name))
-    case Some(TreeEntry(_, ExecutableFileTreeEntryMode | NonExecutableFileTreeEntryMode, _, _)) ⇒
+    case Some(TreeEntry(_, ExecutableFileTreeEntryMode | NonExecutableFileTreeEntryMode, _, _, _)) ⇒
       throw new Exception(s"$f is a file and hence cannot have children")
     case _ ⇒
       throw new Exception(s"Unknown path $f")
   }
 
   def read[T](f: VirtualFile)(inner: InputStream ⇒ T): T = walkTree(f) match {
-    case Some(TreeEntry(_, DirectoryTreeEntryMode, _, _)) ⇒
+    case Some(TreeEntry(_, DirectoryTreeEntryMode, _, _, _)) ⇒
       throw new Exception(s"$f is a directory and hence cannot be read")
-    case Some(TreeEntry(id, ExecutableFileTreeEntryMode | NonExecutableFileTreeEntryMode, _, key)) ⇒
+    case Some(TreeEntry(id, ExecutableFileTreeEntryMode | NonExecutableFileTreeEntryMode, _, key, _)) ⇒
       db.readBlobContent(id, key)(inner)
     case _ ⇒
       throw new Exception(s"Unknown path $f")
@@ -40,9 +40,9 @@ class RepositoryFileSystem(db: RepositoryDatabase, commit: Commit) extends Virtu
   def write(f: VirtualFile)(inner: OutputStream ⇒ Any): Unit = throw new Exception("Not supported")
 
   def objOption(f: VirtualFile): Option[BaseObject] = walkTree(f) match {
-    case Some(TreeEntry(id, DirectoryTreeEntryMode, _, key)) ⇒
+    case Some(TreeEntry(id, DirectoryTreeEntryMode, _, key, _)) ⇒
       Some(db.readTree(id, key))
-    case Some(TreeEntry(id, ExecutableFileTreeEntryMode | NonExecutableFileTreeEntryMode, _, _)) ⇒
+    case Some(TreeEntry(id, ExecutableFileTreeEntryMode | NonExecutableFileTreeEntryMode, _, _, _)) ⇒
       Some(db.readBlob(id))
     case _ ⇒
       None
@@ -74,7 +74,12 @@ class RepositoryFileSystem(db: RepositoryDatabase, commit: Commit) extends Virtu
   }
 
   def key(f: VirtualFile): Option[SymmetricAlgorithmInstance] = walkTree(f) match {
-    case Some(TreeEntry(_, _, _, key)) ⇒ Some(key)
+    case Some(TreeEntry(_, _, _, key, _)) ⇒ Some(key)
+    case _ ⇒ None
+  }
+
+  def hash(f: VirtualFile): Option[Seq[Byte]] = walkTree(f) match {
+    case Some(TreeEntry(_, _, _, _, hash)) ⇒ Some(hash)
     case _ ⇒ None
   }
 

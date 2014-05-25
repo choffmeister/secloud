@@ -29,15 +29,15 @@ class ObjectSerializerSpec extends Specification {
       val key = AES.generate(32)
 
       val tree1 = Tree(ObjectId.empty, List(
-        TreeEntry(ObjectId("000102"), ExecutableFileTreeEntryMode, "test1", AES.generate(16)),
-        TreeEntry(ObjectId("1231231212"), NonExecutableFileTreeEntryMode, "test2", AES.generate(24)),
-        TreeEntry(ObjectId("00"), DirectoryTreeEntryMode, "test3", NullEncryption.generate(0))))
+        TreeEntry(ObjectId("000102"), ExecutableFileTreeEntryMode, "test1", AES.generate(16), Nil),
+        TreeEntry(ObjectId("1231231212"), NonExecutableFileTreeEntryMode, "test2", AES.generate(24), Seq[Byte](0)),
+        TreeEntry(ObjectId("00"), DirectoryTreeEntryMode, "test3", NullEncryption.generate(0), Seq[Byte](0, 1, -2, -1))))
       val intermediate1 = new ByteArrayOutputStream()
       TreeSerializer.write(intermediate1, tree1, key)
       val intermediate2 = new ByteArrayInputStream(intermediate1.toByteArray)
       val tree2 = TreeSerializer.read(intermediate2, key)
 
-      tree1.entries.map(e ⇒ (e.id, e.name)) === tree2.entries.map(e ⇒ (e.id, e.name))
+      tree1.entries.map(e ⇒ (e.id, e.name, e.hash)) === tree2.entries.map(e ⇒ (e.id, e.name, e.hash))
       tree1.entries.zip(tree2.entries).forall(e ⇒ compareSymmetricKeys(e._1.key, e._2.key)) === true
     }
 

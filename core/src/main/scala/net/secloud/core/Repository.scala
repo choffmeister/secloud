@@ -71,24 +71,32 @@ class Repository(val workingDir: VirtualFileSystem, val database: RepositoryData
           TreeEntry(id, DirectoryTreeEntryMode, f.name, key)
 
         case mode @ (NonExecutableFile | ExecutableFile) ⇒
-          val (key, id) = head.blobOption(f) match {
+          val (key, id, hash) = head.blobOption(f) match {
             // TODO: properly detect if found blob can be reused
             case Some(b: Blob) if true ⇒
               val key = head.key(f).get
               val id = b.id
-              (key, id)
+              (key, id, Nil)
             case _ ⇒
               val blob = Blob(ObjectId())
               val key = generateKey()
-              val id = database.writeBlobWithContent(blob, config.asymmetricKey, key)(cs ⇒ wd.read(f)(fs ⇒ pipeStream(fs, cs)))
-              (key, id)
+              val hashAlgorithmInstance = SHA1.create()
+              var hash = Array.empty[Byte]
+              val id = database.writeBlobWithContent(blob, config.asymmetricKey, key) { cs ⇒
+                wd.read(f) { fs ⇒
+                  hash = hashAlgorithmInstance.hash(cs) { hs ⇒
+                    pipeStream(fs, hs)
+                  }
+                }
+              }
+              (key, id, hash.toSeq)
           }
           val treeEntryMode = mode match {
             case NonExecutableFile ⇒ NonExecutableFileTreeEntryMode
             case ExecutableFile ⇒ ExecutableFileTreeEntryMode
             case _ ⇒ throw new Exception()
           }
-          TreeEntry(id, treeEntryMode, f.name, key)
+          TreeEntry(id, treeEntryMode, f.name, key, hash.toSeq)
 
         case _ ⇒ throw new Exception()
       }

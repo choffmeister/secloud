@@ -30,7 +30,8 @@ case class TreeEntry(
   id: ObjectId,
   mode: TreeEntryMode,
   name: String,
-  key: SymmetricAlgorithmInstance)
+  key: SymmetricAlgorithmInstance,
+  hash: Seq[Byte] = Nil)
 
 case class Tree(
   id: ObjectId,
