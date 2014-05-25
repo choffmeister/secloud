@@ -1,4 +1,4 @@
-name := "secloud-macosx"
+name := "secloud-client-macosx"
 
 libraryDependencies ++= Seq(
   "ch.qos.logback" % "logback-classic" % "1.0.13",
@@ -11,7 +11,7 @@ appbundle.name := "Secloud"
 
 appbundle.mainClass := Some("net.secloud.macosx.Application")
 
-appbundle.icon := Some(file("macosx") / "src" / "main" / "resources" / "images" / "app-icon.icns")
+appbundle.icon := Some(file("secloud-client-macosx") / "src" / "main" / "resources" / "images" / "app-icon.icns")
 
 appbundle.workingDirectory := Some(file(appbundle.BundleVar_AppPackage))
 

@@ -38,14 +38,14 @@ object Build extends sbt.Build {
 
   val commonProjectSettings = commonSettings ++ scalariformSettings ++ scctSettings
 
-  lazy val core = (project in file("core"))
+  lazy val core = (project in file("secloud-core"))
     .settings(commonProjectSettings: _*)
 
-  lazy val commandline = (project in file("commandline"))
+  lazy val commandline = (project in file("secloud-client-commandline"))
     .settings(commonProjectSettings: _*)
     .dependsOn(core)
 
-  lazy val macosx = (project in file("macosx"))
+  lazy val macosx = (project in file("secloud-client-macosx"))
     .settings(commonProjectSettings: _*)
     .dependsOn(core)
 
