@@ -17,7 +17,7 @@ object Build extends sbt.Build {
     testOptions in Test += Tests.Argument("junitxml", "console")
   )
 
-  val format = {
+  lazy val format = {
     import scalariform.formatter.preferences._
 
     FormattingPreferences()
@@ -26,17 +26,17 @@ object Build extends sbt.Build {
       .setPreference(CompactControlReadability, false)
   }
 
-  val scalariformSettings = SbtScalariform.scalariformSettings ++ Seq(
+  lazy val scalariformSettings = SbtScalariform.scalariformSettings ++ Seq(
     ScalariformKeys.preferences in Compile := format,
     ScalariformKeys.preferences in Test := format
   )
 
-  val scctSettings = ScctPlugin.instrumentSettings ++ Seq(
+  lazy val scctSettings = ScctPlugin.instrumentSettings ++ Seq(
     resourceDirectory in ScctPlugin.ScctTest <<= (resourceDirectory in Test),
     unmanagedResources in ScctPlugin.ScctTest <<= (unmanagedResources in Test)
   )
 
-  val commonProjectSettings = commonSettings ++ scalariformSettings ++ scctSettings
+  lazy val commonProjectSettings = commonSettings ++ scalariformSettings ++ scctSettings
 
   lazy val core = (project in file("secloud-core"))
     .settings(commonProjectSettings: _*)
