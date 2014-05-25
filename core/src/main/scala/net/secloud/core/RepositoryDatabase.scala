@@ -27,12 +27,22 @@ trait RepositoryDatabase {
   }
 
   def write(inner: OutputStream ⇒ ObjectId): ObjectId = {
+    writeExplicit { (stream, writer) ⇒
+      val id = inner(stream)
+      writer.persist(id)
+      id
+    }
+  }
+
+  def writeExplicit[T](inner: (OutputStream, ObjectWriter) ⇒ T): T = {
     val writer = createWriter()
     try {
       writer.open()
-      val id = inner(writer.stream)
-      writer.close(id)
-      id
+      inner(writer.stream, writer)
+    } catch {
+      case t: Throwable ⇒
+        writer.dismiss()
+        throw t
     } finally {
       writer.close()
     }
@@ -81,7 +91,8 @@ trait ObjectReader {
 
 trait ObjectWriter {
   def open(): Unit
-  def close(id: ObjectId): Unit
+  def persist(id: ObjectId): Unit
+  def dismiss(): Unit
   def close(): Unit
   def stream: OutputStream
 }
@@ -171,7 +182,7 @@ class DirectoryRepositoryDatabase(val base: File) extends RepositoryDatabase {
         innerStream = Some(new BufferedOutputStream(new FileOutputStream(tempPath.get), 8192))
     }
 
-    def close(id: ObjectId) = {
+    def persist(id: ObjectId) = {
       close()
 
       ensureDirectory(rdb.directoryFromId(id))
@@ -182,6 +193,12 @@ class DirectoryRepositoryDatabase(val base: File) extends RepositoryDatabase {
       }
 
       tempPath = None
+    }
+
+    def dismiss() = {
+      close()
+
+      tempPath.get.delete()
     }
 
     def close() = {
