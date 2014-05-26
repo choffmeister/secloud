@@ -56,9 +56,7 @@ private[objects] object BlobSerializer {
 
   def writeContent(output: OutputStream, key: SymmetricAlgorithmInstance)(inner: OutputStream ⇒ Any): Unit = {
     writePrivateBlock(output, key) { bs ⇒
-      writeCompressed(bs) { cs ⇒
-        inner(cs)
-      }
+      inner(bs)
     }
 
     output.flush()
@@ -66,9 +64,7 @@ private[objects] object BlobSerializer {
 
   def readContent[T](input: InputStream, key: SymmetricAlgorithmInstance)(inner: InputStream ⇒ T): T = {
     readPrivateBlock(input, key) { bs ⇒
-      readCompressed(bs) { cs ⇒
-        inner(cs)
-      }
+      inner(bs)
     }
   }
 }

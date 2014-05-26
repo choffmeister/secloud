@@ -26,6 +26,7 @@ object Config {
   }
 
   private def resolveSymmetricAlgorithm(str: String): SymmetricAlgorithm = str match {
+    case "unencrypted" ⇒ NullEncryption
     case "aes" ⇒ AES
     case _ ⇒ throw new Exception(s"Unknown symmetric algorithm")
   }
