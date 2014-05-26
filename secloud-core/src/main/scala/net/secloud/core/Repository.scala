@@ -6,12 +6,7 @@ import net.secloud.core.objects._
 import net.secloud.core.objects.ObjectSerializer._
 import net.secloud.core.utils.StreamUtils._
 
-case class RepositoryConfig(
-  val asymmetricKey: AsymmetricAlgorithmInstance,
-  val symmetricAlgorithm: SymmetricAlgorithm,
-  val symmetricAlgorithmKeySize: Int)
-
-class Repository(val workingDir: VirtualFileSystem, val database: RepositoryDatabase, val config: RepositoryConfig) {
+class Repository(val workingDir: VirtualFileSystem, val database: RepositoryDatabase, val config: Config) {
   private lazy val log = org.slf4j.LoggerFactory.getLogger(getClass)
 
   def init(): ObjectId = {
@@ -112,9 +107,9 @@ class Repository(val workingDir: VirtualFileSystem, val database: RepositoryData
 }
 
 object Repository {
-  def apply(workingDir: VirtualFileSystem, database: RepositoryDatabase, config: RepositoryConfig): Repository =
+  def apply(workingDir: VirtualFileSystem, database: RepositoryDatabase, config: Config): Repository =
     new Repository(workingDir, database, config)
 
-  def apply(dir: File, config: RepositoryConfig): Repository =
+  def apply(dir: File, config: Config): Repository =
     new Repository(new NativeFileSystem(dir), new DirectoryRepositoryDatabase(new File(dir, ".secloud")), config)
 }

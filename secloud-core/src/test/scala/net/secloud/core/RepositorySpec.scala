@@ -19,7 +19,7 @@ class RepositorySpec extends Specification {
       val asymmetricKey = RSA.generate(512, 25)
       val symmetricAlgorithm = AES
       val symmetricAlgorithmKeySize = 16
-      val config = RepositoryConfig(asymmetricKey, symmetricAlgorithm, symmetricAlgorithmKeySize)
+      val config = Config(asymmetricKey, symmetricAlgorithm, symmetricAlgorithmKeySize)
       val repo = Repository(base, config)
       repo.init()
 
@@ -33,7 +33,7 @@ class RepositorySpec extends Specification {
       val asymmetricKey = RSA.generate(512, 25)
       val symmetricAlgorithm = AES
       val symmetricAlgorithmKeySize = 16
-      val config = RepositoryConfig(asymmetricKey, symmetricAlgorithm, symmetricAlgorithmKeySize)
+      val config = Config(asymmetricKey, symmetricAlgorithm, symmetricAlgorithmKeySize)
       val repo = Repository(base, config)
       repo.init()
       repo.commit()
@@ -49,7 +49,7 @@ class RepositorySpec extends Specification {
       val asymmetricKey = RSA.generate(512, 25)
       val symmetricAlgorithm = AES
       val symmetricAlgorithmKeySize = 16
-      val config = RepositoryConfig(asymmetricKey, symmetricAlgorithm, symmetricAlgorithmKeySize)
+      val config = Config(asymmetricKey, symmetricAlgorithm, symmetricAlgorithmKeySize)
       val repo = Repository(base, config)
       repo.init()
 
@@ -69,7 +69,7 @@ class RepositorySpec extends Specification {
       val asymmetricKey = RSA.generate(512, 25)
       val symmetricAlgorithm = AES
       val symmetricAlgorithmKeySize = 16
-      val config = RepositoryConfig(asymmetricKey, symmetricAlgorithm, symmetricAlgorithmKeySize)
+      val config = Config(asymmetricKey, symmetricAlgorithm, symmetricAlgorithmKeySize)
       val repo = Repository(base, config)
       repo.init()
 

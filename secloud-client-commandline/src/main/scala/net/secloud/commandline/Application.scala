@@ -11,11 +11,12 @@ object Application {
   private lazy val log = org.slf4j.LoggerFactory.getLogger(getClass)
   private lazy val con = new StandardConsole()
 
-  def main(args: Array[String]): Unit = {
-    val env = createEnvironment()
+  lazy val env = Environment()
+  lazy val conf = Config()
 
+  def main(args: Array[String]): Unit = {
     try {
-      execute(env, new CommandLineInterface(args))
+      execute(new CommandLineInterface(args))
       System.exit(0)
     } catch {
       case e: Throwable ⇒
@@ -25,10 +26,10 @@ object Application {
     }
   }
 
-  def execute(env: Environment, cli: CommandLineInterface): Unit = {
+  def execute(cli: CommandLineInterface): Unit = {
     cli.subcommand match {
       case Some(cli.init) ⇒
-        val repo = openRepository(env)
+        val repo = Repository(env.currentDirectory, conf)
         con.info("Initializing new repository...")
         val commitId = repo.init()
         con.success("Done")
@@ -37,19 +38,19 @@ object Application {
         KeyGenerator.generate(env, 2048, 128)
         con.success("Done")
       case Some(cli.commit) ⇒
-        val repo = openRepository(env)
+        val repo = Repository(env.currentDirectory, conf)
         con.info("Committing current snapshot...")
         val commitId = repo.commit()
         con.success("Done")
       case Some(cli.ls) ⇒
         val file = VirtualFile(cli.ls.path())
-        val repo = openRepository(env)
+        val repo = Repository(env.currentDirectory, conf)
         val rfs = repo.fileSystem(repo.headCommit)
         val tree = rfs.tree(file)
         tree.entries.foreach(e ⇒ println(e.name))
       case Some(cli.cat) ⇒
         val file = VirtualFile(cli.ls.path())
-        val repo = openRepository(env)
+        val repo = Repository(env.currentDirectory, conf)
         val rfs = repo.fileSystem(repo.headCommit)
         rfs.read(file) { cs ⇒
           val reader = new BufferedReader(new InputStreamReader(cs))
@@ -62,7 +63,7 @@ object Application {
           }
         }
       case Some(cli.tree) ⇒
-        val repo = openRepository(env)
+        val repo = Repository(env.currentDirectory, conf)
         val rfs = repo.fileSystem(repo.headCommit)
         def asciiTreeLayer(layers: List[(Int, Int)]): String = {
           val pre = layers.take(layers.length - 1).map(l ⇒ if (l._1 < l._2 - 1) "|  " else "   ").mkString
@@ -82,38 +83,10 @@ object Application {
       case Some(cli.environment) ⇒
         con.info(s"Current directory ${env.currentDirectory}")
         con.info(s"Home directory ${env.userDirectory}")
-        con.info(s"Now ${env.now}")
       case Some(cli.benchmark) ⇒
         Benchmark.fullBenchmark()
       case _ ⇒
         cli.printHelp()
     }
   }
-
-  def openRepository(env: Environment): Repository = {
-    val asymmetricKey = loadAsymmetricKey(env)
-    val symmetricAlgorithm = AES
-    val symmetricAlgorithmKeySize = 32
-    val config = RepositoryConfig(asymmetricKey, symmetricAlgorithm, symmetricAlgorithmKeySize)
-    Repository(env.currentDirectory, config)
-  }
-
-  def loadAsymmetricKey(env: Environment): AsymmetricAlgorithmInstance = {
-    val f = new File(new File(env.userDirectory, ".secloud"), "rsa.key")
-    try {
-      val fs = new FileInputStream(f)
-      try {
-        RSA.loadFromPEM(fs)
-      } finally {
-        fs.close()
-      }
-    } catch {
-      case e: Throwable ⇒ throw new Exception(s"Could not load RSA private key from ${f}", e)
-    }
-  }
-
-  def createEnvironment(): Environment = Environment(
-    new File(System.getProperty("user.dir")),
-    new File(System.getProperty("user.home")),
-    new Date(System.currentTimeMillis))
 }

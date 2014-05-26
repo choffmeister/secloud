@@ -4,14 +4,6 @@ import org.specs2.mutable._
 import net.secloud.commandline.Application._
 
 class ApplicationSpec extends Specification {
-  "Application" should {
-    "create environment object" in {
-      val env = Application.createEnvironment()
-
-      ok
-    }
-  }
-
   "CommandLineInterface" should {
     "handle init command" in {
       val cli = new CommandLineInterface(Seq("init"))
