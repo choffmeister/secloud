@@ -29,7 +29,6 @@ class RepositoryDatabaseSpec extends Specification {
 
       def ensureTempDirSize(n: Int) = {
         val files = Option(new File(tempDir, "temp").list()).getOrElse(Array.empty[String]).toSeq
-        println(files)
         files must haveSize(n)
       }
 
