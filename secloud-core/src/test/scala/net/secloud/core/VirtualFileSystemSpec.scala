@@ -1,18 +1,12 @@
 package net.secloud.core
 
 import org.specs2.mutable._
-import java.util.UUID
 import java.io.File
 import net.secloud.core.utils.StreamUtils._
 
 class VirtualFileSystemSpec extends Specification {
-  def getTempDir = new File(new File(System.getProperty("java.io.tmpdir")), UUID.randomUUID().toString())
-
   "NativeFileSystem" should {
-    "read and write files" in {
-      val base = getTempDir
-      TestWorkingDirectory.create(base)
-
+    "read and write files" in TestWorkingDirectory { base ⇒
       val vfs = new NativeFileSystem(base)
 
       val f1 = VirtualFile("/a.txt")
@@ -25,10 +19,7 @@ class VirtualFileSystemSpec extends Specification {
       vfs.read(f2)(s ⇒ readString(s)) === "NEW.TXT"
     }
 
-    "return proper mode" in {
-      val base = getTempDir
-      TestWorkingDirectory.create(base)
-
+    "return proper mode" in TestWorkingDirectory { base ⇒
       val vfs = new NativeFileSystem(base)
 
       vfs.mode(VirtualFile("/")) === Directory

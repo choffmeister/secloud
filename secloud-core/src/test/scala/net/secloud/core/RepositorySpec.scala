@@ -2,20 +2,14 @@ package net.secloud.core
 
 import org.specs2.mutable._
 import org.apache.commons.codec.binary.Hex
-import java.util.UUID
 import java.io.File
 import net.secloud.core.objects._
 import net.secloud.core.crypto._
 import net.secloud.core.utils.StreamUtils._
 
 class RepositorySpec extends Specification {
-  def getTempDir = new File(new File(System.getProperty("java.io.tmpdir")), UUID.randomUUID().toString())
-
   "Repository" should {
-    "init" in {
-      val base = getTempDir
-      TestWorkingDirectory.create(base)
-
+    "init" in TestWorkingDirectory { base ⇒
       val asymmetricKey = RSA.generate(512, 25)
       val symmetricAlgorithm = AES
       val symmetricAlgorithmKeySize = 16
@@ -26,10 +20,7 @@ class RepositorySpec extends Specification {
       ok
     }
 
-    "commit" in {
-      val base = getTempDir
-      TestWorkingDirectory.create(base)
-
+    "commit" in TestWorkingDirectory { base ⇒
       val asymmetricKey = RSA.generate(512, 25)
       val symmetricAlgorithm = AES
       val symmetricAlgorithmKeySize = 16
@@ -42,10 +33,7 @@ class RepositorySpec extends Specification {
       Hex.encodeHexString(fileContentHash.get.toArray) === "7670b2ccc9740c2741f029f9212c14da0a855157"
     }
 
-    "commit does not commit two identical snapshots in a row" in {
-      val base = getTempDir
-      TestWorkingDirectory.create(base)
-
+    "commit does not commit two identical snapshots in a row" in TestWorkingDirectory { base ⇒
       val asymmetricKey = RSA.generate(512, 25)
       val symmetricAlgorithm = AES
       val symmetricAlgorithmKeySize = 16
@@ -55,17 +43,14 @@ class RepositorySpec extends Specification {
 
       val commitId1 = repo.commit()
       val commitId2 = repo.commit()
-      TestWorkingDirectory.put(base, List("first", "new.txt"), "This file is new")
+      new File(base, "a.txt").delete()
       val commitId3 = repo.commit()
 
       commitId1 === commitId2
       commitId1 !== commitId3
     }
 
-    "snapshot recognizes whether something has changed or not" in {
-      val base = getTempDir
-      TestWorkingDirectory.create(base)
-
+    "snapshot recognizes whether something has changed or not" in TestWorkingDirectory { base ⇒
       val asymmetricKey = RSA.generate(512, 25)
       val symmetricAlgorithm = AES
       val symmetricAlgorithmKeySize = 16
@@ -77,7 +62,7 @@ class RepositorySpec extends Specification {
       val commit1 = repo.database.readCommit(commitId1, Right(asymmetricKey))
       val commitId2 = repo.commit()
       val commit2 = repo.database.readCommit(commitId2, Right(asymmetricKey))
-      TestWorkingDirectory.put(base, List("first", "new.txt"), "This file is new")
+      new File(new File(base, "first"), "b.txt").delete()
       val commitId3 = repo.commit()
       val commit3 = repo.database.readCommit(commitId3, Right(asymmetricKey))
 

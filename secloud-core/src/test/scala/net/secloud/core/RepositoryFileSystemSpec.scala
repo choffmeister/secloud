@@ -1,20 +1,14 @@
 package net.secloud.core
 
 import org.specs2.mutable._
-import java.util.UUID
 import java.io.File
 import net.secloud.core.crypto._
 import net.secloud.core.objects._
 import net.secloud.core.utils.StreamUtils._
 
 class RepositoryFileSystemSpec extends Specification {
-  def getTempDir = new File(new File(System.getProperty("java.io.tmpdir")), UUID.randomUUID().toString())
-
   "RepositoryFileSystem" should {
-    "read files" in {
-      val base = getTempDir
-      TestWorkingDirectory.create(base)
-
+    "read files" in TestWorkingDirectory { base ⇒
       val vfs = new NativeFileSystem(base)
       val db = new DirectoryRepositoryDatabase(new File(base, ".secloud"))
       val asymmetricKey = RSA.generate(512, 25)
@@ -35,10 +29,7 @@ class RepositoryFileSystemSpec extends Specification {
       rfs2.read(VirtualFile("/first/first-1/c.txt"))(readString) === "Hello World c"
     }
 
-    "distinguish between existing and non existing files" in {
-      val base = getTempDir
-      TestWorkingDirectory.create(base)
-
+    "distinguish between existing and non existing files" in TestWorkingDirectory { base ⇒
       val vfs = new NativeFileSystem(base)
       val db = new DirectoryRepositoryDatabase(new File(base, ".secloud"))
       val asymmetricKey = RSA.generate(512, 25)
@@ -67,10 +58,7 @@ class RepositoryFileSystemSpec extends Specification {
       rfs2.exists(VirtualFile("/first2/first-1/c.txt")) === false
     }
 
-    "return proper mode" in {
-      val base = getTempDir
-      TestWorkingDirectory.create(base)
-
+    "return proper mode" in TestWorkingDirectory { base ⇒
       val vfs = new NativeFileSystem(base)
       val db = new DirectoryRepositoryDatabase(new File(base, ".secloud"))
       val asymmetricKey = RSA.generate(512, 25)
@@ -96,10 +84,7 @@ class RepositoryFileSystemSpec extends Specification {
       rfs2.mode(VirtualFile("/bin/script.py")) === ExecutableFile
     }
 
-    "yield database objects" in {
-      val base = getTempDir
-      TestWorkingDirectory.create(base)
-
+    "yield database objects" in TestWorkingDirectory { base ⇒
       val vfs = new NativeFileSystem(base)
       val db = new DirectoryRepositoryDatabase(new File(base, ".secloud"))
       val asymmetricKey = RSA.generate(512, 25)
@@ -129,8 +114,6 @@ class RepositoryFileSystemSpec extends Specification {
       rfs2.obj(VirtualFile("/firsT")) must throwAn[Exception]
       rfs2.obj(VirtualFile("/a.txta")) must throwAn[Exception]
       rfs2.obj(VirtualFile("/first/first-1/c.txt/foo")) must throwAn[Exception]
-
-      ok
     }
   }
 }

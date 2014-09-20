@@ -1,10 +1,51 @@
 package net.secloud.core
 
-import java.io._
+import java.io.{ File, FileOutputStream }
+import java.util.UUID
+
 import net.secloud.core.utils.StreamUtils._
+import org.specs2.execute._
+
+object TempDirectory {
+  def apply[R: AsResult](a: File ⇒ R) = {
+    val temp = createTemporaryDirectory("")
+    try {
+      AsResult.effectively(a(temp))
+    } finally {
+      removeTemporaryDirectory(temp)
+    }
+  }
+
+  def createTemporaryDirectory(suffix: String): File = {
+    val base = new File(new File(System.getProperty("java.io.tmpdir")), "gittimeshift")
+    val dir = new File(base, UUID.randomUUID().toString + suffix)
+    dir.mkdirs()
+    dir
+  }
+
+  def removeTemporaryDirectory(dir: File): Unit = {
+    def recursion(f: File): Unit = {
+      if (f.isDirectory) {
+        f.listFiles().foreach(child ⇒ recursion(child))
+      }
+      f.delete()
+    }
+    recursion(dir)
+  }
+}
 
 object TestWorkingDirectory {
-  def create(base: File) {
+  def apply[R: AsResult](a: File ⇒ R) = {
+    val temp = TempDirectory.createTemporaryDirectory("")
+    try {
+      fill(temp)
+      AsResult.effectively(a(temp))
+    } finally {
+      TempDirectory.removeTemporaryDirectory(temp)
+    }
+  }
+
+  private def fill(base: File) {
     mkdirs(base, Nil)
     mkdirs(base, List("first", "first-1"))
     mkdirs(base, List("first", "first-2"))
@@ -20,22 +61,22 @@ object TestWorkingDirectory {
     makeExecutable(base, List("bin", "script.py"))
   }
 
-  def mkdirs(base: File, path: List[String]) {
+  private def mkdirs(base: File, path: List[String]) {
     val file = TestWorkingDirectory.toFile(base, path)
     file.mkdirs()
   }
 
-  def put(base: File, path: List[String], content: String) {
+  private def put(base: File, path: List[String], content: String) {
     val file = TestWorkingDirectory.toFile(base, path)
     val stream = new FileOutputStream(file)
     writeString(stream, content)
     stream.close()
   }
 
-  def makeExecutable(base: File, path: List[String]) {
+  private def makeExecutable(base: File, path: List[String]) {
     val file = TestWorkingDirectory.toFile(base, path)
     file.setExecutable(true, false)
   }
 
-  def toFile(base: File, path: List[String]): File = new File(base, path.mkString(File.separator))
+  private def toFile(base: File, path: List[String]): File = new File(base, path.mkString(File.separator))
 }
