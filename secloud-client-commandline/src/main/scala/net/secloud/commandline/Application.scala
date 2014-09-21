@@ -42,6 +42,19 @@ object Application {
         con.info("Committing current snapshot...")
         val commitId = repo.commit()
         con.success("Done")
+      case Some(cli.history) ⇒
+        val repo = Repository(env.currentDirectory, conf)
+        val list = scala.collection.mutable.ListBuffer.empty[Commit]
+        val queue = scala.collection.mutable.Queue.empty[Commit]
+        queue.enqueue(repo.headCommit)
+
+        while (queue.nonEmpty) {
+          val curr = queue.dequeue()
+          list += curr
+          curr.parentIds.map(id ⇒ repo.database.readCommit(id, Right(conf.asymmetricKey))).foreach(c ⇒ queue.enqueue(c))
+        }
+
+        list.map(_.id.hex).foreach(println)
       case Some(cli.ls) ⇒
         val file = VirtualFile(cli.ls.path())
         val repo = Repository(env.currentDirectory, conf)

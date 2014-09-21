@@ -10,6 +10,7 @@ class CommandLineInterface(val arguments: Seq[String]) extends ScallopConf(argum
   val keygen = new Subcommand("keygen")
   val commit = new Subcommand("commit")
 
+  val history = new Subcommand("history")
   val ls = new Subcommand("ls") {
     val path = trailArg[String]("the path")
   }
