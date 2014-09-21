@@ -41,7 +41,7 @@ class RepositorySpec extends Specification {
       val repo = Repository(base, config)
       repo.init()
       repo.commit()
-      repo.commitWithChangeHints(List(VirtualFile("/")))
+      repo.commit(List(VirtualFile("/")))
 
       ok
     }

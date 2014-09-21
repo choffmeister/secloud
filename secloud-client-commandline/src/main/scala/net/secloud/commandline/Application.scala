@@ -1,6 +1,7 @@
 package net.secloud.commandline
 
 import java.io._
+import akka.actor._
 import net.secloud.core._
 import net.secloud.core.filewatcher._
 import net.secloud.core.objects._
@@ -94,48 +95,10 @@ object Application {
         }
         traverse(VirtualFile("/"), List((0, 1)))
       case Some(cli.watch) ⇒
-        import akka.actor._
-        import java.nio.file._
         implicit val system = ActorSystem()
-
-        def commit(repo: Repository, hints: List[File]): Unit = {
-          println("HINTS = " + hints)
-          def toVirtualFile(f: File) = f.getAbsoluteFile.toString.substring(env.currentDirectory.toString.length) match {
-            case s if s.length > 0 ⇒ VirtualFile(s)
-            case s ⇒ VirtualFile("/")
-          }
-
-          val start = System.currentTimeMillis
-          val id =
-            if (hints.isEmpty) repo.commit()
-            else repo.commitWithChangeHints(hints.map(toVirtualFile))
-
-          val end = System.currentTimeMillis
-          println(s"commiting to ${id.hex} took ${end - start} ms")
-        }
-
         val repo = Repository(env.currentDirectory, conf)
-        val actor = system.actorOf(Props(new Actor with ActorLogging {
-          def receive = {
-            case FileWatcherEvents.Created(f) ⇒ commit(repo, List(f))
-            case FileWatcherEvents.Modified(f) ⇒ commit(repo, List(f))
-            case FileWatcherEvents.Deleted(f) ⇒ commit(repo, List(f))
-            case FileWatcherEvents.Error(err) ⇒ commit(repo, Nil)
-            case FileWatcherEvents.Overflow ⇒ commit(repo, Nil)
-            case l: List[Any] ⇒
-              val events = l.map(_.asInstanceOf[FileWatcherEvents.FileWatcherEvent])
-              if (events.exists(e ⇒ e.isInstanceOf[FileWatcherEvents.Error] || e == FileWatcherEvents.Overflow)) {
-                commit(repo, Nil)
-              } else {
-                val paths = events.map(_.asInstanceOf[FileWatcherEvents.FileWatcherEventWithPath]).map(_.f)
-                if (paths.nonEmpty) commit(repo, paths.filter(!isInSecloudDir(_)))
-              }
-          }
-          def isInSecloudDir(f: File) = f.getAbsoluteFile.toString.startsWith(new File(env.currentDirectory, ".secloud").toString)
-        }))
-        val aggregator = system.actorOf(Props(AggregatingActor(actor, 1000L)))
-
-        val watcher = FileWatcher.watch(env, env.currentDirectory, aggregator)
+        val repoActor = system.actorOf(Props(new RepositoryActor(env, conf, repo)))
+        val watcher = FileWatcher.watch(env, env.currentDirectory, repoActor)
 
         System.out.println("Press a key to stop...")
         System.in.read()

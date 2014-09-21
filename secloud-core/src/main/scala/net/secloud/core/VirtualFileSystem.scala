@@ -35,6 +35,11 @@ object VirtualFile {
 
   def checkPath(path: String): Unit =
     if (path != normalize(path)) throw new VirtualFileSystemException(s"Path '${path}' is invalid")
+
+  def fromFile(base: File, file: File): VirtualFile = file.getAbsolutePath.substring(base.getAbsolutePath.length) match {
+    case s if s.length > 0 ⇒ VirtualFile(s)
+    case s ⇒ VirtualFile("/")
+  }
 }
 
 class VirtualFileSystemException(message: String, inner: Option[Throwable]) extends Exception(message, inner.getOrElse(null)) {

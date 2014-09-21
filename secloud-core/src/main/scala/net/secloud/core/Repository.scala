@@ -22,13 +22,8 @@ class Repository(val workingDir: VirtualFileSystem, val database: RepositoryData
     commitId
   }
 
-  def commit(): ObjectId = {
-    val treeEntry = snapshot(None)
-    commit(List(headId), treeEntry)
-  }
-
-  def commitWithChangeHints(changeHints: List[VirtualFile]): ObjectId = {
-    val treeEntry = snapshot(Some(changeHints))
+  def commit(changeHints: List[VirtualFile] = Nil): ObjectId = {
+    val treeEntry = snapshot(changeHints)
     commit(List(headId), treeEntry)
   }
 
@@ -48,9 +43,9 @@ class Repository(val workingDir: VirtualFileSystem, val database: RepositoryData
     commitId
   }
 
-  def snapshot(changeHints: Option[List[VirtualFile]]): TreeEntry = {
+  def snapshot(changeHints: List[VirtualFile]): TreeEntry = {
     def recursion(f: VirtualFile, head: RepositoryFileSystem, wd: VirtualFileSystem): TreeEntry = {
-      if (changeHints.isEmpty || changeHints.get.exists(ch ⇒ ch.isChildOf(f) || ch.isParentOf(f))) {
+      if (changeHints.isEmpty || changeHints.exists(ch ⇒ ch.isChildOf(f) || ch.isParentOf(f))) {
         wd.mode(f) match {
           case Directory ⇒
             val entries = wd.children(f)
