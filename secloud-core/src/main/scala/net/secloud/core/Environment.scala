@@ -5,10 +5,18 @@ import java.util.Date
 
 case class Environment(
   currentDirectory: File,
-  userDirectory: File)
+  userDirectory: File,
+  osName: String,
+  osArch: String,
+  osVersion: String)
 
 object Environment {
   def apply(): Environment = Environment(
-    currentDirectory = new File(System.getProperty("user.dir")),
-    userDirectory = new File(System.getProperty("user.home")))
+    currentDirectory = new File(attr("user.dir")),
+    userDirectory = new File(attr("user.home")),
+    osName = attr("os.name"),
+    osArch = attr("os.arch"),
+    osVersion = attr("os.version"))
+
+  private def attr(name: String) = System.getProperty(name)
 }

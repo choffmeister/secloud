@@ -12,6 +12,7 @@ libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-slf4j" % "2.3.5",
   "com.typesafe.akka" %% "akka-testkit" % "2.3.5",
   "commons-codec" % "commons-codec" % "1.8",
+  "io.restx" % "restx-barbarywatch" % "0.33.1",
   "org.bouncycastle" % "bcpkix-jdk15on" % "1.50",
   "org.bouncycastle" % "bcprov-jdk15on" % "1.50",
   "org.netbeans.modules" % "org-netbeans-modules-keyring-impl" % "RELEASE731",

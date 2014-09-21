@@ -1,10 +1,9 @@
 package net.secloud.commandline
 
 import java.io._
-import java.util.Date
 import net.secloud.core._
+import net.secloud.core.filewatcher._
 import net.secloud.core.objects._
-import net.secloud.core.crypto._
 import scala.language.reflectiveCalls
 
 object Application {
@@ -124,8 +123,7 @@ object Application {
           }
         }))
 
-        val watcher = new FileWatcher(Paths.get(env.currentDirectory.toString), actor)
-        watcher.start()
+        val watcher = FileWatcher.watch(env, Paths.get(env.currentDirectory.toString), actor)
 
         System.out.println("Press a key to stop...")
         System.in.read()

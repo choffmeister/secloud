@@ -1,4 +1,4 @@
-package net.secloud.core
+package net.secloud.core.filewatcher
 
 import java.nio.file.LinkOption._
 import java.nio.file.StandardWatchEventKinds._
@@ -8,17 +8,22 @@ import java.nio.file.attribute.BasicFileAttributes
 
 import akka.actor.ActorRef
 import com.sun.nio.file.SensitivityWatchEventModifier
+import net.secloud.core.Environment
 
 import scala.collection.JavaConversions._
 
-sealed trait FileWatcherEvent
-case class CreatedEvent(p: Path) extends FileWatcherEvent
-case class ModifiedEvent(p: Path) extends FileWatcherEvent
-case class DeletedEvent(p: Path) extends FileWatcherEvent
-case object OverflowError extends FileWatcherEvent
-case class Error(err: Throwable) extends FileWatcherEvent
+object FileWatcherEvents {
+  sealed trait FileWatcherEvent
+  case class Created(p: Path) extends FileWatcherEvent
+  case class Modified(p: Path) extends FileWatcherEvent
+  case class Deleted(p: Path) extends FileWatcherEvent
+  case object Overflow extends FileWatcherEvent
+  case class Error(err: Throwable) extends FileWatcherEvent
+}
 
-class FileWatcher(val path: Path, actorRef: ActorRef) extends Thread {
+trait FileWatcher extends Thread {}
+
+class DefaultFileWatcher(val path: Path, actorRef: ActorRef) extends FileWatcher {
   private val watcher = FileSystems.getDefault.newWatchService()
   private var keys = Map.empty[WatchKey, Path]
 
@@ -44,25 +49,36 @@ class FileWatcher(val path: Path, actorRef: ActorRef) extends Thread {
           val name = event.context
           val child = dir.resolve(name)
           if (Files.isDirectory(child, NOFOLLOW_LINKS)) register(child)
-          actorRef ! CreatedEvent(child)
+          actorRef ! FileWatcherEvents.Created(child)
         case ENTRY_MODIFY ⇒
           val event = ev.asInstanceOf[WatchEvent[Path]]
           val name = event.context
           val child = dir.resolve(name)
-          actorRef ! ModifiedEvent(child)
+          actorRef ! FileWatcherEvents.Modified(child)
         case ENTRY_DELETE ⇒
           val event = ev.asInstanceOf[WatchEvent[Path]]
           val name = event.context
           val child = dir.resolve(name)
-          actorRef ! DeletedEvent(child)
+          actorRef ! FileWatcherEvents.Deleted(child)
         case OVERFLOW ⇒
-          actorRef ! OverflowError
+          actorRef ! FileWatcherEvents.Overflow
         case x ⇒
-          actorRef ! Error(new Exception(s"Unknown event ${x.name()}"))
+          actorRef ! FileWatcherEvents.Error(new Exception(s"Unknown event ${x.name()}"))
       }
     }
     if (!key.reset()) keys -= key
   } catch {
-    case t: Throwable ⇒ actorRef ! Error(t)
+    case t: Throwable ⇒ actorRef ! FileWatcherEvents.Error(t)
+  }
+}
+
+object FileWatcher {
+  def watch(env: Environment, path: Path, actorRef: ActorRef): FileWatcher = {
+    val watcher = env.osName match {
+      case "Mac OS X" ⇒ new OSXFileWatcher(file, actorRef)
+      case _ ⇒ new DefaultFileWatcher(file, actorRef)
+    }
+    watcher.start()
+    watcher
   }
 }
