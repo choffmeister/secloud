@@ -1,11 +1,10 @@
 # Simple Build Tool
 target/
 
-# secloud
-.secloud/
-
 # IDEA
 .idea/
+*.iml
+*.ipr
 
 # Trash
 .cache
