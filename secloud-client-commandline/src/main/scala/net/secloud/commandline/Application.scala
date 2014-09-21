@@ -97,12 +97,17 @@ object Application {
         import java.nio.file._
         implicit val system = ActorSystem()
 
-        def commit(repo: Repository, event: FileWatcherEvent, p: Option[Path]): Unit = {
-          if (p.isDefined && !p.get.startsWith(Paths.get(env.currentDirectory.toString, ".secloud"))) {
+        def commit(repo: Repository, event: FileWatcherEvents.FileWatcherEvent, f: Option[File]): Unit = {
+          def isInSecloudDir(f: File) = f.getAbsoluteFile.toString.startsWith(new File(env.currentDirectory, ".secloud").toString)
+          def toVirtualFile(f: File) = f.getAbsoluteFile.toString.substring(env.currentDirectory.toString.length) match {
+            case s if s.length > 0 ⇒ VirtualFile(s)
+            case s ⇒ VirtualFile("/")
+          }
+          if (f.isDefined && !isInSecloudDir(f.get)) {
             val start = System.currentTimeMillis
-            val id = p match {
-              case Some(p) ⇒
-                val hints = List(VirtualFile("/" + p.subpath(Paths.get(env.currentDirectory.toString).getNameCount, p.getNameCount).toString))
+            val id = f match {
+              case Some(f) ⇒
+                val hints = List(toVirtualFile(f))
                 repo.commitWithChangeHints(hints)
               case _ ⇒
                 repo.commit()
@@ -115,15 +120,15 @@ object Application {
         val repo = Repository(env.currentDirectory, conf)
         val actor = system.actorOf(Props(new Actor with ActorLogging {
           def receive = {
-            case e @ CreatedEvent(p) ⇒ commit(repo, e, Some(p))
-            case e @ ModifiedEvent(p) ⇒ commit(repo, e, Some(p))
-            case e @ DeletedEvent(p) ⇒ commit(repo, e, Some(p))
-            case e @ Error(err) ⇒ commit(repo, e, None)
-            case e @ OverflowError ⇒ commit(repo, e, None)
+            case e @ FileWatcherEvents.Created(f) ⇒ commit(repo, e, Some(f))
+            case e @ FileWatcherEvents.Modified(f) ⇒ commit(repo, e, Some(f))
+            case e @ FileWatcherEvents.Deleted(f) ⇒ commit(repo, e, Some(f))
+            case e @ FileWatcherEvents.Error(err) ⇒ commit(repo, e, None)
+            case e @ FileWatcherEvents.Overflow ⇒ commit(repo, e, None)
           }
         }))
 
-        val watcher = FileWatcher.watch(env, Paths.get(env.currentDirectory.toString), actor)
+        val watcher = FileWatcher.watch(env, env.currentDirectory, actor)
 
         System.out.println("Press a key to stop...")
         System.in.read()

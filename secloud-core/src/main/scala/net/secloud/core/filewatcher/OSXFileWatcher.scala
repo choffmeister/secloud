@@ -40,17 +40,17 @@ class OSXFileWatcher(val file: File, actorRef: ActorRef) extends FileWatcher {
           val name = event.context
           val child = dir.resolve(Paths.get(name.toString))
           if (Files.isDirectory(child, NOFOLLOW_LINKS)) register(child)
-          actorRef ! FileWatcherEvents.Created(child)
+          actorRef ! FileWatcherEvents.Created(child.toFile)
         case ENTRY_MODIFY ⇒
           val event = ev.asInstanceOf[WatchEvent[File]]
           val name = event.context
           val child = dir.resolve(Paths.get(name.toString))
-          actorRef ! FileWatcherEvents.Modified(child)
+          actorRef ! FileWatcherEvents.Modified(child.toFile)
         case ENTRY_DELETE ⇒
           val event = ev.asInstanceOf[WatchEvent[File]]
           val name = event.context
           val child = dir.resolve(Paths.get(name.toString))
-          actorRef ! FileWatcherEvents.Deleted(child)
+          actorRef ! FileWatcherEvents.Deleted(child.toFile)
         case OVERFLOW ⇒
           actorRef ! FileWatcherEvents.Overflow
         case x ⇒

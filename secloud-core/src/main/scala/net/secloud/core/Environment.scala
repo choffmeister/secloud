@@ -12,8 +12,8 @@ case class Environment(
 
 object Environment {
   def apply(): Environment = Environment(
-    currentDirectory = new File(attr("user.dir")),
-    userDirectory = new File(attr("user.home")),
+    currentDirectory = new File(attr("user.dir")).getAbsoluteFile,
+    userDirectory = new File(attr("user.home")).getAbsoluteFile,
     osName = attr("os.name"),
     osArch = attr("os.arch"),
     osVersion = attr("os.version"))

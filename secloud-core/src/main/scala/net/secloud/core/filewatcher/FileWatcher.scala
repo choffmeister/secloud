@@ -15,9 +15,9 @@ import scala.collection.JavaConversions._
 
 object FileWatcherEvents {
   sealed trait FileWatcherEvent
-  case class Created(p: Path) extends FileWatcherEvent
-  case class Modified(p: Path) extends FileWatcherEvent
-  case class Deleted(p: Path) extends FileWatcherEvent
+  case class Created(f: File) extends FileWatcherEvent
+  case class Modified(f: File) extends FileWatcherEvent
+  case class Deleted(f: File) extends FileWatcherEvent
   case object Overflow extends FileWatcherEvent
   case class Error(err: Throwable) extends FileWatcherEvent
 }
@@ -51,17 +51,17 @@ class DefaultFileWatcher(val file: File, actorRef: ActorRef) extends FileWatcher
           val name = event.context
           val child = dir.resolve(name)
           if (Files.isDirectory(child, NOFOLLOW_LINKS)) register(child)
-          actorRef ! FileWatcherEvents.Created(child)
+          actorRef ! FileWatcherEvents.Created(child.toFile)
         case ENTRY_MODIFY ⇒
           val event = ev.asInstanceOf[WatchEvent[Path]]
           val name = event.context
           val child = dir.resolve(name)
-          actorRef ! FileWatcherEvents.Modified(child)
+          actorRef ! FileWatcherEvents.Modified(child.toFile)
         case ENTRY_DELETE ⇒
           val event = ev.asInstanceOf[WatchEvent[Path]]
           val name = event.context
           val child = dir.resolve(name)
-          actorRef ! FileWatcherEvents.Deleted(child)
+          actorRef ! FileWatcherEvents.Deleted(child.toFile)
         case OVERFLOW ⇒
           actorRef ! FileWatcherEvents.Overflow
         case x ⇒
