@@ -45,7 +45,7 @@ class Repository(val workingDir: VirtualFileSystem, val database: RepositoryData
 
   def snapshot(changeHints: List[VirtualFile]): TreeEntry = {
     def recursion(f: VirtualFile, head: RepositoryFileSystem, wd: VirtualFileSystem): TreeEntry = {
-      if (changeHints.isEmpty || changeHints.exists(ch ⇒ ch.isChildOf(f) || ch.isParentOf(f))) {
+      if (changeHints.isEmpty || changeHints.exists(ch ⇒ ch == f || ch.isChildOf(f) || ch.isParentOf(f))) {
         wd.mode(f) match {
           case Directory ⇒
             val entries = wd.children(f)
@@ -95,7 +95,10 @@ class Repository(val workingDir: VirtualFileSystem, val database: RepositoryData
 
           case _ ⇒ throw new Exception()
         }
-      } else head.tree(f.parent).entries.find(_.name == f.name).get
+      } else {
+        log.debug("Reusing entry for {}", f.path)
+        head.tree(f.parent).entries.find(_.name == f.name).get
+      }
     }
 
     recursion(VirtualFile("/"), fileSystem(headCommit), workingDir)

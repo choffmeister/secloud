@@ -33,10 +33,7 @@ class RepositoryActor(val env: Environment, val conf: Config, val repo: Reposito
 
   def commit(repo: Repository, hints: List[File]): Unit = {
     val start = System.currentTimeMillis
-    val id =
-      if (hints.nonEmpty) repo.commit()
-      else repo.commit(hints.map(h ⇒ VirtualFile.fromFile(env.currentDirectory, h)))
-
+    val id = repo.commit(hints.map(h ⇒ VirtualFile.fromFile(env.currentDirectory, h)))
     val end = System.currentTimeMillis
     log.info(s"Committed with new id ${id.hex} (${end - start} ms)")
   }
