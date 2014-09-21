@@ -3,12 +3,14 @@ package net.secloud.core
 import java.io.File
 
 import akka.actor._
-import net.secloud.core.filewatcher.FileWatcherEvents
+import net.secloud.core.filewatcher._
 import net.secloud.core.utils.AggregatingActor
 
 class RepositoryActor(val env: Environment, val conf: Config, val repo: Repository) extends Actor with ActorLogging {
   import FileWatcherEvents._
 
+  val watcher = FileWatcher.watch(env, env.currentDirectory, self)
+  log.info("Started watching directory {}", env.currentDirectory)
   val fileEventAggregator = context.actorOf(Props(AggregatingActor(self, 1000L)))
 
   def receive = {
