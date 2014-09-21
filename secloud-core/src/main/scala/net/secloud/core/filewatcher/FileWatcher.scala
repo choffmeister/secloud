@@ -1,5 +1,6 @@
 package net.secloud.core.filewatcher
 
+import java.io.File
 import java.nio.file.LinkOption._
 import java.nio.file.StandardWatchEventKinds._
 import java.nio.file.WatchEvent.Kind
@@ -23,7 +24,7 @@ object FileWatcherEvents {
 
 trait FileWatcher extends Thread {}
 
-class DefaultFileWatcher(val path: Path, actorRef: ActorRef) extends FileWatcher {
+class DefaultFileWatcher(val file: File, actorRef: ActorRef) extends FileWatcher {
   private val watcher = FileSystems.getDefault.newWatchService()
   private var keys = Map.empty[WatchKey, Path]
 
@@ -40,6 +41,7 @@ class DefaultFileWatcher(val path: Path, actorRef: ActorRef) extends FileWatcher
   }
 
   override def run(): Unit = while (true) try {
+    val path = Paths.get(file.toString)
     if (!keys.exists(_._2 == path)) register(path)
     val key = watcher.take
     keys.find(_._1 == key).map(_._2).foreach { dir ⇒
@@ -73,7 +75,7 @@ class DefaultFileWatcher(val path: Path, actorRef: ActorRef) extends FileWatcher
 }
 
 object FileWatcher {
-  def watch(env: Environment, path: Path, actorRef: ActorRef): FileWatcher = {
+  def watch(env: Environment, file: File, actorRef: ActorRef): FileWatcher = {
     val watcher = env.osName match {
       case "Mac OS X" ⇒ new OSXFileWatcher(file, actorRef)
       case _ ⇒ new DefaultFileWatcher(file, actorRef)

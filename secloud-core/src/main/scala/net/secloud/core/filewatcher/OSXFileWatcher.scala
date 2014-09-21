@@ -13,7 +13,7 @@ import com.sun.nio.file.SensitivityWatchEventModifier
 
 import scala.collection.JavaConversions._
 
-class OSXFileWatcher(val path: Path, actorRef: ActorRef) extends FileWatcher {
+class OSXFileWatcher(val file: File, actorRef: ActorRef) extends FileWatcher {
   private val watcher = WatchService.newWatchService()
   private var keys = Map.empty[WatchKey, Path]
 
@@ -30,6 +30,7 @@ class OSXFileWatcher(val path: Path, actorRef: ActorRef) extends FileWatcher {
   }
 
   override def run(): Unit = while (true) try {
+    val path = Paths.get(file.toString)
     if (!keys.exists(_._2 == path)) register(path)
     val key = watcher.take
     keys.find(_._1 == key).map(_._2).foreach { dir ⇒
