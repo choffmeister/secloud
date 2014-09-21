@@ -82,7 +82,8 @@ class DefaultFileWatcher(val file: File, actorRef: ActorRef) extends FileWatcher
 object FileWatcher {
   def watch(env: Environment, file: File, actorRef: ActorRef): FileWatcher = {
     val watcher = env.osName match {
-      case "Mac OS X" ⇒ new OSXFileWatcher(file, actorRef)
+      // TODO: fix
+      // case "Mac OS X" ⇒ new OSXFileWatcher(file, actorRef)
       case _ ⇒ new DefaultFileWatcher(file, actorRef)
     }
     watcher.start()
