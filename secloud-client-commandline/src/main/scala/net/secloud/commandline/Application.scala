@@ -4,6 +4,7 @@ import java.io._
 import net.secloud.core._
 import net.secloud.core.filewatcher._
 import net.secloud.core.objects._
+import net.secloud.core.utils.AggregatingActor
 import scala.language.reflectiveCalls
 
 object Application {
@@ -97,38 +98,44 @@ object Application {
         import java.nio.file._
         implicit val system = ActorSystem()
 
-        def commit(repo: Repository, event: FileWatcherEvents.FileWatcherEvent, f: Option[File]): Unit = {
-          def isInSecloudDir(f: File) = f.getAbsoluteFile.toString.startsWith(new File(env.currentDirectory, ".secloud").toString)
+        def commit(repo: Repository, hints: List[File]): Unit = {
+          println("HINTS = " + hints)
           def toVirtualFile(f: File) = f.getAbsoluteFile.toString.substring(env.currentDirectory.toString.length) match {
             case s if s.length > 0 ⇒ VirtualFile(s)
             case s ⇒ VirtualFile("/")
           }
-          if (f.isDefined && !isInSecloudDir(f.get)) {
-            val start = System.currentTimeMillis
-            val id = f match {
-              case Some(f) ⇒
-                val hints = List(toVirtualFile(f))
-                repo.commitWithChangeHints(hints)
-              case _ ⇒
-                repo.commit()
-            }
-            val end = System.currentTimeMillis
-            println(s"commiting to ${id.hex} took ${end - start} ms")
-          }
+
+          val start = System.currentTimeMillis
+          val id =
+            if (hints.isEmpty) repo.commit()
+            else repo.commitWithChangeHints(hints.map(toVirtualFile))
+
+          val end = System.currentTimeMillis
+          println(s"commiting to ${id.hex} took ${end - start} ms")
         }
 
         val repo = Repository(env.currentDirectory, conf)
         val actor = system.actorOf(Props(new Actor with ActorLogging {
           def receive = {
-            case e @ FileWatcherEvents.Created(f) ⇒ commit(repo, e, Some(f))
-            case e @ FileWatcherEvents.Modified(f) ⇒ commit(repo, e, Some(f))
-            case e @ FileWatcherEvents.Deleted(f) ⇒ commit(repo, e, Some(f))
-            case e @ FileWatcherEvents.Error(err) ⇒ commit(repo, e, None)
-            case e @ FileWatcherEvents.Overflow ⇒ commit(repo, e, None)
+            case FileWatcherEvents.Created(f) ⇒ commit(repo, List(f))
+            case FileWatcherEvents.Modified(f) ⇒ commit(repo, List(f))
+            case FileWatcherEvents.Deleted(f) ⇒ commit(repo, List(f))
+            case FileWatcherEvents.Error(err) ⇒ commit(repo, Nil)
+            case FileWatcherEvents.Overflow ⇒ commit(repo, Nil)
+            case l: List[Any] ⇒
+              val events = l.map(_.asInstanceOf[FileWatcherEvents.FileWatcherEvent])
+              if (events.exists(e ⇒ e.isInstanceOf[FileWatcherEvents.Error] || e == FileWatcherEvents.Overflow)) {
+                commit(repo, Nil)
+              } else {
+                val paths = events.map(_.asInstanceOf[FileWatcherEvents.FileWatcherEventWithPath]).map(_.f)
+                if (paths.nonEmpty) commit(repo, paths.filter(!isInSecloudDir(_)))
+              }
           }
+          def isInSecloudDir(f: File) = f.getAbsoluteFile.toString.startsWith(new File(env.currentDirectory, ".secloud").toString)
         }))
+        val aggregator = system.actorOf(Props(AggregatingActor(actor, 1000L)))
 
-        val watcher = FileWatcher.watch(env, env.currentDirectory, actor)
+        val watcher = FileWatcher.watch(env, env.currentDirectory, aggregator)
 
         System.out.println("Press a key to stop...")
         System.in.read()

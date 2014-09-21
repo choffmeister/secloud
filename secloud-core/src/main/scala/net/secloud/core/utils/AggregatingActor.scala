@@ -1,5 +1,7 @@
 package net.secloud.core.utils
 
+import java.util.concurrent.TimeUnit
+
 import akka.actor._
 
 import scala.concurrent.duration.FiniteDuration
@@ -24,4 +26,8 @@ class AggregatingActor(proxyFor: ActorRef, timeout: FiniteDuration) extends FSM[
     case Event(x, data) ⇒
       goto(FilledState) using data.copy(messages = x :: data.messages)
   }
+}
+
+object AggregatingActor {
+  def apply(proxyFor: ActorRef, timeoutMillis: Long): AggregatingActor = new AggregatingActor(proxyFor, FiniteDuration(timeoutMillis, TimeUnit.MILLISECONDS))
 }

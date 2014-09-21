@@ -16,9 +16,12 @@ import scala.concurrent.duration.FiniteDuration
 
 object FileWatcherEvents {
   sealed trait FileWatcherEvent
-  case class Created(f: File) extends FileWatcherEvent
-  case class Modified(f: File) extends FileWatcherEvent
-  case class Deleted(f: File) extends FileWatcherEvent
+  sealed trait FileWatcherEventWithPath extends FileWatcherEvent {
+    val f: File
+  }
+  case class Created(f: File) extends FileWatcherEventWithPath
+  case class Modified(f: File) extends FileWatcherEventWithPath
+  case class Deleted(f: File) extends FileWatcherEventWithPath
   case object Overflow extends FileWatcherEvent
   case class Error(err: Throwable) extends FileWatcherEvent
 }
