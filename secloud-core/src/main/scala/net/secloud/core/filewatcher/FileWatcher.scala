@@ -22,11 +22,15 @@ object FileWatcherEvents {
   case class Error(err: Throwable) extends FileWatcherEvent
 }
 
-trait FileWatcher extends Thread {}
+trait FileWatcher extends Thread {
+  def running: Boolean
+}
 
 class DefaultFileWatcher(val file: File, actorRef: ActorRef) extends FileWatcher {
   private val watcher = FileSystems.getDefault.newWatchService()
   private var keys = Map.empty[WatchKey, Path]
+  private var _running = false
+  def running = _running
 
   private def register(p: Path): Unit = {
     Files.walkFileTree(p, new SimpleFileVisitor[Path] {
@@ -43,6 +47,7 @@ class DefaultFileWatcher(val file: File, actorRef: ActorRef) extends FileWatcher
   override def run(): Unit = while (true) try {
     val path = Paths.get(file.toString)
     if (!keys.exists(_._2 == path)) register(path)
+    _running = true
     val key = watcher.take
     keys.find(_._1 == key).map(_._2).foreach { dir ⇒
       for (ev ← key.pollEvents()) ev.kind match {
@@ -81,6 +86,9 @@ object FileWatcher {
       case _ ⇒ new DefaultFileWatcher(file, actorRef)
     }
     watcher.start()
+    blockUntil(watcher.running)
     watcher
   }
+
+  private def blockUntil(cond: => Boolean): Unit = while (!cond) Thread.sleep(100L)
 }

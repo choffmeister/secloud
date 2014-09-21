@@ -16,6 +16,8 @@ import scala.collection.JavaConversions._
 class OSXFileWatcher(val file: File, actorRef: ActorRef) extends FileWatcher {
   private val watcher = WatchService.newWatchService()
   private var keys = Map.empty[WatchKey, Path]
+  private var _running = false
+  def running = _running
 
   private def register(p: Path): Unit = {
     Files.walkFileTree(p, new SimpleFileVisitor[Path] {
@@ -32,6 +34,7 @@ class OSXFileWatcher(val file: File, actorRef: ActorRef) extends FileWatcher {
   override def run(): Unit = while (true) try {
     val path = Paths.get(file.toString)
     if (!keys.exists(_._2 == path)) register(path)
+    _running = true
     val key = watcher.take
     keys.find(_._1 == key).map(_._2).foreach { dir ⇒
       for (ev ← key.pollEvents()) ev.kind match {
