@@ -19,13 +19,15 @@ class RepositoryActor(val env: Environment, val conf: Config, val repo: Reposito
 
     case l: List[Any] if l.forall(_.isInstanceOf[FileWatcherEvent]) ⇒
       val events = l.map(_.asInstanceOf[FileWatcherEvent])
-      if (events.exists(e ⇒ e.isInstanceOf[Error] || e == Overflow)) {
-        log.warning("Got filewatcher error. Recommitting whole repository")
+      val errors = events.filter(_.isInstanceOf[Error]).map(_.asInstanceOf[Error])
+      if (errors.nonEmpty) {
+        errors.foreach(err => log.error(err.err, "Got file watcher error"))
+        log.info("Recommitting whole repository")
         commit(repo, Nil)
       } else {
         val hints = events.map(_.asInstanceOf[FileWatcherEventWithPath]).map(_.f)
         val hints2 = hints.filter(h ⇒ VirtualFile.fromFile(env.currentDirectory, h).segments.headOption != Some(".secloud"))
-        log.info("Got filewatcher event. Committing with hints {}", hints2.map(_.toString).mkString(", "))
+        log.info("Committing with hints {}", hints2.map(_.toString).mkString(", "))
         if (hints.nonEmpty) commit(repo, hints2)
       }
 

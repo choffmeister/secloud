@@ -22,7 +22,6 @@ object FileWatcherEvents {
   case class Created(f: File) extends FileWatcherEventWithPath
   case class Modified(f: File) extends FileWatcherEventWithPath
   case class Deleted(f: File) extends FileWatcherEventWithPath
-  case object Overflow extends FileWatcherEvent
   case class Error(err: Throwable) extends FileWatcherEvent
 }
 
@@ -72,7 +71,7 @@ class DefaultFileWatcher(val file: File, actorRef: ActorRef) extends FileWatcher
           val child = dir.resolve(name)
           actorRef ! FileWatcherEvents.Deleted(child.toFile)
         case OVERFLOW ⇒
-          actorRef ! FileWatcherEvents.Overflow
+          actorRef ! FileWatcherEvents.Error(new Exception(s"Underlying file watcher notified an overflow"))
         case x ⇒
           actorRef ! FileWatcherEvents.Error(new Exception(s"Unknown event ${x.name()}"))
       }
