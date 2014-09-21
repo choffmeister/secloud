@@ -93,6 +93,36 @@ object Application {
           case _ ⇒ throw new Exception()
         }
         traverse(VirtualFile("/"), List((0, 1)))
+      case Some(cli.watch) ⇒
+        import akka.actor._
+        import java.nio.file._
+        implicit val system = ActorSystem()
+
+        def commit(repo: Repository, event: FileWatcherEvent, p: Option[Path]): Unit = {
+          if (p.isDefined && !p.get.startsWith(Paths.get(env.currentDirectory.toString, ".secloud"))) {
+            val start = System.currentTimeMillis
+            val id = repo.commit()
+            val end = System.currentTimeMillis
+            println(s"commiting to ${id.hex} took ${end - start} ms")
+          }
+        }
+
+        val repo = Repository(env.currentDirectory, conf)
+        val actor = system.actorOf(Props(new Actor with ActorLogging {
+          def receive = {
+            case e @ CreatedEvent(p) ⇒ commit(repo, e, Some(p))
+            case e @ ModifiedEvent(p) ⇒ commit(repo, e, Some(p))
+            case e @ DeletedEvent(p) ⇒ commit(repo, e, Some(p))
+            case e @ Error(err) ⇒ commit(repo, e, None)
+            case e @ OverflowError ⇒ commit(repo, e, None)
+          }
+        }))
+
+        val watcher = new FileWatcher(Paths.get(env.currentDirectory.toString), actor)
+        watcher.start()
+
+        System.out.println("Press a key to stop...")
+        System.in.read()
       case Some(cli.environment) ⇒
         con.info(s"Current directory ${env.currentDirectory}")
         con.info(s"Home directory ${env.userDirectory}")

@@ -19,6 +19,8 @@ class CommandLineInterface(val arguments: Seq[String]) extends ScallopConf(argum
   }
   val tree = new Subcommand("tree")
 
+  val watch = new Subcommand("watch")
+
   val environment = new Subcommand("environment")
   val benchmark = new Subcommand("benchmark")
 }
