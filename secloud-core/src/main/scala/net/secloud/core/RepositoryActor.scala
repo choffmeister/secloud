@@ -21,7 +21,7 @@ class RepositoryActor(val env: Environment, val conf: Config, val repo: Reposito
       val events = l.map(_.asInstanceOf[FileWatcherEvent])
       val errors = events.filter(_.isInstanceOf[Error]).map(_.asInstanceOf[Error])
       if (errors.nonEmpty) {
-        errors.foreach(err => log.error(err.err, "Got file watcher error"))
+        errors.foreach(err ⇒ log.error(err.err, "Got file watcher error"))
         log.info("Recommitting whole repository")
         commit(repo, Nil)
       } else {

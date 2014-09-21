@@ -55,7 +55,7 @@ class OSXFileWatcher(val file: File, actorRef: ActorRef) extends FileWatcher {
           val child = dir.resolve(Paths.get(name.toString))
           actorRef ! FileWatcherEvents.Deleted(child.toFile)
         case OVERFLOW ⇒
-          actorRef ! FileWatcherEvents.Overflow
+          actorRef ! FileWatcherEvents.Error(new Exception(s"Underlying file watcher notified an overflow"))
         case x ⇒
           actorRef ! FileWatcherEvents.Error(new Exception(s"Unknown event ${x.name()}"))
       }
