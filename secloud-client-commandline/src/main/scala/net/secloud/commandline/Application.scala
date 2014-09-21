@@ -1,10 +1,11 @@
 package net.secloud.commandline
 
 import java.io._
-import java.util.Date
+import akka.actor._
 import net.secloud.core._
+import net.secloud.core.filewatcher._
 import net.secloud.core.objects._
-import net.secloud.core.crypto._
+import net.secloud.core.utils.AggregatingActor
 import scala.language.reflectiveCalls
 
 object Application {
@@ -42,6 +43,19 @@ object Application {
         con.info("Committing current snapshot...")
         val commitId = repo.commit()
         con.success("Done")
+      case Some(cli.history) ⇒
+        val repo = Repository(env.currentDirectory, conf)
+        val list = scala.collection.mutable.ListBuffer.empty[Commit]
+        val queue = scala.collection.mutable.Queue.empty[Commit]
+        queue.enqueue(repo.headCommit)
+
+        while (queue.nonEmpty) {
+          val curr = queue.dequeue()
+          list += curr
+          curr.parentIds.map(id ⇒ repo.database.readCommit(id, Right(conf.asymmetricKey))).foreach(c ⇒ queue.enqueue(c))
+        }
+
+        list.map(_.id.hex).foreach(println)
       case Some(cli.ls) ⇒
         val file = VirtualFile(cli.ls.path())
         val repo = Repository(env.currentDirectory, conf)
@@ -80,6 +94,14 @@ object Application {
           case _ ⇒ throw new Exception()
         }
         traverse(VirtualFile("/"), List((0, 1)))
+      case Some(cli.watch) ⇒
+        implicit val system = ActorSystem()
+        val repo = Repository(env.currentDirectory, conf)
+        val repoActor = system.actorOf(Props(new RepositoryActor(env, conf, repo)))
+        val watcher = FileWatcher.watch(env, env.currentDirectory, repoActor)
+
+        System.out.println("Press a key to stop...")
+        System.in.read()
       case Some(cli.environment) ⇒
         con.info(s"Current directory ${env.currentDirectory}")
         con.info(s"Home directory ${env.userDirectory}")
