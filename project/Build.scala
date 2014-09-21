@@ -9,7 +9,7 @@ object Build extends sbt.Build {
 
   lazy val commonSettings = Defaults.defaultSettings ++ Seq(
     organization := "net.secloud",
-    version := "0.0.2",
+    version := "0.0.3",
     scalaVersion := "2.10.4",
     scalacOptions <<= baseDirectory.map(bd =>
       Seq("-encoding", "utf8") ++
