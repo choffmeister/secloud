@@ -23,31 +23,31 @@ class FileWatcherSpec extends Specification {
       val env = Environment.apply().copy(osName = "unknown")
       val watch = FileWatcher.watch(env, temp, self)
 
-      within (timeout) {
+      within(timeout) {
         newfile(file(temp, "README.md"))
         fishForMessage() {
-          case FileWatcherEvents.Created(f) => f == file(temp, "README.md")
-          case _ => false
+          case FileWatcherEvents.Created(f) ⇒ f == file(temp, "README.md")
+          case _ ⇒ false
         }
       }
 
-      within (timeout) {
+      within(timeout) {
         mkdirs(file(temp, "src", "main", "scala", "net", "secloud"))
         newfile(file(temp, "src", "main", "scala", "net", "secloud", "Application.scala"))
         fishForMessage() {
-          case FileWatcherEvents.Created(f) => f == file(temp, "src")
-          case _ => false
+          case FileWatcherEvents.Created(f) ⇒ f == file(temp, "src")
+          case _ ⇒ false
         }
       }
 
-      within (timeout) {
+      within(timeout) {
         delete(file(temp, "src", "main", "scala", "net", "secloud", "Application.scala"))
         delete(file(temp, "src", "main", "scala", "net", "secloud"))
         delete(file(temp, "src", "main", "scala", "net"))
         delete(file(temp, "src", "main", "scala"))
         fishForMessage() {
-          case FileWatcherEvents.Deleted(f) => f == file(temp, "src", "main", "scala")
-          case _ => false
+          case FileWatcherEvents.Deleted(f) ⇒ f == file(temp, "src", "main", "scala")
+          case _ ⇒ false
         }
       }
     }
@@ -55,8 +55,8 @@ class FileWatcherSpec extends Specification {
 
   def file(base: File, suffix: String*): File = file(base, suffix.toList)
   def file(base: File, suffix: List[String]): File = suffix match {
-    case head :: tail => file(new File(base, head), tail)
-    case _ => base
+    case head :: tail ⇒ file(new File(base, head), tail)
+    case _ ⇒ base
   }
   def mkdirs(f: File): Unit = f.mkdirs()
   def newfile(f: File): Unit = f.createNewFile()
