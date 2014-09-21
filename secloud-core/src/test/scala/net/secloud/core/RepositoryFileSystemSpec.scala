@@ -27,6 +27,14 @@ class RepositoryFileSystemSpec extends Specification {
       rfs2.read(VirtualFile("/a.txt"))(readString) === "Hello World a"
       rfs2.read(VirtualFile("/first/b.txt"))(readString) === "Hello World b"
       rfs2.read(VirtualFile("/first/first-1/c.txt"))(readString) === "Hello World c"
+
+      var lines1 = List.empty[String]
+      rfs2.read(VirtualFile("/empty"))(cs ⇒ readLines(cs, l ⇒ lines1 ++= List(l)))
+      lines1 === List("")
+
+      var lines2 = List.empty[String]
+      rfs2.read(VirtualFile("/bin/script.py"))(cs ⇒ readLines(cs, l ⇒ lines2 ++= List(l)))
+      lines2 === List("#!/usr/bin/python", "print 'Hello World!'", "")
     }
 
     "distinguish between existing and non existing files" in TestWorkingDirectory { base ⇒

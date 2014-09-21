@@ -57,7 +57,8 @@ object TestWorkingDirectory {
     put(base, List("first", "first-1", "c.txt"), "Hello World c")
     put(base, List("first", "first-2", "d.txt"), "Hello World d")
     put(base, List("second", "second-1", "e.txt"), "Hello World e")
-    put(base, List("bin", "script.py"), "#!/usr/bin/python\n\nprint 'Hello World!'")
+    put(base, List("bin", "script.py"), "#!/usr/bin/python\r\nprint 'Hello World!'\n")
+    put(base, List("empty"), "")
     makeExecutable(base, List("bin", "script.py"))
   }
 

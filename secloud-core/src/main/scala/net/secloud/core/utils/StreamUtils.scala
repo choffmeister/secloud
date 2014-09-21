@@ -70,6 +70,32 @@ object StreamUtils {
     new String(readBytes(input), "UTF-8")
   }
 
+  def readLines(input: InputStream, callback: String ⇒ Any): Unit = {
+    // TODO: optimize
+    var bs = new ByteArrayOutputStream()
+    var done = false
+
+    def emitLine() {
+      val b = bs.toByteArray
+      bs = new ByteArrayOutputStream()
+      val cutof =
+        if (b.endsWith(Array[Byte](13, 10))) 2
+        else if (b.endsWith(Array[Byte](10))) 1
+        else 0
+      callback(new String(b, 0, b.length - cutof, "UTF-8"))
+    }
+
+    while (!done) {
+      val buffer = Array[Byte](1)
+      val read = input.read(buffer, 0, 1)
+      if (read > 0) {
+        bs.write(buffer, 0, 1)
+        if (buffer(0) == 10) emitLine()
+      } else done = true
+    }
+    emitLine()
+  }
+
   def writeBytesToFile(file: File, bytes: Array[Byte]): Unit = {
     val fs = new FileOutputStream(file)
     try {

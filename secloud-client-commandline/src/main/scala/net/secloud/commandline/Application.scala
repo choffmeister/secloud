@@ -6,6 +6,7 @@ import net.secloud.core._
 import net.secloud.core.filewatcher._
 import net.secloud.core.objects._
 import net.secloud.core.utils.AggregatingActor
+import net.secloud.core.utils.StreamUtils._
 import scala.language.reflectiveCalls
 
 object Application {
@@ -66,16 +67,7 @@ object Application {
         val file = VirtualFile(cli.ls.path())
         val repo = Repository(env.currentDirectory, conf)
         val rfs = repo.fileSystem(repo.headCommit)
-        rfs.read(file) { cs ⇒
-          val reader = new BufferedReader(new InputStreamReader(cs))
-          var done = false
-          while (!done) {
-            val line = Option(reader.readLine())
-            if (line.isDefined) {
-              con.stdout(line.get)
-            } else done = true
-          }
-        }
+        rfs.read(file)(cs ⇒ readLines(cs, l ⇒ con.stdout(l)))
       case Some(cli.tree) ⇒
         val repo = Repository(env.currentDirectory, conf)
         val rfs = repo.fileSystem(repo.headCommit)
