@@ -98,8 +98,6 @@ object Application {
         implicit val system = ActorSystem()
         val repo = Repository(env.currentDirectory, conf)
         val repoActor = system.actorOf(Props(new RepositoryActor(env, conf, repo)))
-        val watcher = FileWatcher.watch(env, env.currentDirectory, repoActor)
-
         System.out.println("Press a key to stop...")
         System.in.read()
       case Some(cli.environment) ⇒
