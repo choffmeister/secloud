@@ -33,7 +33,7 @@ class RepositorySpec extends Specification {
       Hex.encodeHexString(fileContentHash.get.toArray) === "7670b2ccc9740c2741f029f9212c14da0a855157"
     }
 
-    "commit with hints" in TestWorkingDirectory { base =>
+    "commit with hints" in TestWorkingDirectory { base ⇒
       val asymmetricKey = RSA.generate(512, 25)
       val symmetricAlgorithm = AES
       val symmetricAlgorithmKeySize = 16
