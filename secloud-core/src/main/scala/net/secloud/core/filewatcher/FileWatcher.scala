@@ -36,7 +36,7 @@ class DefaultFileWatcher(val file: File, actorRef: ActorRef) extends FileWatcher
     Files.walkFileTree(p, new SimpleFileVisitor[Path] {
       override def preVisitDirectory(p2: Path, attrs: BasicFileAttributes): FileVisitResult = {
         val eventTypes = Array[Kind[_]](ENTRY_CREATE, ENTRY_DELETE, ENTRY_MODIFY)
-        val attrs = SensitivityWatchEventModifier.HIGH
+        val attrs = SensitivityWatchEventModifier.MEDIUM
         val key = p2.register(watcher, eventTypes, attrs)
         keys += key -> p2
         FileVisitResult.CONTINUE
@@ -90,5 +90,5 @@ object FileWatcher {
     watcher
   }
 
-  private def blockUntil(cond: => Boolean): Unit = while (!cond) Thread.sleep(100L)
+  private def blockUntil(cond: ⇒ Boolean): Unit = while (!cond) Thread.sleep(100L)
 }
