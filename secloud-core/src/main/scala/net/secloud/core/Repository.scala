@@ -23,7 +23,12 @@ class Repository(val workingDir: VirtualFileSystem, val database: RepositoryData
   }
 
   def commit(): ObjectId = {
-    val treeEntry = snapshot()
+    val treeEntry = snapshot(None)
+    commit(List(headId), treeEntry)
+  }
+
+  def commitWithChangeHints(changeHints: List[VirtualFile]): ObjectId = {
+    val treeEntry = snapshot(Some(changeHints))
     commit(List(headId), treeEntry)
   }
 
@@ -43,57 +48,59 @@ class Repository(val workingDir: VirtualFileSystem, val database: RepositoryData
     commitId
   }
 
-  def snapshot(): TreeEntry = {
+  def snapshot(changeHints: Option[List[VirtualFile]]): TreeEntry = {
     def recursion(f: VirtualFile, head: RepositoryFileSystem, wd: VirtualFileSystem): TreeEntry = {
-      wd.mode(f) match {
-        case Directory ⇒
-          val entries = wd.children(f)
-            .filter(e ⇒ !e.name.startsWith(".") && e.name != "target")
-            .map(e ⇒ recursion(f.child(e.name), head, wd))
-            .sortBy(e ⇒ e.name)
-            .toList
+      if (changeHints.isEmpty || changeHints.get.exists(ch ⇒ ch.isChildOf(f) || ch.isParentOf(f))) {
+        wd.mode(f) match {
+          case Directory ⇒
+            val entries = wd.children(f)
+              .filter(e ⇒ !e.name.startsWith(".") && e.name != "target")
+              .map(e ⇒ recursion(f.child(e.name), head, wd))
+              .sortBy(e ⇒ e.name)
+              .toList
 
-          head.treeOption(f) match {
-            case Some(t: Tree) if t.entries.map(e ⇒ (e.id, e.name, e.mode)) == entries.map(e ⇒ (e.id, e.name, e.mode)) ⇒
-              TreeEntry(t.id, DirectoryTreeEntryMode, f.name, head.key(f).get)
-            case _ ⇒
-              val tree = Tree(ObjectId(), entries)
-              val key = generateKey()
-              val id = database.writeTree(tree, config.asymmetricKey, key)
-              TreeEntry(id, DirectoryTreeEntryMode, f.name, key)
-          }
+            head.treeOption(f) match {
+              case Some(t: Tree) if t.entries.map(e ⇒ (e.id, e.name, e.mode)) == entries.map(e ⇒ (e.id, e.name, e.mode)) ⇒
+                TreeEntry(t.id, DirectoryTreeEntryMode, f.name, head.key(f).get)
+              case _ ⇒
+                val tree = Tree(ObjectId(), entries)
+                val key = generateKey()
+                val id = database.writeTree(tree, config.asymmetricKey, key)
+                TreeEntry(id, DirectoryTreeEntryMode, f.name, key)
+            }
 
-        case mode @ (NonExecutableFile | ExecutableFile) ⇒
-          val blob = Blob(ObjectId())
-          val key = generateKey()
+          case mode @ (NonExecutableFile | ExecutableFile) ⇒
+            val blob = Blob(ObjectId())
+            val key = generateKey()
 
-          database.writeExplicit { (dbs, writer) ⇒
-            var hash = Seq.empty[Byte]
-            val id = signObject(dbs, config.asymmetricKey) { ss ⇒
-              writeBlob(ss, blob)
-              writeBlobContent(ss, key) { cs ⇒
-                hash = wd.read(f)(fs ⇒ SHA1.create().hash(cs)(hs ⇒ pipeStream(fs, hs)).toSeq)
+            database.writeExplicit { (dbs, writer) ⇒
+              var hash = Seq.empty[Byte]
+              val id = signObject(dbs, config.asymmetricKey) { ss ⇒
+                writeBlob(ss, blob)
+                writeBlobContent(ss, key) { cs ⇒
+                  hash = wd.read(f)(fs ⇒ SHA1.create().hash(cs)(hs ⇒ pipeStream(fs, hs)).toSeq)
+                }
+              }
+              val treeEntryMode = mode match {
+                case NonExecutableFile ⇒ NonExecutableFileTreeEntryMode
+                case ExecutableFile ⇒ ExecutableFileTreeEntryMode
+                case _ ⇒ throw new Exception()
+              }
+
+              head.hash(f) match {
+                case Some(prevHash) if prevHash == hash ⇒
+                  writer.dismiss()
+                  val prevBlob = head.blob(f)
+                  TreeEntry(prevBlob.id, treeEntryMode, f.name, head.key(f).get, prevHash)
+                case _ ⇒
+                  writer.persist(id)
+                  TreeEntry(id, treeEntryMode, f.name, key, hash)
               }
             }
-            val treeEntryMode = mode match {
-              case NonExecutableFile ⇒ NonExecutableFileTreeEntryMode
-              case ExecutableFile ⇒ ExecutableFileTreeEntryMode
-              case _ ⇒ throw new Exception()
-            }
 
-            head.hash(f) match {
-              case Some(prevHash) if prevHash == hash ⇒
-                writer.dismiss()
-                val prevBlob = head.blob(f)
-                TreeEntry(prevBlob.id, treeEntryMode, f.name, head.key(f).get, prevHash)
-              case _ ⇒
-                writer.persist(id)
-                TreeEntry(id, treeEntryMode, f.name, key, hash)
-            }
-          }
-
-        case _ ⇒ throw new Exception()
-      }
+          case _ ⇒ throw new Exception()
+        }
+      } else head.tree(f.parent).entries.find(_.name == f.name).get
     }
 
     recursion(VirtualFile("/"), fileSystem(headCommit), workingDir)

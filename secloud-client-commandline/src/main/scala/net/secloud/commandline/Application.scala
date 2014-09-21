@@ -101,7 +101,13 @@ object Application {
         def commit(repo: Repository, event: FileWatcherEvent, p: Option[Path]): Unit = {
           if (p.isDefined && !p.get.startsWith(Paths.get(env.currentDirectory.toString, ".secloud"))) {
             val start = System.currentTimeMillis
-            val id = repo.commit()
+            val id = p match {
+              case Some(p) ⇒
+                val hints = List(VirtualFile("/" + p.subpath(Paths.get(env.currentDirectory.toString).getNameCount, p.getNameCount).toString))
+                repo.commitWithChangeHints(hints)
+              case _ ⇒
+                repo.commit()
+            }
             val end = System.currentTimeMillis
             println(s"commiting to ${id.hex} took ${end - start} ms")
           }

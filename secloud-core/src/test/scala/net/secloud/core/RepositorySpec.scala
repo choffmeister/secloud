@@ -33,6 +33,19 @@ class RepositorySpec extends Specification {
       Hex.encodeHexString(fileContentHash.get.toArray) === "7670b2ccc9740c2741f029f9212c14da0a855157"
     }
 
+    "commit with hints" in TestWorkingDirectory { base =>
+      val asymmetricKey = RSA.generate(512, 25)
+      val symmetricAlgorithm = AES
+      val symmetricAlgorithmKeySize = 16
+      val config = Config(asymmetricKey, symmetricAlgorithm, symmetricAlgorithmKeySize)
+      val repo = Repository(base, config)
+      repo.init()
+      repo.commit()
+      repo.commitWithChangeHints(List(VirtualFile("/")))
+
+      ok
+    }
+
     "commit does not commit two identical snapshots in a row" in TestWorkingDirectory { base ⇒
       val asymmetricKey = RSA.generate(512, 25)
       val symmetricAlgorithm = AES

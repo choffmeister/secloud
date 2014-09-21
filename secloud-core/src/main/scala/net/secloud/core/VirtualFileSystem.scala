@@ -18,6 +18,9 @@ case class VirtualFile(path: String) {
   def child(name: String) = VirtualFile.fromSegments(segments ++ List(name))
   def parent = VirtualFile.fromSegments(segments.take(segments.length - 1).toList)
   def tail = VirtualFile.fromSegments(segments.tail)
+
+  def isChildOf(that: VirtualFile) = segments.startsWith(that.segments)
+  def isParentOf(that: VirtualFile) = that.segments.startsWith(segments)
 }
 
 object VirtualFile {
