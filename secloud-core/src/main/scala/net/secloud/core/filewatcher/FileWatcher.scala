@@ -7,11 +7,12 @@ import java.nio.file.WatchEvent.Kind
 import java.nio.file._
 import java.nio.file.attribute.BasicFileAttributes
 
-import akka.actor.ActorRef
+import akka.actor._
 import com.sun.nio.file.SensitivityWatchEventModifier
 import net.secloud.core.Environment
 
 import scala.collection.JavaConversions._
+import scala.concurrent.duration.FiniteDuration
 
 object FileWatcherEvents {
   sealed trait FileWatcherEvent
