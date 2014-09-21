@@ -8,14 +8,7 @@
         </encoder>
     </appender>
 
-    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
-        <encoder>
-            <pattern>[%-5level] %date{HH:mm:ss.SSS} %logger{1} - %msg%n</pattern>
-        </encoder>
-    </appender>
-
     <root level="ALL">
         <appender-ref ref="FILE"/>
-        <appender-ref ref="CONSOLE"/>
     </root>
 </configuration>
