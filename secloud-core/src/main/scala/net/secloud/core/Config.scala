@@ -4,10 +4,14 @@ import java.io._
 import net.secloud.core.crypto._
 import com.typesafe.config.ConfigFactory
 
+import scala.collection.JavaConversions._
+import scala.util.matching.Regex
+
 case class Config(
   asymmetricKey: AsymmetricAlgorithmInstance,
   symmetricAlgorithm: SymmetricAlgorithm,
-  symmetricAlgorithmKeySize: Int)
+  symmetricAlgorithmKeySize: Int,
+  ignore: List[Regex])
 
 object Config {
   lazy val raw = ConfigFactory.load()
@@ -15,7 +19,8 @@ object Config {
   def apply(): Config = new Config(
     loadAsymmetricKey(new File(raw.getString("secloud.key.path"))),
     resolveSymmetricAlgorithm(raw.getString("secloud.encryption.algorithm.name")),
-    raw.getInt("secloud.encryption.algorithm.keysize"))
+    raw.getInt("secloud.encryption.algorithm.keysize"),
+    "/.secloud$".r :: "/.secloud/".r :: raw.getStringList("secloud.ignore").toList.map(_.r))
 
   private def loadAsymmetricKey(keyPath: File): AsymmetricAlgorithmInstance = {
     try {

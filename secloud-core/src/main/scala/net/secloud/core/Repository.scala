@@ -49,7 +49,7 @@ class Repository(val workingDir: VirtualFileSystem, val database: RepositoryData
         wd.mode(f) match {
           case Directory ⇒
             val entries = wd.children(f)
-              .filter(e ⇒ !e.name.startsWith(".") && e.name != "target")
+              .filter(e ⇒ !e.name.startsWith(".") && config.ignore.forall(i ⇒ (f.child(e.name)).matches(i) == false))
               .map(e ⇒ recursion(f.child(e.name), head, wd))
               .sortBy(e ⇒ e.name)
               .toList

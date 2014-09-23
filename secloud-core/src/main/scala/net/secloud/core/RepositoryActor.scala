@@ -25,11 +25,11 @@ class RepositoryActor(val env: Environment, val conf: Config, val repo: Reposito
         log.info("Recommitting whole repository")
         commit(repo, Nil)
       } else {
-        val hints = events.map(_.asInstanceOf[FileWatcherEventWithPath]).map(_.f)
-        val filtered = hints.filter(h ⇒ VirtualFile.fromFile(env.currentDirectory, h).segments.headOption != Some(".secloud"))
+        val hints = events.map(_.asInstanceOf[FileWatcherEventWithPath]).map(e ⇒ e.f -> VirtualFile.fromFile(env.currentDirectory, e.f))
+        val filtered = hints.filter(h ⇒ conf.ignore.forall(i ⇒ h._2.matches(i) == false))
         if (filtered.nonEmpty) {
-          log.info("Committing with hints {}", filtered.map(_.toString).mkString(", "))
-          commit(repo, filtered)
+          log.info("Committing with hints {}", filtered.map(_._1.toString).mkString(", "))
+          commit(repo, filtered.map(_._1))
         }
       }
 

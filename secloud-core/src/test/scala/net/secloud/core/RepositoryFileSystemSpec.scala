@@ -14,7 +14,7 @@ class RepositoryFileSystemSpec extends Specification {
       val asymmetricKey = RSA.generate(512, 25)
       val symmetricAlgorithm = AES
       val symmetricAlgorithmKeySize = 16
-      val config = Config(asymmetricKey, symmetricAlgorithm, symmetricAlgorithmKeySize)
+      val config = Config(asymmetricKey, symmetricAlgorithm, symmetricAlgorithmKeySize, Nil)
       val repo = new Repository(vfs, db, config)
 
       val commitId1 = repo.init()
@@ -43,7 +43,7 @@ class RepositoryFileSystemSpec extends Specification {
       val asymmetricKey = RSA.generate(512, 25)
       val symmetricAlgorithm = AES
       val symmetricAlgorithmKeySize = 16
-      val config = Config(asymmetricKey, symmetricAlgorithm, symmetricAlgorithmKeySize)
+      val config = Config(asymmetricKey, symmetricAlgorithm, symmetricAlgorithmKeySize, Nil)
       val repo = new Repository(vfs, db, config)
 
       val commitId1 = repo.init()
@@ -72,7 +72,7 @@ class RepositoryFileSystemSpec extends Specification {
       val asymmetricKey = RSA.generate(512, 25)
       val symmetricAlgorithm = AES
       val symmetricAlgorithmKeySize = 16
-      val config = Config(asymmetricKey, symmetricAlgorithm, symmetricAlgorithmKeySize)
+      val config = Config(asymmetricKey, symmetricAlgorithm, symmetricAlgorithmKeySize, Nil)
       val repo = new Repository(vfs, db, config)
 
       val commitId1 = repo.init()
@@ -98,7 +98,7 @@ class RepositoryFileSystemSpec extends Specification {
       val asymmetricKey = RSA.generate(512, 25)
       val symmetricAlgorithm = AES
       val symmetricAlgorithmKeySize = 16
-      val config = Config(asymmetricKey, symmetricAlgorithm, symmetricAlgorithmKeySize)
+      val config = Config(asymmetricKey, symmetricAlgorithm, symmetricAlgorithmKeySize, Nil)
       val repo = new Repository(vfs, db, config)
 
       val commitId1 = repo.init()

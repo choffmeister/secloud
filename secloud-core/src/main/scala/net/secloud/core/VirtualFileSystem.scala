@@ -4,6 +4,7 @@ import java.io.{ File, FileInputStream, FileOutputStream }
 import java.io.{ InputStream, OutputStream }
 import scala.language.implicitConversions
 import scala.language.reflectiveCalls
+import scala.util.matching.Regex
 
 sealed abstract class VirtualFileMode
 case object NonExecutableFile extends VirtualFileMode
@@ -21,6 +22,8 @@ case class VirtualFile(path: String) {
 
   def isChildOf(that: VirtualFile) = this != that && segments.startsWith(that.segments)
   def isParentOf(that: VirtualFile) = this != that && that.segments.startsWith(segments)
+
+  def matches(regex: Regex) = regex.findFirstIn(path).isDefined
 }
 
 object VirtualFile {
