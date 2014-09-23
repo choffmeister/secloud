@@ -26,9 +26,11 @@ class RepositoryActor(val env: Environment, val conf: Config, val repo: Reposito
         commit(repo, Nil)
       } else {
         val hints = events.map(_.asInstanceOf[FileWatcherEventWithPath]).map(_.f)
-        val hints2 = hints.filter(h ⇒ VirtualFile.fromFile(env.currentDirectory, h).segments.headOption != Some(".secloud"))
-        log.info("Committing with hints {}", hints2.map(_.toString).mkString(", "))
-        if (hints.nonEmpty) commit(repo, hints2)
+        val filtered = hints.filter(h ⇒ VirtualFile.fromFile(env.currentDirectory, h).segments.headOption != Some(".secloud"))
+        if (filtered.nonEmpty) {
+          log.info("Committing with hints {}", filtered.map(_.toString).mkString(", "))
+          commit(repo, filtered)
+        }
       }
 
     case x ⇒
