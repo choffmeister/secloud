@@ -3,11 +3,12 @@ package net.secloud.core.backend
 import java.io._
 
 import com.github.sardine._
+import com.typesafe.config.ConfigFactory
 import net.secloud.core.objects.ObjectId
 import net.secloud.core.utils.StreamUtils._
 
-class WebDAVBackend(hostname: String, baseUrl: String, username: String, password: String) extends Backend {
-  private val sardine = SardineFactory.begin(username, password)
+class WebDAVBackend(config: WebDAVBackendConfig) extends Backend {
+  private val sardine = SardineFactory.begin(config.username, config.password)
 
   def init(): Unit = {
     if (exists("/")) throw new Exception(s"Directory ${absoluteUrl("/")} already exists")
@@ -45,7 +46,7 @@ class WebDAVBackend(hostname: String, baseUrl: String, username: String, passwor
 
   private def directoryUrl(id: ObjectId) = "/objects/%s/".format(id.hex.take(2))
   private def fileUrl(id: ObjectId) = "/objects/%s/%s".format(id.hex.take(2), id.hex.drop(2))
-  private def absoluteUrl(relativeUrl: String) = "https://" + "%s/%s/%s".format(hostname, baseUrl, relativeUrl).replaceAll("/{2,}", "/").stripPrefix("/")
+  private def absoluteUrl(relativeUrl: String) = "https://" + "%s/%s/%s".format(config.hostname, config.baseUrl, relativeUrl).replaceAll("/{2,}", "/").stripPrefix("/")
 
   private def exists(url: String) = sardine.exists(absoluteUrl(url))
   private def createDirectory(url: String) = sardine.createDirectory(absoluteUrl(url))
@@ -59,4 +60,15 @@ class WebDAVBackend(hostname: String, baseUrl: String, username: String, passwor
     readFile(url, stream)
     stream.toByteArray
   }
+}
+
+case class WebDAVBackendConfig(hostname: String, baseUrl: String, username: String, password: String)
+object WebDAVBackendConfig {
+  lazy val raw = ConfigFactory.load()
+
+  def apply(): WebDAVBackendConfig = new WebDAVBackendConfig(
+    raw.getString("secloud.webdav.hostname"),
+    raw.getString("secloud.webdav.base-url"),
+    raw.getString("secloud.webdav.username"),
+    raw.getString("secloud.webdav.password"))
 }
