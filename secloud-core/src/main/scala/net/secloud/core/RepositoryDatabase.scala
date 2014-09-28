@@ -67,7 +67,7 @@ trait RepositoryDatabase {
       }
     }
   def readTreePublic(treeId: ObjectId): Tree =
-    read(treeId)(s => ObjectSerializer.readTreePublic(s)).copy(id = treeId)
+    read(treeId)(s ⇒ ObjectSerializer.readTreePublic(s)).copy(id = treeId)
   def readTree(treeId: ObjectId, key: SymmetricAlgorithmInstance): Tree =
     read(treeId)(s ⇒ ObjectSerializer.readTree(s, key)).copy(id = treeId)
 

@@ -1,6 +1,7 @@
 package net.secloud.core
 
 import java.io._
+import net.secloud.core.backend.Backend
 import net.secloud.core.crypto._
 import net.secloud.core.objects._
 import net.secloud.core.objects.ObjectSerializer._
@@ -102,6 +103,38 @@ class Repository(val workingDir: VirtualFileSystem, val database: RepositoryData
     }
 
     recursion(VirtualFile("/"), fileSystem(headCommit), workingDir)
+  }
+
+  def synchronize(backend: Backend): Unit = {
+    def recursion(entry: TreeEntry, depth: Int): Unit = {
+      if (!backend.has(entry.id)) {
+        entry.mode match {
+          case DirectoryTreeEntryMode ⇒
+            println("  " + "  " * depth + "tree " + entry.id.hex)
+            database.readTreePublic(entry.id).entries.foreach(e ⇒ recursion(e, depth + 1))
+            database.read(entry.id)(s ⇒ backend.put(entry.id, s))
+          case NonExecutableFileTreeEntryMode | ExecutableFileTreeEntryMode ⇒
+            println("  " + "  " * depth + "blob " + entry.id.hex)
+            database.read(entry.id)(s ⇒ backend.put(entry.id, s))
+        }
+      }
+    }
+
+    val queue = scala.collection.mutable.Queue.empty[Commit]
+    queue.enqueue(database.readCommitPublic(headId))
+
+    while (queue.nonEmpty) {
+      val commit = queue.dequeue()
+      commit.parentIds.foreach(pid ⇒ queue.enqueue(database.readCommitPublic(pid)))
+
+      println("commit " + commit.id.hex)
+      if (!backend.has(commit.id)) {
+        recursion(commit.tree, 0)
+        database.read(commit.id)(s ⇒ backend.put(commit.id, s))
+      }
+    }
+
+    backend.headId = headId
   }
 
   def headId: ObjectId = database.headId
