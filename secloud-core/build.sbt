@@ -6,6 +6,7 @@ resolvers ++= Seq(
 
 libraryDependencies ++= Seq(
   "ch.qos.logback" % "logback-classic" % "1.0.13",
+  "com.github.lookfirst" % "sardine" % "5.3",
   "com.jcraft" % "jzlib" % "1.1.3",
   "com.typesafe" % "config" % "1.2.1",
   "com.typesafe.akka" %% "akka-actor" % "2.3.5",

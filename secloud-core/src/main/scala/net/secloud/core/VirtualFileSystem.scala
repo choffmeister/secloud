@@ -2,6 +2,7 @@ package net.secloud.core
 
 import java.io.{ File, FileInputStream, FileOutputStream }
 import java.io.{ InputStream, OutputStream }
+import net.secloud.core.utils.StreamUtils.using
 import scala.language.implicitConversions
 import scala.language.reflectiveCalls
 import scala.util.matching.Regex
@@ -71,14 +72,6 @@ class NativeFileSystem(base: File) extends VirtualFileSystem {
 
   private def /(): String = File.separator
   private def <<(f: VirtualFile): File = new File(base.getAbsolutePath + / + f.segments.mkString(/))
-
-  private def using[A <: { def close(): Unit }, B](closable: A)(inner: A ⇒ B): B = {
-    try {
-      inner(closable)
-    } finally {
-      closable.close()
-    }
-  }
 }
 
 object NullFileSystem extends VirtualFileSystem {

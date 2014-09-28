@@ -113,4 +113,12 @@ object StreamUtils {
       fs.close()
     }
   }
+
+  def using[A <: { def close(): Unit }, B](closable: A)(inner: A ⇒ B): B = {
+    try {
+      inner(closable)
+    } finally {
+      closable.close()
+    }
+  }
 }
