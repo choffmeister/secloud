@@ -20,11 +20,15 @@ object ObjectSerializer {
 
   def writeTree(output: OutputStream, tree: Tree, key: SymmetricAlgorithmInstance): Unit =
     TreeSerializer.write(output, tree, key)
+  def readTreePublic(input: InputStream): Tree =
+    TreeSerializer.readPublic(input)
   def readTree(input: InputStream, key: SymmetricAlgorithmInstance): Tree =
     TreeSerializer.read(input, key)
 
   def writeCommit(output: OutputStream, commit: Commit, key: SymmetricAlgorithmInstance): Unit =
     CommitSerializer.write(output, commit, key)
+  def readCommitPublic(input: InputStream): Commit =
+    CommitSerializer.readPublic(input)
   def readCommit(input: InputStream, key: Either[SymmetricAlgorithmInstance, AsymmetricAlgorithmInstance]): Commit =
     CommitSerializer.read(input, key)
 
@@ -95,7 +99,7 @@ private[objects] object TreeSerializer {
     output.flush()
   }
 
-  def read(input: InputStream, key: SymmetricAlgorithmInstance): Tree = {
+  def readPublic(input: InputStream): Tree = {
     val objectType = readHeader(input)
     assert("Expected tree", objectType == TreeObjectType)
 
@@ -106,7 +110,13 @@ private[objects] object TreeSerializer {
         (id, mode)
       }
     }
+    val entries = entryIdsAndModes.map(e ⇒ TreeEntry(e._1, e._2, "", NullEncryption.generate(0), Nil))
 
+    return Tree(ObjectId(), entries)
+  }
+
+  def read(input: InputStream, key: SymmetricAlgorithmInstance): Tree = {
+    val treePublic = readPublic(input)
     val entryNamesKeyAndHash = readPrivateBlock(input, key) { bs ⇒
       bs.readList() {
         val name = bs.readString()
@@ -115,9 +125,7 @@ private[objects] object TreeSerializer {
         (name, key, hash)
       }
     }
-
-    val entries = entryIdsAndModes.zip(entryNamesKeyAndHash)
-      .map(e ⇒ TreeEntry(e._1._1, e._1._2, e._2._1, e._2._2, e._2._3))
+    val entries = treePublic.entries.zip(entryNamesKeyAndHash).map(e ⇒ TreeEntry(e._1.id, e._1.mode, e._2._1, e._2._2, e._2._3))
 
     return Tree(ObjectId(), entries)
   }
@@ -150,7 +158,7 @@ private[objects] object CommitSerializer {
     output.flush()
   }
 
-  def read(input: InputStream, key: Either[SymmetricAlgorithmInstance, AsymmetricAlgorithmInstance]): Commit = {
+  def readPublic(input: InputStream): Commit = {
     val objectType = readHeader(input)
     assert("Expected commit", objectType == CommitObjectType)
 
@@ -170,19 +178,23 @@ private[objects] object CommitSerializer {
       val treeId = bs.readObjectId()
       (parentIds, issuers, encapsulatedCommitKeys, treeId)
     }
+    val tree = TreeEntry(treeId, DirectoryTreeEntryMode, "", NullEncryption.generate(0))
 
+    return Commit(ObjectId(), parentIds, issuers, encapsulatedCommitKeys, tree)
+  }
+
+  def read(input: InputStream, key: Either[SymmetricAlgorithmInstance, AsymmetricAlgorithmInstance]): Commit = {
+    val commitPublic = readPublic(input)
     val commitKey = key match {
       case Left(sk) ⇒ sk
       case Right(apk) ⇒
-        val encapsulatedCommitKey = encapsulatedCommitKeys(apk.fingerprint.toSeq).toArray
+        val encapsulatedCommitKey = commitPublic.encapsulatedCommitKeys(apk.fingerprint.toSeq).toArray
         bytesAsStream(apk.unwrapKey(encapsulatedCommitKey))(s ⇒ readSymmetricAlgorithm(s))
     }
     val treeKey = readPrivateBlock(input, commitKey) { bs ⇒
       readSymmetricAlgorithm(bs)
     }
 
-    val tree = TreeEntry(treeId, DirectoryTreeEntryMode, "", treeKey)
-
-    return Commit(ObjectId(), parentIds, issuers, encapsulatedCommitKeys, tree)
+    return commitPublic.copy(tree = commitPublic.tree.copy(key = treeKey))
   }
 }

@@ -55,6 +55,8 @@ trait RepositoryDatabase {
       }
     }
   }
+  def readCommitPublic(commitId: ObjectId): Commit =
+    read(commitId)(s ⇒ ObjectSerializer.readCommitPublic(s)).copy(id = commitId)
   def readCommit(commitId: ObjectId, key: Either[SymmetricAlgorithmInstance, AsymmetricAlgorithmInstance]): Commit =
     read(commitId)(s ⇒ ObjectSerializer.readCommit(s, key)).copy(id = commitId)
 
@@ -64,6 +66,8 @@ trait RepositoryDatabase {
         ObjectSerializer.writeTree(ss, tree, key)
       }
     }
+  def readTreePublic(treeId: ObjectId): Tree =
+    read(treeId)(s => ObjectSerializer.readTreePublic(s)).copy(id = treeId)
   def readTree(treeId: ObjectId, key: SymmetricAlgorithmInstance): Tree =
     read(treeId)(s ⇒ ObjectSerializer.readTree(s, key)).copy(id = treeId)
 
