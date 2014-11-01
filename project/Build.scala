@@ -1,0 +1,76 @@
+import sbt._
+import sbt.Keys._
+import xerial.sbt.Pack._
+
+object Build extends sbt.Build {
+  lazy val buildSettings = Seq(
+    scalaVersion := "2.11.2",
+    scalacOptions ++= Seq("-encoding", "utf8"))
+
+  lazy val coordinateSettings = Seq(
+    organization := "net.secloud",
+    version := "0.0.1-SNAPSHOT")
+
+  lazy val projectSettings = Defaults.defaultSettings ++ Scalariform.settings ++
+      Jacoco.settings ++ buildSettings ++ coordinateSettings
+
+  lazy val core = (project in file("secloud-core"))
+    .settings(projectSettings: _*)
+    .settings(libraryDependencies ++= Seq(
+      "ch.qos.logback" % "logback-classic" % "1.1.2",
+      "com.typesafe" % "config" % "1.2.0",
+      "com.typesafe.akka" %% "akka-actor" % "2.3.6",
+      "com.typesafe.akka" %% "akka-slf4j" % "2.3.6",
+      "com.typesafe.akka" %% "akka-testkit" % "2.3.6" % "test",
+      "io.spray" %% "spray-can" % "1.3.1",
+      "io.spray" %% "spray-testkit" % "1.3.1" % "test",
+      "org.specs2" %% "specs2" % "2.4.1" % "test"))
+    .settings(name := "secloud-core")
+
+  lazy val server = (project in file("secloud-server"))
+    .settings(projectSettings: _*)
+    .settings(libraryDependencies ++= Seq(
+      "ch.qos.logback" % "logback-classic" % "1.1.2",
+      "com.typesafe" % "config" % "1.2.0",
+      "com.typesafe.akka" %% "akka-actor" % "2.3.6",
+      "com.typesafe.akka" %% "akka-slf4j" % "2.3.6",
+      "com.typesafe.akka" %% "akka-testkit" % "2.3.6" % "test",
+      "io.spray" %% "spray-can" % "1.3.1",
+      "io.spray" %% "spray-testkit" % "1.3.1" % "test",
+      "org.specs2" %% "specs2" % "2.4.1" % "test"))
+    .settings(packSettings: _*)
+    .settings(packMain := Map("server" -> "net.secloud.Server"))
+    .settings(name := "secloud-server")
+    .dependsOn(core)
+
+  lazy val root = (project in file("."))
+    .settings(name := "secloud")
+    .settings(coordinateSettings: _*)
+    .aggregate(core, server)
+}
+
+object Jacoco {
+  import de.johoop.jacoco4sbt._
+  import JacocoPlugin._
+
+  lazy val settings = jacoco.settings ++ reports
+
+  lazy val reports = Seq(
+    jacoco.reportFormats in jacoco.Config := Seq(
+      XMLReport(encoding = "utf-8"),
+      ScalaHTMLReport(withBranchCoverage = true)))
+}
+
+object Scalariform {
+  import com.typesafe.sbt._
+  import com.typesafe.sbt.SbtScalariform._
+  import scalariform.formatter.preferences._
+
+  lazy val settings = SbtScalariform.scalariformSettings ++ preferences
+
+  lazy val preferences = Seq(
+    ScalariformKeys.preferences := ScalariformKeys.preferences.value
+      .setPreference(RewriteArrowSymbols, true)
+      .setPreference(SpacesWithinPatternBinders, true)
+      .setPreference(CompactControlReadability, false))
+}
