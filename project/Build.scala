@@ -1,8 +1,11 @@
 import sbt._
 import sbt.Keys._
 import xerial.sbt.Pack._
+import de.choffmeister.sbt.MacOSXAppPlugin._
 
 object Build extends sbt.Build {
+  lazy val dist = TaskKey[File]("dist", "Builds the distribution packages")
+
   lazy val buildSettings = Seq(
     scalaVersion := "2.11.2",
     scalacOptions ++= Seq("-encoding", "utf8"))
@@ -43,10 +46,38 @@ object Build extends sbt.Build {
     .settings(name := "secloud-server")
     .dependsOn(core)
 
+  lazy val macosx = (project in file("secloud-client-macosx"))
+    .settings(projectSettings: _*)
+    .settings(macosxAppSettings: _*)
+    .settings(macosxAppName := "secloud")
+    .settings(macosxAppMainClass := "net.secloud.Application")
+    .settings(macosxAppJavaProperties := Map(
+      "apple.laf.useScreenMenuBar" -> "true",
+      "apple.awt.UIElement" -> "true"
+    ))
+    .settings(name := "secloud-client-macosx")
+    .dependsOn(core)
+
   lazy val root = (project in file("."))
-    .settings(name := "secloud")
     .settings(coordinateSettings: _*)
-    .aggregate(core, server)
+    .settings(dist <<= (target, pack in server, macosxAppPackage in macosx) map { (target, server, macosx) =>
+      val dist = target / "dist"
+      IO.delete(dist)
+
+      val serverDist = dist / "secloud-server"
+      val serverBin = serverDist / "bin"
+      IO.copyDirectory(server, serverDist)
+      serverBin.listFiles.foreach(_.setExecutable(true, false))
+
+      val macosxDist = dist / macosx.getName
+      val macosxBin = macosxDist / "Contents/MacOS/appstub"
+      IO.copyDirectory(macosx, macosxDist)
+      macosxBin.setExecutable(true, false)
+
+      dist
+    })
+    .settings(name := "secloud")
+    .aggregate(core, server, macosx)
 }
 
 object Jacoco {
