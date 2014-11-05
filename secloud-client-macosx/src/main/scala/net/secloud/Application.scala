@@ -25,8 +25,20 @@ object Application {
   }
 
   def screenScale: Double = {
-    Option(Toolkit.getDefaultToolkit.getDesktopProperty("apple.awt.contentScaleFactor"))
-      .fold(1.0f)(_.asInstanceOf[Float]).toDouble
+    Option(Toolkit.getDefaultToolkit.getDesktopProperty("apple.awt.contentScaleFactor")) match {
+      case Some(scale) ⇒ scale.asInstanceOf[Float].toDouble
+      case _ ⇒
+        val gd = GraphicsEnvironment.getLocalGraphicsEnvironment.getDefaultScreenDevice
+        Option(gd.getClass.getDeclaredField("scale")) match {
+          case Some(field) ⇒
+            field.setAccessible(true)
+            field.get(gd) match {
+              case i if i.isInstanceOf[Int] ⇒ i.asInstanceOf[Int].toDouble
+              case _ ⇒ 1.0
+            }
+          case _ ⇒ 1.0
+        }
+    }
   }
 
   def loadTrayIcon(tray: SystemTray): Image = {
