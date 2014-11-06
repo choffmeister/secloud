@@ -32,15 +32,6 @@ object Build extends sbt.Build {
 
   lazy val server = (project in file("secloud-server"))
     .settings(projectSettings: _*)
-    .settings(libraryDependencies ++= Seq(
-      "ch.qos.logback" % "logback-classic" % "1.1.2",
-      "com.typesafe" % "config" % "1.2.0",
-      "com.typesafe.akka" %% "akka-actor" % "2.3.6",
-      "com.typesafe.akka" %% "akka-slf4j" % "2.3.6",
-      "com.typesafe.akka" %% "akka-testkit" % "2.3.6" % "test",
-      "io.spray" %% "spray-can" % "1.3.1",
-      "io.spray" %% "spray-testkit" % "1.3.1" % "test",
-      "org.specs2" %% "specs2" % "2.4.1" % "test"))
     .settings(packSettings: _*)
     .settings(packMain := Map("server" -> "net.secloud.Server"))
     .settings(name := "secloud-server")
@@ -48,13 +39,16 @@ object Build extends sbt.Build {
 
   lazy val macosx = (project in file("secloud-client-macosx"))
     .settings(projectSettings: _*)
+    .settings(packSettings: _*)
     .settings(macosxAppSettings: _*)
     .settings(macosxAppName := "secloud")
     .settings(macosxAppMainClass := "net.secloud.Application")
-    .settings(macosxAppJavaProperties := Map(
-      "apple.laf.useScreenMenuBar" -> "true",
-      "apple.awt.UIElement" -> "true"
+    .settings(macosxAppIcon := Some(baseDirectory.value / "src/main/resources/images/app-icon.icns"))
+    .settings(macosxAppJavaJVMOptions := List(
+      "-Dapple.laf.useScreenMenuBar=true",
+      "-Dapple.awt.UIElement=true"
     ))
+    .settings(macosxAppJavaJars := (pack.value / "lib").listFiles)
     .settings(name := "secloud-client-macosx")
     .dependsOn(core)
 
@@ -70,7 +64,7 @@ object Build extends sbt.Build {
       serverBin.listFiles.foreach(_.setExecutable(true, false))
 
       val macosxDist = dist / macosx.getName
-      val macosxBin = macosxDist / "Contents/MacOS/appstub"
+      val macosxBin = macosxDist / "Contents/MacOS/launcher"
       IO.copyDirectory(macosx, macosxDist)
       macosxBin.setExecutable(true, false)
 
