@@ -39,7 +39,6 @@ object Build extends sbt.Build {
 
   lazy val macosx = (project in file("secloud-client-macosx"))
     .settings(projectSettings: _*)
-    .settings(packSettings: _*)
     .settings(macosxAppSettings: _*)
     .settings(macosxAppName := "secloud")
     .settings(macosxAppMainClass := "net.secloud.Application")
@@ -48,7 +47,6 @@ object Build extends sbt.Build {
       "-Dapple.laf.useScreenMenuBar=true",
       "-Dapple.awt.UIElement=true"
     ))
-    .settings(macosxAppJavaJars := (pack.value / "lib").listFiles)
     .settings(name := "secloud-client-macosx")
     .dependsOn(core)
 
